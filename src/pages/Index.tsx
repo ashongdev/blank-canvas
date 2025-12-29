@@ -136,16 +136,35 @@ const Index = () => {
 	return (
 		<div className="min-h-screen bg-background flex flex-col overflow-hidden">
 			{/* Header */}
-			<motion.header
+<motion.header
 				initial={{ opacity: 0, y: -20 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4 }}
 				className="border-b border-border flex-shrink-0"
 			>
 				<div className="container mx-auto px-6 py-6 flex items-center justify-between">
-					<h1 className="text-2xl font-semibold tracking-tight">
-						Certificate Generator
-					</h1>
+					<div className="flex items-center gap-6">
+						<h1 className="text-2xl font-semibold tracking-tight">
+							Certificate Generator
+						</h1>
+						<nav className="flex items-center gap-4">
+							<span className="text-sm font-medium text-primary">
+								Editor
+							</span>
+							<a
+								href="/admin"
+								className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
+							>
+								Admin
+							</a>
+							<a
+								href="/participant"
+								className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
+							>
+								Get Certificate
+							</a>
+						</nav>
+					</div>
 					<Button
 						variant="ghost"
 						size="icon"
