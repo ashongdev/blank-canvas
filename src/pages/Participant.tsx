@@ -1,4 +1,5 @@
 import CertificatePreview from "@/components/CertificatePreview";
+import ParticipantControlPanel from "@/components/ParticipantControlPanel";
 import PositionControls from "@/components/PositionControls";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,48 +10,13 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import axios from "axios";
 import { motion } from "framer-motion";
-import {
-	AlertCircle,
-	Download,
-	Loader2,
-	Moon,
-	Search,
-	Sun,
-} from "lucide-react";
+import { AlertCircle, Loader2, Moon, Search, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-
-const CERTIFICATE_FONTS = [
-	{
-		value: "Bickham Script Pro Regular",
-		label: "Bickham Script Pro Regular",
-	},
-	{ value: "Great Vibes", label: "Great Vibes" },
-	{ value: "Alex Brush", label: "Alex Brush" },
-	{ value: "Garamond", label: "Garamond" },
-	{ value: "Times New Roman", label: "Times New Roman" },
-	{ value: "Playfair Display", label: "Playfair Display" },
-	{ value: "Montserrat", label: "Montserrat" },
-];
-
-const FONT_WEIGHTS = [
-	{ value: "300", label: "Light" },
-	{ value: "400", label: "Regular" },
-	{ value: "500", label: "Medium" },
-	{ value: "600", label: "Semi Bold" },
-	{ value: "700", label: "Bold" },
-];
 
 const Participant = () => {
 	const { theme, setTheme } = useTheme();
@@ -360,156 +326,26 @@ const Participant = () => {
 							</div>
 
 							{/* Right Controls - Styling & Download */}
-							<div className="h-full max-w-[264px] space-y-6">
-								<motion.div
-									initial={{ opacity: 0, x: 20 }}
-									animate={{ opacity: 1, x: 0 }}
-									transition={{ duration: 0.4, delay: 0.1 }}
-									className="space-y-6"
-								>
-									{/* Name Input */}
-									<div className="space-y-3">
-										<h3 className="text-sm font-medium">
-											Your Name
-										</h3>
-										<Input
-											value={participantName}
-											onChange={(e) =>
-												setParticipantName(
-													e.target.value
-												)
-											}
-											placeholder="Enter your name..."
-											className="w-full"
-										/>
-									</div>
-
-									{/* Font Selection */}
-									<div className="space-y-3">
-										<h3 className="text-sm font-medium">
-											Font Family
-										</h3>
-										<Select
-											value={selectedFont}
-											onValueChange={setSelectedFont}
-										>
-											<SelectTrigger className="w-full">
-												<SelectValue placeholder="Select font" />
-											</SelectTrigger>
-											<SelectContent>
-												{CERTIFICATE_FONTS.map(
-													(font) => (
-														<SelectItem
-															key={font.value}
-															value={font.value}
-														>
-															<span
-																style={{
-																	fontFamily:
-																		font.value,
-																}}
-															>
-																{font.label}
-															</span>
-														</SelectItem>
-													)
-												)}
-											</SelectContent>
-										</Select>
-									</div>
-
-									{/* Font Size */}
-									<div className="space-y-3">
-										<h3 className="text-sm font-medium">
-											Font Size
-										</h3>
-										<Input
-											type="number"
-											value={fontSize}
-											onChange={(e) =>
-												setFontSize(
-													Number(e.target.value)
-												)
-											}
-											min={12}
-											max={200}
-											className="w-full"
-										/>
-									</div>
-
-									{/* Font Weight */}
-									<div className="space-y-3">
-										<h3 className="text-sm font-medium">
-											Font Weight
-										</h3>
-										<Select
-											value={fontWeight}
-											onValueChange={setFontWeight}
-										>
-											<SelectTrigger className="w-full">
-												<SelectValue placeholder="Select weight" />
-											</SelectTrigger>
-											<SelectContent>
-												{FONT_WEIGHTS.map((weight) => (
-													<SelectItem
-														key={weight.value}
-														value={weight.value}
-													>
-														{weight.label}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</div>
-
-									{/* Text Color */}
-									<div className="space-y-3">
-										<h3 className="text-sm font-medium">
-											Text Color
-										</h3>
-										<Input
-											type="text"
-											value={textColor}
-											onChange={(e) =>
-												setTextColor(e.target.value)
-											}
-											placeholder="#000000"
-											className="w-full font-mono text-sm"
-										/>
-									</div>
-
-									{/* Download Button */}
-									<div className="pt-4 border-t border-border">
-										<Button
-											onClick={handleDownload}
-											disabled={
-												!participantName.trim() ||
-												isDownloading
-											}
-											className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-smooth"
-										>
-											{isDownloading ? (
-												<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-											) : (
-												<Download className="w-4 h-4 mr-2" />
-											)}
-											Download Certificate
-										</Button>
-									</div>
-
-									{/* Back Button */}
-									<Button
-										variant="outline"
-										onClick={() => {
-											setTemplateLoaded(false);
-											setTemplateUrl(null);
-											setParticipantName("");
-										}}
-										className="w-full"
-									>
-										Use Different ID
-									</Button>
-								</motion.div>
+							<div className="h-full max-w-[264px]">
+								<ParticipantControlPanel
+									participantName={participantName}
+									onParticipantNameChange={setParticipantName}
+									selectedFont={selectedFont}
+									onFontChange={setSelectedFont}
+									fontSize={fontSize}
+									onFontSizeChange={setFontSize}
+									fontWeight={fontWeight}
+									onFontWeightChange={setFontWeight}
+									textColor={textColor}
+									onTextColorChange={setTextColor}
+									onDownload={handleDownload}
+									onBack={() => {
+										setTemplateLoaded(false);
+										setTemplateUrl(null);
+										setParticipantName("");
+									}}
+									hasName={!!participantName.trim()}
+								/>
 							</div>
 						</div>
 					</div>
