@@ -28,6 +28,7 @@ const Admin = () => {
 	const [showSuccessModal, setShowSuccessModal] = useState(false);
 	const [generatedId, setGeneratedId] = useState("");
 	const [copied, setCopied] = useState(false);
+	const [publicId, setPublicId] = useState("");
 
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -38,6 +39,8 @@ const Admin = () => {
 
 		setIsUploading(true);
 		try {
+			formData.append("public_id", publicId);
+
 			const res = await axios.post(
 				"http://127.0.0.1:8000/api/upload",
 				formData,
@@ -148,6 +151,23 @@ const Admin = () => {
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-6">
+							{/* Public ID Input */}
+							<div className="space-y-2">
+								<label htmlFor="public-id" className="text-sm font-medium">
+									Cloudinary Public ID
+								</label>
+								<Input
+									id="public-id"
+									placeholder="Enter the public_id for the certificate template"
+									value={publicId}
+									onChange={(e) => setPublicId(e.target.value)}
+									className="font-mono text-sm"
+								/>
+								<p className="text-xs text-muted-foreground">
+									This ID will be used to retrieve the template from Cloudinary
+								</p>
+							</div>
+
 							<label
 								htmlFor="admin-template-upload"
 								className="block"
