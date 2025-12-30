@@ -16,6 +16,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import axios from "axios";
 import { motion } from "framer-motion";
 import {
 	AlertCircle,
@@ -99,10 +100,6 @@ const Participant = () => {
 		setError(null);
 		setTemplateLoaded(false);
 
-		// Simulate API call with delay
-		await new Promise((resolve) => setTimeout(resolve, 1500));
-
-		// Simulate different scenarios based on ID
 		if (idToUse.toLowerCase().includes("error")) {
 			setError(
 				"Failed to fetch template. Please check the ID and try again."
@@ -121,9 +118,8 @@ const Participant = () => {
 			return;
 		}
 
-		// Success case - use a placeholder image for simulation
 		setTemplateUrl(
-			`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/v1767052134/publicId.png`
+			`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/v1767052134/${certificateId}.png`
 		);
 		setTemplateLoaded(true);
 		setIsLoading(false);
@@ -151,12 +147,46 @@ const Participant = () => {
 		}
 
 		setIsDownloading(true);
+		if (!templateUrl) {
+			toast.error("Please upload a template first");
+			return;
+		}
 
-		// Simulate download process
-		await new Promise((resolve) => setTimeout(resolve, 2000));
+		toast.success("Generating certificates...");
 
-		toast.success("Certificate downloaded successfully!");
-		setIsDownloading(false);
+		try {
+			const response = await axios.post(
+				"http://127.0.0.1:8000/api/generate",
+				{
+					textPosition: {
+						x: textPosition.x,
+						y: textPosition.y,
+					},
+					selectedFont,
+					fontSize: fontSize,
+					fontWeight,
+					textColor,
+					certificateId,
+					participantName,
+					anchorMode,
+				},
+				{ responseType: "blob" }
+			);
+
+			const url = window.URL.createObjectURL(response.data);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `${participantName}.png`;
+			link.click();
+			window.URL.revokeObjectURL(url);
+
+			toast.success("Download Complete.");
+		} catch (error) {
+			console.log("Error generating certificates:", error);
+			toast.error("Failed to generate certificates");
+		} finally {
+			setIsDownloading(false);
+		}
 	};
 
 	return (

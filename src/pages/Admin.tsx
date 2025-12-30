@@ -153,18 +153,24 @@ const Admin = () => {
 						<CardContent className="space-y-6">
 							{/* Public ID Input */}
 							<div className="space-y-2">
-								<label htmlFor="public-id" className="text-sm font-medium">
-									Cloudinary Public ID
+								<label
+									htmlFor="public-id"
+									className="text-sm font-medium"
+								>
+									Public ID
 								</label>
 								<Input
 									id="public-id"
-									placeholder="Enter the public_id for the certificate template"
+									placeholder="Enter the public id for the certificate template"
 									value={publicId}
-									onChange={(e) => setPublicId(e.target.value)}
+									onChange={(e) =>
+										setPublicId(e.target.value)
+									}
 									className="font-mono text-sm"
 								/>
 								<p className="text-xs text-muted-foreground">
-									This ID will be used to retrieve the template from Cloudinary
+									This ID will be used to retrieve the
+									template from Cloudinary
 								</p>
 							</div>
 
