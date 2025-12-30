@@ -1,5 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -8,6 +14,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import axios from "axios";
 import { motion } from "framer-motion";
 import { Check, Copy, Moon, Sun, Upload } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -26,17 +33,25 @@ const Admin = () => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
+		const formData = new FormData();
+		formData.append("template", file);
+
 		setIsUploading(true);
+		try {
+			const res = await axios.post(
+				"http://127.0.0.1:8000/api/upload",
+				formData,
+				{ headers: { "Content-Type": "multipart/form-data" } }
+			);
 
-		// Simulate upload delay
-		await new Promise((resolve) => setTimeout(resolve, 1500));
-
-		// Simulate generating a Cloudinary ID
-		const mockId = `cert_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-		setGeneratedId(mockId);
-		setIsUploading(false);
-		setShowSuccessModal(true);
-		toast.success("Template uploaded successfully!");
+			setGeneratedId(res.data.public_id);
+			setShowSuccessModal(true);
+			toast.success("Template uploaded successfully");
+		} catch (error) {
+			toast.error("Failed to upload template");
+		} finally {
+			setIsUploading(false);
+		}
 	};
 
 	const handleCopyId = async () => {
@@ -72,7 +87,10 @@ const Admin = () => {
 			>
 				<div className="container mx-auto px-6 py-6 flex items-center justify-between">
 					<div className="flex items-center gap-6">
-						<Link to="/" className="text-2xl font-semibold tracking-tight hover:text-primary transition-smooth">
+						<Link
+							to="/"
+							className="text-2xl font-semibold tracking-tight hover:text-primary transition-smooth"
+						>
 							Certificate Generator
 						</Link>
 						<nav className="flex items-center gap-4">
@@ -99,7 +117,9 @@ const Admin = () => {
 					<Button
 						variant="ghost"
 						size="icon"
-						onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+						onClick={() =>
+							setTheme(theme === "dark" ? "light" : "dark")
+						}
 						className="rounded-full"
 					>
 						<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -119,13 +139,19 @@ const Admin = () => {
 				>
 					<Card className="shadow-medium">
 						<CardHeader className="text-center space-y-2">
-							<CardTitle className="text-2xl">Upload Certificate Template</CardTitle>
+							<CardTitle className="text-2xl">
+								Upload Certificate Template
+							</CardTitle>
 							<CardDescription>
-								Upload your certificate template and share the unique ID with participants
+								Upload your certificate template and share the
+								unique ID with participants
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-6">
-							<label htmlFor="admin-template-upload" className="block">
+							<label
+								htmlFor="admin-template-upload"
+								className="block"
+							>
 								<input
 									id="admin-template-upload"
 									type="file"
@@ -138,7 +164,9 @@ const Admin = () => {
 									{isUploading ? (
 										<div className="flex flex-col items-center gap-4">
 											<div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-											<p className="text-sm text-muted-foreground">Uploading template...</p>
+											<p className="text-sm text-muted-foreground">
+												Uploading template...
+											</p>
 										</div>
 									) : (
 										<div className="flex flex-col items-center gap-4">
@@ -146,7 +174,9 @@ const Admin = () => {
 												<Upload className="w-8 h-8 text-muted-foreground" />
 											</div>
 											<div className="space-y-1">
-												<p className="text-sm font-medium">Click to upload template</p>
+												<p className="text-sm font-medium">
+													Click to upload template
+												</p>
 												<p className="text-xs text-muted-foreground">
 													PNG, JPG, or PDF up to 10MB
 												</p>
@@ -157,7 +187,8 @@ const Admin = () => {
 							</label>
 
 							<div className="text-center text-sm text-muted-foreground">
-								After uploading, you'll receive a unique ID to share with participants
+								After uploading, you'll receive a unique ID to
+								share with participants
 							</div>
 						</CardContent>
 					</Card>
@@ -175,14 +206,17 @@ const Admin = () => {
 							Template Uploaded Successfully!
 						</DialogTitle>
 						<DialogDescription>
-							Share the ID or URL below with your participants so they can download their personalized certificates.
+							Share the ID or URL below with your participants so
+							they can download their personalized certificates.
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="space-y-4 mt-4">
 						{/* Certificate ID */}
 						<div className="space-y-2">
-							<label className="text-sm font-medium">Certificate ID</label>
+							<label className="text-sm font-medium">
+								Certificate ID
+							</label>
 							<div className="flex gap-2">
 								<Input
 									value={generatedId}
@@ -206,7 +240,9 @@ const Admin = () => {
 
 						{/* Share URL */}
 						<div className="space-y-2">
-							<label className="text-sm font-medium">Share URL</label>
+							<label className="text-sm font-medium">
+								Share URL
+							</label>
 							<div className="flex gap-2">
 								<Input
 									value={shareUrl}

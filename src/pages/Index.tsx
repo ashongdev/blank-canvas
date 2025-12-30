@@ -61,7 +61,7 @@ const Index = () => {
 					headers: { "Content-Type": "multipart/form-data" },
 				}
 			);
-			localStorage.setItem("fileName", JSON.stringify(res.data.fileName));
+
 			toast.success("Template uploaded successfully");
 		} catch (error) {
 			toast.error("Failed to upload template");
@@ -136,7 +136,7 @@ const Index = () => {
 	return (
 		<div className="min-h-screen bg-background flex flex-col overflow-hidden">
 			{/* Header */}
-<motion.header
+			<motion.header
 				initial={{ opacity: 0, y: -20 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4 }}
