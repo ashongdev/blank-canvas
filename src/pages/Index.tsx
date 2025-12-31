@@ -56,7 +56,7 @@ const Index = () => {
 		formData.append("recipients", JSON.stringify(recipients));
 
 		try {
-			const res = await axios.post(`${BASE_URL}/api/upload/`, formData);
+			const res = await axios.post(`${BASE_URL}/upload/`, formData);
 
 			toast.success("Template uploaded successfully");
 		} catch (error) {
@@ -93,7 +93,7 @@ const Index = () => {
 
 		try {
 			const fileName = JSON.parse(localStorage.getItem("fileName"));
-			const response = await axios.post(`${BASE_URL}/api/generate/`, {
+			const response = await axios.post(`${BASE_URL}/generate/`, {
 				textPosition: {
 					x: textPosition.x,
 					y: textPosition.y,

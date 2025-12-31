@@ -133,7 +133,7 @@ const Participant = () => {
 
 		try {
 			const response = await axios.post(
-				`${BASE_URL}/api/generate/`,
+				`${BASE_URL}/generate/`,
 				{
 					textPosition: {
 						x: textPosition.x,
