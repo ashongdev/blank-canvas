@@ -56,9 +56,7 @@ const Index = () => {
 		formData.append("recipients", JSON.stringify(recipients));
 
 		try {
-			const res = await axios.post(`${BASE_URL}/api/upload`, formData, {
-				headers: { "Content-Type": "multipart/form-data" },
-			});
+			const res = await axios.post(`${BASE_URL}/api/upload/`, formData);
 
 			toast.success("Template uploaded successfully");
 		} catch (error) {
@@ -95,7 +93,7 @@ const Index = () => {
 
 		try {
 			const fileName = JSON.parse(localStorage.getItem("fileName"));
-			const { data } = await axios.post(`${BASE_URL}/api/generate`, {
+			const response = await axios.post(`${BASE_URL}/api/generate/`, {
 				textPosition: {
 					x: textPosition.x,
 					y: textPosition.y,
@@ -108,7 +106,16 @@ const Index = () => {
 				recipients,
 				anchorMode,
 			});
-			const returnValue = data.return_value; // array of { image_urls, email }
+
+			// fixme: fix download
+			const url = window.URL.createObjectURL(response.data);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `file.png`;
+			link.click();
+			window.URL.revokeObjectURL(url);
+
+			toast.success("Download Complete.");
 		} catch (error) {
 			console.error("Error generating certificates:", error);
 			toast.error("Failed to generate certificates");

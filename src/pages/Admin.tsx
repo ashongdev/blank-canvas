@@ -44,9 +44,8 @@ const Admin = () => {
 			formData.append("public_id", publicId);
 
 			const res = await axios.post(
-				`${BASE_URL}/api/upload`,
+				`${BASE_URL}/api/upload/`,
 				formData,
-				{ headers: { "Content-Type": "multipart/form-data" } }
 			);
 
 			setGeneratedId(res.data.public_id);
