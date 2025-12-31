@@ -18,6 +18,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 const Participant = () => {
 	const { theme, setTheme } = useTheme();
 	const [searchParams] = useSearchParams();
@@ -122,7 +124,7 @@ const Participant = () => {
 
 		try {
 			const response = await axios.post(
-				"http://127.0.0.1:8000/api/generate",
+				`${BASE_URL}/api/generate`,
 				{
 					textPosition: {
 						x: textPosition.x,

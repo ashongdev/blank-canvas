@@ -16,6 +16,8 @@ interface Recipient {
 	email: string;
 }
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 const Index = () => {
 	const { theme, setTheme } = useTheme();
 	const [templateUrl, setTemplateUrl] = useState<string | null>(null);
@@ -54,13 +56,9 @@ const Index = () => {
 		formData.append("recipients", JSON.stringify(recipients));
 
 		try {
-			const res = await axios.post(
-				"http://127.0.0.1:8000/api/upload",
-				formData,
-				{
-					headers: { "Content-Type": "multipart/form-data" },
-				}
-			);
+			const res = await axios.post(`${BASE_URL}/api/upload`, formData, {
+				headers: { "Content-Type": "multipart/form-data" },
+			});
 
 			toast.success("Template uploaded successfully");
 		} catch (error) {
@@ -97,22 +95,19 @@ const Index = () => {
 
 		try {
 			const fileName = JSON.parse(localStorage.getItem("fileName"));
-			const { data } = await axios.post(
-				"http://127.0.0.1:8000/api/generate",
-				{
-					textPosition: {
-						x: textPosition.x,
-						y: textPosition.y,
-					},
-					selectedFont,
-					fontSize: fontSize,
-					fontWeight,
-					textColor,
-					fileName,
-					recipients,
-					anchorMode,
-				}
-			);
+			const { data } = await axios.post(`${BASE_URL}/api/generate`, {
+				textPosition: {
+					x: textPosition.x,
+					y: textPosition.y,
+				},
+				selectedFont,
+				fontSize: fontSize,
+				fontWeight,
+				textColor,
+				fileName,
+				recipients,
+				anchorMode,
+			});
 			const returnValue = data.return_value; // array of { image_urls, email }
 		} catch (error) {
 			console.error("Error generating certificates:", error);

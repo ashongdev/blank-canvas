@@ -22,6 +22,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL
+
 const Admin = () => {
 	const { theme, setTheme } = useTheme();
 	const [isUploading, setIsUploading] = useState(false);
@@ -42,7 +44,7 @@ const Admin = () => {
 			formData.append("public_id", publicId);
 
 			const res = await axios.post(
-				"http://127.0.0.1:8000/api/upload",
+				`${BASE_URL}/api/upload`,
 				formData,
 				{ headers: { "Content-Type": "multipart/form-data" } }
 			);
