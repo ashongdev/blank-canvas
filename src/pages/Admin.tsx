@@ -22,7 +22,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Admin = () => {
 	const { theme, setTheme } = useTheme();
@@ -41,11 +41,17 @@ const Admin = () => {
 
 		setIsUploading(true);
 		try {
-			formData.append("public_id", publicId);
+			const CLOUD_NAME = "demtelhcc";
+			const UPLOAD_PRESET = "certificate_upload";
+
+			const cloudinaryForm = new FormData();
+			cloudinaryForm.append("file", file);
+			cloudinaryForm.append("upload_preset", UPLOAD_PRESET);
+			cloudinaryForm.append("public_id", publicId);
 
 			const res = await axios.post(
-				`${BASE_URL}/api/upload/`,
-				formData,
+				`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+				cloudinaryForm
 			);
 
 			setGeneratedId(res.data.public_id);

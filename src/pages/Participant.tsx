@@ -86,12 +86,21 @@ const Participant = () => {
 			return;
 		}
 
-		setTemplateUrl(
-			`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/v1767052134/${certificateId}.png`
-		);
+		const url = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${idToUse}.png`;
+		try {
+			const res = await axios.get(url);
+			if (!res.data) throw new Error("Template not found");
+			setTemplateUrl(url);
+			setTemplateLoaded(true);
+			toast.success("Template loaded successfully!");
+		} catch {
+			toast.dismiss();
+			toast.error("Template not found. Check the ID.");
+			setError("Template not found. Check the ID.");
+		}
+
 		setTemplateLoaded(true);
 		setIsLoading(false);
-		toast.success("Template loaded successfully!");
 	};
 
 	const handlePositionChange = (axis: "x" | "y", direction: number) => {
