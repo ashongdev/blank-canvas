@@ -20,7 +20,10 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Index = () => {
 	const { theme, setTheme } = useTheme();
-	const [templateUrl, setTemplateUrl] = useState<string | null>(null);
+	const [templateFile, setTemplateFile] = useState<File | null>(null);
+	const [templateUrl, setTemplateUrl] = useState<string | null>(
+		"https://res.cloudinary.com/demtelhcc/image/upload/TESTING.png"
+	);
 	const [showPreview, setShowPreview] = useState(true);
 	const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
 	const [selectedFont, setSelectedFont] = useState(
@@ -44,25 +47,21 @@ const Index = () => {
 		}
 	}, [templateUrl]);
 
-	const handleTemplateUpload = async (file: File) => {
+	const handleTemplateUpload = (file: File) => {
+		setTemplateFile(file);
 		const url = URL.createObjectURL(file);
 		setTemplateUrl(url);
 
-		const img = new Image();
-		img.src = url;
-
-		const formData = new FormData();
-		formData.append("template", file);
-		formData.append("recipients", JSON.stringify(recipients));
-
-		try {
-			const res = await axios.post(`${BASE_URL}/upload/`, formData);
-
-			toast.success("Template uploaded successfully");
-		} catch (error) {
-			toast.error("Failed to upload template");
-		}
+		toast.success("Template loaded locally");
 	};
+
+	useEffect(() => {
+		return () => {
+			if (templateUrl?.startsWith("blob:")) {
+				URL.revokeObjectURL(templateUrl);
+			}
+		};
+	}, [templateUrl]);
 
 	const handlePositionChange = (axis: "x" | "y", direction: number) => {
 		setTextPosition((prev) => ({
@@ -78,51 +77,53 @@ const Index = () => {
 		}));
 	};
 
-	const handleGenerate = async () => {
-		if (!templateUrl) {
+	const handleDownload = async () => {
+		if (!templateFile) {
 			toast.error("Please upload a template first");
 			return;
 		}
 
-		if (recipients.length === 0) {
-			toast.error("Please add at least one recipient");
-			return;
-		}
+		// if (recipients.length === 0) {
+		// 	toast.error("Please add at least one recipient");
+		// 	return;
+		// }
 
-		toast.success("Generating certificates...");
+		const formData = new FormData();
+		formData.append("template", templateFile);
+		formData.append("recipients", JSON.stringify(recipients));
+		formData.append(
+			"textPosition",
+			JSON.stringify({ x: textPosition.x, y: textPosition.y })
+		);
+		formData.append("selectedFont", selectedFont);
+		formData.append("fontSize", fontSize.toString());
+		formData.append("fontWeight", fontWeight);
+		formData.append("textColor", textColor);
+		formData.append("anchorMode", anchorMode);
+		formData.append("inEditor", "true");
+		formData.append("participantName", previewName);
 
 		try {
-			const fileName = JSON.parse(localStorage.getItem("fileName"));
-			const response = await axios.post(`${BASE_URL}/generate/`, {
-				textPosition: {
-					x: textPosition.x,
-					y: textPosition.y,
-				},
-				selectedFont,
-				fontSize: fontSize,
-				fontWeight,
-				textColor,
-				fileName,
-				recipients,
-				anchorMode,
-			});
+			const response = await axios.post(
+				`${BASE_URL}/generate/`,
+				formData,
+				{ responseType: "blob" }
+			);
 
-			// fixme: fix download
-			const url = window.URL.createObjectURL(response.data);
+			const url = URL.createObjectURL(response.data);
 			const link = document.createElement("a");
 			link.href = url;
-			link.download = `file.png`;
+			link.download = `${previewName}.png`;
 			link.click();
-			window.URL.revokeObjectURL(url);
+			URL.revokeObjectURL(url);
 
 			toast.success("Download Complete.");
 		} catch (error) {
-			console.error("Error generating certificates:", error);
 			toast.error("Failed to generate certificates");
 		}
 	};
 
-	const handleGenerateAndMail = () => {
+	const handleDownloadAndMail = () => {
 		if (!templateUrl) {
 			toast.error("Please upload a template first");
 			return;
@@ -256,9 +257,9 @@ const Index = () => {
 										textColor={textColor}
 										onTextColorChange={setTextColor}
 										onTemplateUpload={handleTemplateUpload}
-										onGenerate={handleGenerate}
+										onGenerate={handleDownload}
 										onGenerateAndMail={
-											handleGenerateAndMail
+											handleDownloadAndMail
 										}
 										hasTemplate={!!templateUrl}
 									/>

@@ -32,6 +32,18 @@ const Admin = () => {
 	const [copied, setCopied] = useState(false);
 	const [publicId, setPublicId] = useState("");
 
+	const checkId = async (publicId: string) => {
+		const res = await axios.post(`${BASE_URL}/check_public_id/`, {
+			public_id: publicId,
+		});
+
+		return res.data.exists;
+	};
+
+	const generateRandomPublicId = () => {
+		return Date.now().toString();
+	};
+
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
@@ -40,14 +52,27 @@ const Admin = () => {
 		formData.append("template", file);
 
 		setIsUploading(true);
+
 		try {
+			let finalPublicId = publicId;
+
+			const exists = await checkId(publicId);
+
+			if (exists) {
+				const randomSuffix = Date.now().toString();
+				finalPublicId = `${publicId}_${randomSuffix}`;
+
+				toast.error("Public ID already exists. Generated a new one.");
+				setPublicId(finalPublicId);
+			}
+
 			const CLOUD_NAME = "demtelhcc";
 			const UPLOAD_PRESET = "certificate_upload";
 
 			const cloudinaryForm = new FormData();
 			cloudinaryForm.append("file", file);
 			cloudinaryForm.append("upload_preset", UPLOAD_PRESET);
-			cloudinaryForm.append("public_id", publicId);
+			cloudinaryForm.append("public_id", finalPublicId);
 
 			const res = await axios.post(
 				`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
@@ -173,6 +198,7 @@ const Admin = () => {
 									onChange={(e) =>
 										setPublicId(e.target.value)
 									}
+									disabled={isUploading}
 									className="font-mono text-sm"
 								/>
 								<p className="text-xs text-muted-foreground">
