@@ -2,8 +2,11 @@ import CertificatePreview from "@/components/CertificatePreview";
 import ControlPanel from "@/components/ControlPanel";
 import PositionControls from "@/components/PositionControls";
 import RecipientManager from "@/components/RecipientManager";
+import TourButton from "@/components/TourButton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { indexPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
+import { useTour } from "@/hooks/useTour";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
@@ -20,6 +23,11 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Index = () => {
 	const { theme, setTheme } = useTheme();
+	const { startTour, resetTour } = useTour({
+		steps: indexPageTourSteps,
+		storageKey: TOUR_STORAGE_KEYS.index,
+		autoStart: true,
+	});
 	const [templateFile, setTemplateFile] = useState<File | null>(null);
 	const [templateUrl, setTemplateUrl] = useState<string | null>(
 		"https://res.cloudinary.com/demtelhcc/image/upload/TESTING.png"
@@ -168,18 +176,21 @@ const Index = () => {
 							</a>
 						</nav>
 					</div>
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() =>
-							setTheme(theme === "dark" ? "light" : "dark")
-						}
-						className="rounded-full"
-					>
-						<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-						<Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-						<span className="sr-only">Toggle theme</span>
-					</Button>
+					<div className="flex items-center gap-2">
+						<TourButton onClick={() => { resetTour(); startTour(); }} />
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() =>
+								setTheme(theme === "dark" ? "light" : "dark")
+							}
+							className="rounded-full"
+						>
+							<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+							<Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+							<span className="sr-only">Toggle theme</span>
+						</Button>
+					</div>
 				</div>
 			</motion.header>
 
@@ -187,8 +198,8 @@ const Index = () => {
 			<main className="flex-1 overflow-hidden">
 				<Tabs defaultValue="editor" className="h-full flex flex-col">
 					<div className="border-b border-border flex-shrink-0">
-						<div className="container mx-auto px-6">
-							<TabsList className="bg-transparent h-12 p-0">
+					<div className="container mx-auto px-6">
+							<TabsList className="bg-transparent h-12 p-0" data-tour="tabs">
 								<TabsTrigger
 									value="editor"
 									className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
@@ -212,7 +223,7 @@ const Index = () => {
 						<div className="h-full container mx-auto px-0 py-8">
 							<div className="h-full grid grid-cols-[280px_1fr_280px] gap-8">
 								{/* Left Controls */}
-								<div className="h-full max-w-[264px]">
+								<div className="h-full max-w-[264px]" data-tour="position-controls">
 									<PositionControls
 										onPositionChange={handlePositionChange}
 										textPosition={textPosition}
@@ -227,7 +238,7 @@ const Index = () => {
 								</div>
 
 								{/* Center Preview */}
-								<div className="flex items-center justify-center">
+								<div className="flex items-center justify-center" data-tour="certificate-preview">
 									<CertificatePreview
 										templateUrl={templateUrl}
 										previewName={previewName}
@@ -244,7 +255,7 @@ const Index = () => {
 								</div>
 
 								{/* Right Controls */}
-								<div className="h-full max-w-[264px] px-2">
+								<div className="h-full max-w-[264px] px-2" data-tour="control-panel">
 									<ControlPanel
 										showPreview={showPreview}
 										onPreviewToggle={setShowPreview}
