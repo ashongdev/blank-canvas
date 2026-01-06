@@ -1,6 +1,7 @@
 import CertificatePreview from "@/components/CertificatePreview";
 import ParticipantControlPanel from "@/components/ParticipantControlPanel";
 import PositionControls from "@/components/PositionControls";
+import TourButton from "@/components/TourButton";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -10,6 +11,8 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { participantPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
+import { useTour } from "@/hooks/useTour";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { AlertCircle, Loader2, Moon, Search, Sun } from "lucide-react";
@@ -23,6 +26,12 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 const Participant = () => {
 	const { theme, setTheme } = useTheme();
 	const [searchParams] = useSearchParams();
+
+	const { startTour, resetTour } = useTour({
+		steps: participantPageTourSteps,
+		storageKey: TOUR_STORAGE_KEYS.participant,
+		autoStart: true,
+	});
 
 	const [certificateId, setCertificateId] = useState(
 		searchParams.get("id") || ""
@@ -204,18 +213,21 @@ const Participant = () => {
 							</Link>
 						</nav>
 					</div>
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() =>
-							setTheme(theme === "dark" ? "light" : "dark")
-						}
-						className="rounded-full"
-					>
-						<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-						<Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-						<span className="sr-only">Toggle theme</span>
-					</Button>
+					<div className="flex items-center gap-2">
+						<TourButton onClick={() => { resetTour(); startTour(); }} />
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() =>
+								setTheme(theme === "dark" ? "light" : "dark")
+							}
+							className="rounded-full"
+						>
+							<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+							<Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+							<span className="sr-only">Toggle theme</span>
+						</Button>
+					</div>
 				</div>
 			</motion.header>
 
@@ -247,6 +259,7 @@ const Participant = () => {
 										</label>
 										<div className="flex gap-2">
 											<Input
+												data-tour="certificate-id-input"
 												value={certificateId}
 												onChange={(e) => {
 													setCertificateId(
@@ -259,6 +272,7 @@ const Participant = () => {
 												disabled={isLoading}
 											/>
 											<Button
+												data-tour="retrieve-btn"
 												onClick={() =>
 													handleFetchTemplate()
 												}

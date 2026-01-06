@@ -1,3 +1,4 @@
+import TourButton from "@/components/TourButton";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -14,6 +15,8 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { adminPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
+import { useTour } from "@/hooks/useTour";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Check, Copy, Moon, Sun, Upload } from "lucide-react";
@@ -26,6 +29,11 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Admin = () => {
 	const { theme, setTheme } = useTheme();
+	const { startTour, resetTour } = useTour({
+		steps: adminPageTourSteps,
+		storageKey: TOUR_STORAGE_KEYS.admin,
+		autoStart: true,
+	});
 	const [isUploading, setIsUploading] = useState(false);
 	const [showSuccessModal, setShowSuccessModal] = useState(false);
 	const [generatedId, setGeneratedId] = useState("");
@@ -149,18 +157,21 @@ const Admin = () => {
 							</Link>
 						</nav>
 					</div>
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() =>
-							setTheme(theme === "dark" ? "light" : "dark")
-						}
-						className="rounded-full"
-					>
-						<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-						<Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-						<span className="sr-only">Toggle theme</span>
-					</Button>
+					<div className="flex items-center gap-2">
+						<TourButton onClick={() => { resetTour(); startTour(); }} />
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() =>
+								setTheme(theme === "dark" ? "light" : "dark")
+							}
+							className="rounded-full"
+						>
+							<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+							<Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+							<span className="sr-only">Toggle theme</span>
+						</Button>
+					</div>
 				</div>
 			</motion.header>
 
@@ -184,7 +195,7 @@ const Admin = () => {
 						</CardHeader>
 						<CardContent className="space-y-6">
 							{/* Public ID Input */}
-							<div className="space-y-2">
+							<div className="space-y-2" data-tour="public-id">
 								<label
 									htmlFor="public-id"
 									className="text-sm font-medium"
@@ -207,48 +218,51 @@ const Admin = () => {
 								</p>
 							</div>
 
-							<label
-								htmlFor="admin-template-upload"
-								className="block"
-							>
-								<input
-									id="admin-template-upload"
-									type="file"
-									accept="image/*"
-									onChange={handleFileUpload}
-									className="hidden"
-									disabled={isUploading}
-								/>
-								<div className="border-2 border-dashed border-border rounded-lg p-12 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-smooth">
-									{isUploading ? (
-										<div className="flex flex-col items-center gap-4">
-											<div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-											<p className="text-sm text-muted-foreground">
-												Uploading template...
-											</p>
-										</div>
-									) : (
-										<div className="flex flex-col items-center gap-4">
-											<div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-												<Upload className="w-8 h-8 text-muted-foreground" />
-											</div>
-											<div className="space-y-1">
-												<p className="text-sm font-medium">
-													Click to upload template
-												</p>
-												<p className="text-xs text-muted-foreground">
-													PNG, JPG, or PDF up to 10MB
+							<div data-tour="admin-upload">
+								<label
+									htmlFor="admin-template-upload"
+									className="block"
+								>
+									<input
+										id="admin-template-upload"
+										type="file"
+										accept="image/*"
+										onChange={handleFileUpload}
+										className="hidden"
+										disabled={isUploading}
+									/>
+									<div className="border-2 border-dashed border-border rounded-lg p-12 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-smooth">
+										{isUploading ? (
+											<div className="flex flex-col items-center gap-4">
+												<div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+												<p className="text-sm text-muted-foreground">
+													Uploading template...
 												</p>
 											</div>
-										</div>
-									)}
-								</div>
-							</label>
+										) : (
+											<div className="flex flex-col items-center gap-4">
+												<div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+													<Upload className="w-8 h-8 text-muted-foreground" />
+												</div>
+												<div className="space-y-1">
+													<p className="text-sm font-medium">
+														Click to upload template
+													</p>
+													<p className="text-xs text-muted-foreground">
+														PNG, JPG, or PDF up to 10MB
+													</p>
+												</div>
+											</div>
+										)}
+									</div>
+								</label>
+							</div>
 
-							<div className="text-center text-sm text-muted-foreground">
+							<div className="text-center text-sm text-muted-foreground" data-tour="admin-submit">
 								After uploading, you'll receive a unique ID to
 								share with participants
 							</div>
+
 						</CardContent>
 					</Card>
 				</motion.div>
