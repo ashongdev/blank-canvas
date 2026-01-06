@@ -35,18 +35,30 @@ export const useTour = ({
     // Small delay to ensure DOM elements are rendered
     setTimeout(() => {
       driverRef.current = driver({
+        // Core tour behavior
         showProgress: true,
         showButtons: ['next', 'previous', 'close'],
+        
+        // Animation & transitions - key for element-anchored movement
         animate: true,
+        smoothScroll: true,
+        
+        // Overlay & spotlight settings
         allowClose: true,
-        overlayColor: 'rgba(0, 0, 0, 0.75)',
-        stagePadding: 8,
+        overlayColor: 'rgba(0, 0, 0, 0.7)',
+        stagePadding: 10,
         stageRadius: 8,
-        popoverClass: 'tour-popover',
+        
+        // Popover behavior
+        popoverClass: 'driver-popover-theme',
+        
+        // Button labels
         progressText: '{{current}} of {{total}}',
         nextBtnText: 'Next →',
         prevBtnText: '← Back',
-        doneBtnText: 'Done',
+        doneBtnText: 'Finish',
+        
+        // Callbacks
         onDestroyStarted: () => {
           if (driverRef.current?.hasNextStep()) {
             onSkip?.();
@@ -57,11 +69,13 @@ export const useTour = ({
         onDestroyed: () => {
           onComplete?.();
         },
+        
+        // Steps with element targeting
         steps,
       });
 
       driverRef.current.drive();
-    }, 300);
+    }, 500);
   }, [steps, markTourComplete, onComplete, onSkip]);
 
   const stopTour = useCallback(() => {
