@@ -1,4 +1,4 @@
-import TourButton from "@/components/TourButton";
+import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -20,11 +20,8 @@ import { useTour } from "@/hooks/useTour";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Check, Copy, Upload } from "lucide-react";
-import { useTheme } from "next-themes";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import Header from "@/components/Header";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -85,7 +82,7 @@ const Admin = () => {
 
 			const res = await axios.post(
 				`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-				cloudinaryForm
+				cloudinaryForm,
 			);
 
 			setGeneratedId(res.data.public_id);
@@ -123,7 +120,12 @@ const Admin = () => {
 	return (
 		<div className="min-h-screen bg-background flex flex-col">
 			{/* Header */}
-			<Header onTourClick={() => { resetTour(); startTour(); }} />
+			<Header
+				onTourClick={() => {
+					resetTour();
+					startTour();
+				}}
+			/>
 
 			{/* Main Content */}
 			<main className="flex-1 flex items-center justify-center p-6">
@@ -199,7 +201,8 @@ const Admin = () => {
 														Click to upload template
 													</p>
 													<p className="text-xs text-muted-foreground">
-														PNG, JPG, or PDF up to 10MB
+														PNG, JPG, or PDF up to
+														10MB
 													</p>
 												</div>
 											</div>
@@ -208,11 +211,13 @@ const Admin = () => {
 								</label>
 							</div>
 
-							<div className="text-center text-sm text-muted-foreground" data-tour="admin-submit">
+							<div
+								className="text-center text-sm text-muted-foreground"
+								data-tour="admin-submit"
+							>
 								After uploading, you'll receive a unique ID to
 								share with participants
 							</div>
-
 						</CardContent>
 					</Card>
 				</motion.div>

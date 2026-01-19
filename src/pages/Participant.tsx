@@ -1,7 +1,7 @@
 import CertificatePreview from "@/components/CertificatePreview";
+import Header from "@/components/Header";
 import ParticipantControlPanel from "@/components/ParticipantControlPanel";
 import PositionControls from "@/components/PositionControls";
-import TourButton from "@/components/TourButton";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -26,17 +26,11 @@ import {
 import { useTour } from "@/hooks/useTour";
 import axios from "axios";
 import { motion } from "framer-motion";
-import {
-	AlertCircle,
-	Loader2,
-	Search,
-	Share2,
-} from "lucide-react";
+import { AlertCircle, Loader2, Search, Share2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import Header from "@/components/Header";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -281,9 +275,12 @@ const Participant = () => {
 	return (
 		<div className="min-h-screen bg-background flex flex-col">
 			{/* Header */}
-            <Header 
-                onTourClick={() => { resetTour(); startTour(); }}
-            />
+			<Header
+				onTourClick={() => {
+					resetTour();
+					startTour();
+				}}
+			/>
 
 			{/* Main Content */}
 			<main className="flex-1 overflow-hidden">

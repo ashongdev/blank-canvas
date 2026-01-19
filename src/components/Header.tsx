@@ -1,10 +1,9 @@
-
-import { Button } from "@/components/ui/button";
 import TourButton from "@/components/TourButton"; // Adjust path if needed
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { Moon, Sun, Upload } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 
 interface HeaderProps {
 	onTourClick: () => void;
@@ -17,19 +16,19 @@ const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
 	const location = useLocation();
 
 	const handleCreateClick = () => {
-		if (location.pathname !== '/' && onCreateClick) {
+		if (location.pathname !== "/" && onCreateClick) {
 			navigate("/");
-            // We need a way to trigger the click *after* navigation, OR 
-            // simply navigate to '/' and let the user click "Upload" or handle it via URL state?
-            // Re-think: Is it better to just navigate to / and open upload dialog?
-            // If we are already at /, execute onCreateClick.
-            // If not, navigate to /? But we can't execute the callback from another component easily.
-            // Simplified approach: Just navigate to /. The user can then click upload.
+			// We need a way to trigger the click *after* navigation, OR
+			// simply navigate to '/' and let the user click "Upload" or handle it via URL state?
+			// Re-think: Is it better to just navigate to / and open upload dialog?
+			// If we are already at /, execute onCreateClick.
+			// If not, navigate to /? But we can't execute the callback from another component easily.
+			// Simplified approach: Just navigate to /. The user can then click upload.
 		} else if (onCreateClick) {
 			onCreateClick();
 		} else {
-            navigate("/");
-        }
+			navigate("/");
+		}
 	};
 
 	return (
@@ -42,9 +41,12 @@ const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
 			<div className="container mx-auto px-6 py-6 flex items-center justify-between">
 				<div className="flex items-center gap-6">
 					<h1 className="text-2xl font-semibold tracking-tight">
-                        <Link to="/" className="hover:text-primary transition-smooth">
-						    Certificate Generator
-                        </Link>
+						<Link
+							to="/"
+							className="hover:text-primary transition-smooth"
+						>
+							Certificate Generator
+						</Link>
 					</h1>
 					<nav className="flex items-center gap-4 hidden md:flex">
 						<Link

@@ -73,12 +73,12 @@ const Index = () => {
 		toast.success("Template loaded locally");
 	};
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            handleTemplateUpload(file);
-        }
-    };
+	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			handleTemplateUpload(file);
+		}
+	};
 
 	useEffect(() => {
 		return () => {
