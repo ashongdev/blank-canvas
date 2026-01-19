@@ -19,16 +19,17 @@ import { adminPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { Check, Copy, Moon, Sun, Upload } from "lucide-react";
+import { Check, Copy, Upload } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import Header from "@/components/Header";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Admin = () => {
-	const { theme, setTheme } = useTheme();
+	// const { theme, setTheme } = useTheme(); // Moved to Header
 	const { startTour, resetTour } = useTour({
 		steps: adminPageTourSteps,
 		storageKey: TOUR_STORAGE_KEYS.admin,
@@ -122,58 +123,7 @@ const Admin = () => {
 	return (
 		<div className="min-h-screen bg-background flex flex-col">
 			{/* Header */}
-			<motion.header
-				initial={{ opacity: 0, y: -20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.4 }}
-				className="border-b border-border flex-shrink-0"
-			>
-				<div className="container mx-auto px-6 py-6 flex items-center justify-between">
-					<div className="flex items-center gap-6">
-						<Link
-							to="/"
-							className="text-2xl font-semibold tracking-tight hover:text-primary transition-smooth"
-						>
-							Certificate Generator
-						</Link>
-						<nav className="flex items-center gap-4">
-							<Link
-								to="/"
-								className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-							>
-								Editor
-							</Link>
-							<Link
-								to="/admin"
-								className="text-sm font-medium text-primary"
-							>
-								Admin
-							</Link>
-							<Link
-								to="/participant"
-								className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-							>
-								Get Certificate
-							</Link>
-						</nav>
-					</div>
-					<div className="flex items-center gap-2">
-						<TourButton onClick={() => { resetTour(); startTour(); }} />
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() =>
-								setTheme(theme === "dark" ? "light" : "dark")
-							}
-							className="rounded-full"
-						>
-							<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-							<Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-							<span className="sr-only">Toggle theme</span>
-						</Button>
-					</div>
-				</div>
-			</motion.header>
+			<Header onTourClick={() => { resetTour(); startTour(); }} />
 
 			{/* Main Content */}
 			<main className="flex-1 flex items-center justify-center p-6">

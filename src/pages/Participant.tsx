@@ -29,16 +29,14 @@ import { motion } from "framer-motion";
 import {
 	AlertCircle,
 	Loader2,
-	Moon,
 	Search,
 	Share2,
-	Sun,
-	Upload,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import Header from "@/components/Header";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -98,7 +96,10 @@ const Participant = () => {
 			setTemplateLoaded(true);
 			setSelectedFile(file);
 			setIsLocalDraft(true);
-			// Reset presets to defaults for new file
+
+			setSearchParams({});
+			setCertificateId("");
+
 			setTextPosition({ x: 0, y: 0 });
 			setSelectedFont("Bickham Script Pro Regular");
 			setFontSize(48);
@@ -116,11 +117,6 @@ const Participant = () => {
 		try {
 			const formData = new FormData();
 			formData.append("template", selectedFile);
-			// Assuming we let Cloudinary/Backend generate ID, or we can provide one.
-			// If we want a specific ID, we can ask user. For now, let's let backend handle it
-			// or use filename. Let's use a timestamp/random string logic if needed,
-			// but backend 'upload' view accepts 'public_id' optionally.
-
 			formData.append("selectedFont", selectedFont);
 			formData.append("fontSize", fontSize.toString());
 			formData.append("fontWeight", fontWeight);
@@ -285,77 +281,9 @@ const Participant = () => {
 	return (
 		<div className="min-h-screen bg-background flex flex-col">
 			{/* Header */}
-			<motion.header
-				initial={{ opacity: 0, y: -20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.4 }}
-				className="border-b border-border flex-shrink-0"
-			>
-				<div className="container mx-auto px-6 py-6 flex items-center justify-between">
-					<div className="flex items-center gap-6">
-						<Link
-							to="/"
-							className="text-2xl font-semibold tracking-tight hover:text-primary transition-smooth"
-						>
-							Certificate Generator
-						</Link>
-						<nav className="flex items-center gap-4">
-							<Link
-								to="/"
-								className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-							>
-								Editor
-							</Link>
-							<Link
-								to="/admin"
-								className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-							>
-								Admin
-							</Link>
-							<Link
-								to="/participant"
-								className="text-sm font-medium text-primary"
-							>
-								Get Certificate
-							</Link>
-						</nav>
-					</div>
-					<div className="flex items-center gap-2">
-						<input
-							type="file"
-							ref={fileInputRef}
-							className="hidden"
-							accept="image/*"
-							onChange={handleFileSelect}
-						/>
-						<Button
-							className="gap-2"
-							onClick={() => fileInputRef.current?.click()}
-						>
-							<Upload className="w-4 h-4" />
-							Create & Share
-						</Button>
-						<TourButton
-							onClick={() => {
-								resetTour();
-								startTour();
-							}}
-						/>
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() =>
-								setTheme(theme === "dark" ? "light" : "dark")
-							}
-							className="rounded-full"
-						>
-							<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-							<Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-							<span className="sr-only">Toggle theme</span>
-						</Button>
-					</div>
-				</div>
-			</motion.header>
+            <Header 
+                onTourClick={() => { resetTour(); startTour(); }}
+            />
 
 			{/* Main Content */}
 			<main className="flex-1 overflow-hidden">

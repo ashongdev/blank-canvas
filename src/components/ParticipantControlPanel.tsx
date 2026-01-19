@@ -8,6 +8,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	CERTIFICATE_FONTS,
+	FONT_WEIGHTS,
+	PREDEFINED_COLORS,
+} from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Download, Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -27,42 +32,6 @@ interface ParticipantControlPanelProps {
 	onBack: () => void;
 	hasName: boolean;
 }
-
-const CERTIFICATE_FONTS = [
-	{
-		value: "Bickham Script Pro Regular",
-		label: "Bickham Script Pro Regular",
-	},
-	{ value: "Great Vibes", label: "Great Vibes" },
-	{ value: "Alex Brush", label: "Alex Brush" },
-	{ value: "Garamond", label: "Garamond" },
-	{ value: "Times New Roman", label: "Times New Roman" },
-	{ value: "Playfair Display", label: "Playfair Display" },
-	{ value: "Montserrat", label: "Montserrat" },
-];
-
-const FONT_WEIGHTS = [
-	{ value: "300", label: "Light" },
-	{ value: "400", label: "Regular" },
-	{ value: "500", label: "Medium" },
-	{ value: "600", label: "Semi Bold" },
-	{ value: "700", label: "Bold" },
-];
-
-const PREDEFINED_COLORS = [
-	{ value: "#000000", label: "Black" },
-	{ value: "#FFFFFF", label: "White" },
-	{ value: "#FF0000", label: "Red" },
-	{ value: "#00FF00", label: "Green" },
-	{ value: "#0000FF", label: "Blue" },
-	{ value: "#FFFF00", label: "Yellow" },
-	{ value: "#FF00FF", label: "Magenta" },
-	{ value: "#00FFFF", label: "Cyan" },
-	{ value: "#FFA500", label: "Orange" },
-	{ value: "#800080", label: "Purple" },
-	{ value: "#FFD700", label: "Gold" },
-	{ value: "#C0C0C0", label: "Silver" },
-];
 
 const ParticipantControlPanel = ({
 	participantName,
@@ -104,7 +73,9 @@ const ParticipantControlPanel = ({
 					<h3 className="text-sm font-medium">Your Name</h3>
 					<Input
 						value={participantName}
-						onChange={(e) => onParticipantNameChange(e.target.value)}
+						onChange={(e) =>
+							onParticipantNameChange(e.target.value)
+						}
 						placeholder="Enter your name..."
 						className="w-full"
 					/>
@@ -135,7 +106,9 @@ const ParticipantControlPanel = ({
 					<Input
 						type="number"
 						value={fontSize}
-						onChange={(e) => onFontSizeChange(Number(e.target.value))}
+						onChange={(e) =>
+							onFontSizeChange(Number(e.target.value))
+						}
 						min={12}
 						max={200}
 						className="w-full"
@@ -145,13 +118,19 @@ const ParticipantControlPanel = ({
 				{/* Font Weight */}
 				<div className="space-y-3">
 					<h3 className="text-sm font-medium">Font Weight</h3>
-					<Select value={fontWeight} onValueChange={onFontWeightChange}>
+					<Select
+						value={fontWeight}
+						onValueChange={onFontWeightChange}
+					>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select weight" />
 						</SelectTrigger>
 						<SelectContent>
 							{FONT_WEIGHTS.map((weight) => (
-								<SelectItem key={weight.value} value={weight.value}>
+								<SelectItem
+									key={weight.value}
+									value={weight.value}
+								>
 									{weight.label}
 								</SelectItem>
 							))}
@@ -175,7 +154,9 @@ const ParticipantControlPanel = ({
 							{PREDEFINED_COLORS.map((color) => (
 								<button
 									key={color.value}
-									onClick={() => onTextColorChange(color.value)}
+									onClick={() =>
+										onTextColorChange(color.value)
+									}
 									className="h-10 rounded border-2 transition-smooth hover:scale-105"
 									style={{
 										backgroundColor: color.value,

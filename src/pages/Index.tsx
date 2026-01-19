@@ -1,16 +1,22 @@
 import CertificatePreview from "@/components/CertificatePreview";
 import ControlPanel from "@/components/ControlPanel";
+import Header from "@/components/Header";
 import PositionControls from "@/components/PositionControls";
 import RecipientManager from "@/components/RecipientManager";
-import TourButton from "@/components/TourButton";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { indexPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
 import axios from "axios";
-import { motion } from "framer-motion";
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -22,7 +28,7 @@ interface Recipient {
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Index = () => {
-	const { theme, setTheme } = useTheme();
+	// const { theme, setTheme } = useTheme(); // Moved to Header
 	const { startTour, resetTour } = useTour({
 		steps: indexPageTourSteps,
 		storageKey: TOUR_STORAGE_KEYS.index,
@@ -30,12 +36,12 @@ const Index = () => {
 	});
 	const [templateFile, setTemplateFile] = useState<File | null>(null);
 	const [templateUrl, setTemplateUrl] = useState<string | null>(
-		"https://res.cloudinary.com/demtelhcc/image/upload/TESTING.png"
+		"https://res.cloudinary.com/demtelhcc/image/upload/TESTING.png",
 	);
 	const [showPreview, setShowPreview] = useState(true);
 	const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
 	const [selectedFont, setSelectedFont] = useState(
-		"Bickham Script Pro Regular"
+		"Bickham Script Pro Regular",
 	);
 	const [fontSize, setFontSize] = useState(48);
 	const [fontWeight, setFontWeight] = useState("300");
@@ -47,6 +53,10 @@ const Index = () => {
 
 	const imgRef = useRef<HTMLImageElement>(null);
 	const [displayedSize, setDisplayedSize] = useState({ width: 0, height: 0 });
+	const [showShareDialog, setShowShareDialog] = useState(false);
+	const [generatedLink, setGeneratedLink] = useState("");
+
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		if (imgRef.current) {
@@ -62,6 +72,13 @@ const Index = () => {
 
 		toast.success("Template loaded locally");
 	};
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleTemplateUpload(file);
+        }
+    };
 
 	useEffect(() => {
 		return () => {
@@ -101,7 +118,7 @@ const Index = () => {
 		formData.append("recipients", JSON.stringify(recipients));
 		formData.append(
 			"textPosition",
-			JSON.stringify({ x: textPosition.x, y: textPosition.y })
+			JSON.stringify({ x: textPosition.x, y: textPosition.y }),
 		);
 		formData.append("selectedFont", selectedFont);
 		formData.append("fontSize", fontSize.toString());
@@ -115,7 +132,7 @@ const Index = () => {
 			const response = await axios.post(
 				`${BASE_URL}/generate/`,
 				formData,
-				{ responseType: "blob" }
+				{ responseType: "blob" },
 			);
 
 			const url = URL.createObjectURL(response.data);
@@ -144,62 +161,72 @@ const Index = () => {
 		// Generation + mailing logic will be implemented by user
 	};
 
+	const handlePublish = async () => {
+		if (!templateFile) {
+			toast.error("Please upload a template first");
+			return;
+		}
+
+		const toastId = toast.loading("Uploading and saving configuration...");
+
+		try {
+			const formData = new FormData();
+			formData.append("template", templateFile);
+			formData.append("selectedFont", selectedFont);
+			formData.append("fontSize", fontSize.toString());
+			formData.append("fontWeight", fontWeight);
+			formData.append("textColor", textColor);
+			// Index.tsx has textPosition.x/y
+			formData.append("x", textPosition.x.toString());
+			formData.append("y", textPosition.y.toString());
+			formData.append("anchorMode", anchorMode);
+
+			const res = await axios.post(`${BASE_URL}/upload/`, formData);
+
+			if (res.data.public_id) {
+				const newId = res.data.public_id;
+				const link = `${window.location.origin}/participant?id=${newId}`;
+				setGeneratedLink(link);
+				setShowShareDialog(true);
+
+				toast.dismiss(toastId);
+				toast.success("Published successfully!");
+			}
+		} catch (error) {
+			console.error(error);
+			toast.dismiss(toastId);
+			toast.error("Failed to publish.");
+		}
+	};
+
 	return (
 		<div className="min-h-screen bg-background flex flex-col overflow-hidden">
 			{/* Header */}
-			<motion.header
-				initial={{ opacity: 0, y: -20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.4 }}
-				className="border-b border-border flex-shrink-0"
-			>
-				<div className="container mx-auto px-6 py-6 flex items-center justify-between">
-					<div className="flex items-center gap-6">
-						<h1 className="text-2xl font-semibold tracking-tight">
-							Certificate Generator
-						</h1>
-						<nav className="flex items-center gap-4">
-							<span className="text-sm font-medium text-primary">
-								Editor
-							</span>
-							<a
-								href="/admin"
-								className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-							>
-								Admin
-							</a>
-							<a
-								href="/participant"
-								className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-							>
-								Get Certificate
-							</a>
-						</nav>
-					</div>
-					<div className="flex items-center gap-2">
-						<TourButton onClick={() => { resetTour(); startTour(); }} />
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() =>
-								setTheme(theme === "dark" ? "light" : "dark")
-							}
-							className="rounded-full"
-						>
-							<Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-							<Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-							<span className="sr-only">Toggle theme</span>
-						</Button>
-					</div>
-				</div>
-			</motion.header>
+			<Header
+				onTourClick={() => {
+					resetTour();
+					startTour();
+				}}
+				onCreateClick={() => fileInputRef.current?.click()}
+			/>
+
+			<input
+				type="file"
+				ref={fileInputRef}
+				className="hidden"
+				accept="image/*"
+				onChange={handleFileSelect}
+			/>
 
 			{/* Main Content */}
 			<main className="flex-1 overflow-hidden">
 				<Tabs defaultValue="editor" className="h-full flex flex-col">
 					<div className="border-b border-border flex-shrink-0">
-					<div className="container mx-auto px-6">
-							<TabsList className="bg-transparent h-12 p-0" data-tour="tabs">
+						<div className="container mx-auto px-6">
+							<TabsList
+								className="bg-transparent h-12 p-0"
+								data-tour="tabs"
+							>
 								<TabsTrigger
 									value="editor"
 									className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
@@ -223,7 +250,10 @@ const Index = () => {
 						<div className="h-full container mx-auto px-0 py-8">
 							<div className="h-full grid grid-cols-[280px_1fr_280px] gap-8">
 								{/* Left Controls */}
-								<div className="h-full max-w-[264px]" data-tour="position-controls">
+								<div
+									className="h-full max-w-[264px]"
+									data-tour="position-controls"
+								>
 									<PositionControls
 										onPositionChange={handlePositionChange}
 										textPosition={textPosition}
@@ -238,7 +268,10 @@ const Index = () => {
 								</div>
 
 								{/* Center Preview */}
-								<div className="flex items-center justify-center" data-tour="certificate-preview">
+								<div
+									className="flex items-center justify-center"
+									data-tour="certificate-preview"
+								>
 									<CertificatePreview
 										templateUrl={templateUrl}
 										previewName={previewName}
@@ -255,7 +288,10 @@ const Index = () => {
 								</div>
 
 								{/* Right Controls */}
-								<div className="h-full max-w-[264px] px-2" data-tour="control-panel">
+								<div
+									className="h-full max-w-[264px] px-2"
+									data-tour="control-panel"
+								>
 									<ControlPanel
 										showPreview={showPreview}
 										onPreviewToggle={setShowPreview}
@@ -272,6 +308,7 @@ const Index = () => {
 										onGenerateAndMail={
 											handleDownloadAndMail
 										}
+										onShare={handlePublish}
 										hasTemplate={!!templateUrl}
 									/>
 								</div>
@@ -292,6 +329,41 @@ const Index = () => {
 					</TabsContent>
 				</Tabs>
 			</main>
+
+			<Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Certificate Published!</DialogTitle>
+						<DialogDescription>
+							Share this link with your participants to let them
+							fill their details.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="flex items-center space-x-2">
+						<div className="grid flex-1 gap-2">
+							<Label htmlFor="link" className="sr-only">
+								Link
+							</Label>
+							<Input
+								id="link"
+								defaultValue={generatedLink}
+								readOnly
+							/>
+						</div>
+						<Button
+							size="sm"
+							className="px-3"
+							onClick={() => {
+								navigator.clipboard.writeText(generatedLink);
+								toast.success("Copied to clipboard");
+							}}
+						>
+							<span className="sr-only">Copy</span>
+							Copy
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 };
