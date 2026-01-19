@@ -18,8 +18,6 @@ import { Loader2, Share2, Upload } from "lucide-react";
 import React, { useState } from "react";
 
 interface ControlPanelProps {
-	showPreview: boolean;
-	onPreviewToggle: (checked: boolean) => void;
 	selectedFont: string;
 	onFontChange: (font: string) => void;
 	fontSize: number;
@@ -30,14 +28,11 @@ interface ControlPanelProps {
 	onTextColorChange: (color: string) => void;
 	onTemplateUpload: (file: File) => void;
 	onGenerate: () => Promise<void> | void;
-	onGenerateAndMail: () => Promise<void> | void;
 	onShare?: () => Promise<void> | void;
 	hasTemplate: boolean;
 }
 
 const ControlPanel = ({
-	showPreview,
-	onPreviewToggle,
 	selectedFont,
 	onFontChange,
 	fontSize,
@@ -48,13 +43,10 @@ const ControlPanel = ({
 	onTextColorChange,
 	onTemplateUpload,
 	onGenerate,
-	onGenerateAndMail,
 	onShare,
 	hasTemplate,
 }: ControlPanelProps) => {
 	const [isGenerating, setIsGenerating] = useState(false);
-	const [isGeneratingAndMail, setIsGeneratingAndMail] = useState(false);
-	const isLoading = isGenerating || isGeneratingAndMail;
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -64,22 +56,12 @@ const ControlPanel = ({
 	};
 
 	const handleGenerate = async () => {
-		if (isLoading) return;
+		if (isGenerating) return;
 		setIsGenerating(true);
 		try {
 			await Promise.resolve(onGenerate());
 		} finally {
 			setIsGenerating(false);
-		}
-	};
-
-	const handleGenerateAndMail = async () => {
-		if (isLoading) return;
-		setIsGeneratingAndMail(true);
-		try {
-			await Promise.resolve(onGenerateAndMail());
-		} finally {
-			setIsGeneratingAndMail(false);
 		}
 	};
 
@@ -114,29 +96,6 @@ const ControlPanel = ({
 						</Button>
 					</label>
 				</div>
-
-				{/* Preview Toggle */}
-				{/* <div className="space-y-3">
-					<h3 className="text-sm font-medium">Preview</h3>
-					<div className="flex items-center justify-between p-3 rounded-lg border border-border">
-						<Label
-							htmlFor="preview-toggle"
-							className="text-sm cursor-pointer flex items-center gap-2"
-						>
-							{showPreview ? (
-								<Eye className="w-4 h-4 text-primary" />
-							) : (
-								<EyeOff className="w-4 h-4 text-muted-foreground" />
-							)}
-							<span>{showPreview ? "Visible" : "Hidden"}</span>
-						</Label>
-						<Switch
-							id="preview-toggle"
-							checked={showPreview}
-							onCheckedChange={onPreviewToggle}
-						/>
-					</div>
-				</div> */}
 
 				{/* Font Selection */}
 				<div className="space-y-3">
@@ -247,23 +206,13 @@ const ControlPanel = ({
 					)}
 					<Button
 						onClick={handleGenerate}
-						disabled={!hasTemplate || isLoading}
+						disabled={!hasTemplate || isGenerating}
 						className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground transition-smooth"
 					>
 						{isGenerating && (
 							<Loader2 className="w-4 h-4 mr-2 animate-spin inline-block" />
 						)}
 						Generate
-					</Button>
-					<Button
-						onClick={handleGenerateAndMail}
-						disabled={!hasTemplate || isLoading}
-						className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-smooth"
-					>
-						{isGeneratingAndMail && (
-							<Loader2 className="w-4 h-4 mr-2 animate-spin inline-block" />
-						)}
-						Generate & Mail
 					</Button>
 				</div>
 			</motion.div>

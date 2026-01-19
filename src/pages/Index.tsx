@@ -35,9 +35,7 @@ const Index = () => {
 		autoStart: true,
 	});
 	const [templateFile, setTemplateFile] = useState<File | null>(null);
-	const [templateUrl, setTemplateUrl] = useState<string | null>(
-		"https://res.cloudinary.com/demtelhcc/image/upload/TESTING.png",
-	);
+	const [templateUrl, setTemplateUrl] = useState<string | null>();
 	const [showPreview, setShowPreview] = useState(true);
 	const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
 	const [selectedFont, setSelectedFont] = useState(
@@ -146,19 +144,6 @@ const Index = () => {
 		} catch (error) {
 			toast.error("Failed to generate certificates");
 		}
-	};
-
-	const handleDownloadAndMail = () => {
-		if (!templateUrl) {
-			toast.error("Please upload a template first");
-			return;
-		}
-		if (recipients.length === 0) {
-			toast.error("Please add at least one recipient");
-			return;
-		}
-		toast.success("Generating and mailing certificates...");
-		// Generation + mailing logic will be implemented by user
 	};
 
 	const handlePublish = async () => {
@@ -293,8 +278,6 @@ const Index = () => {
 									data-tour="control-panel"
 								>
 									<ControlPanel
-										showPreview={showPreview}
-										onPreviewToggle={setShowPreview}
 										selectedFont={selectedFont}
 										onFontChange={setSelectedFont}
 										fontSize={fontSize}
@@ -305,9 +288,6 @@ const Index = () => {
 										onTextColorChange={setTextColor}
 										onTemplateUpload={handleTemplateUpload}
 										onGenerate={handleDownload}
-										onGenerateAndMail={
-											handleDownloadAndMail
-										}
 										onShare={handlePublish}
 										hasTemplate={!!templateUrl}
 									/>
