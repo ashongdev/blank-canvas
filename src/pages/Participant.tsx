@@ -10,12 +10,31 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { participantPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
+import { Label } from "@/components/ui/label";
+import {
+	participantPageTourSteps,
+	TOUR_STORAGE_KEYS,
+} from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { AlertCircle, Loader2, Moon, Search, Sun } from "lucide-react";
+import {
+	AlertCircle,
+	Loader2,
+	Moon,
+	Search,
+	Share2,
+	Sun,
+	Upload,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -25,7 +44,7 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Participant = () => {
 	const { theme, setTheme } = useTheme();
-	const [searchParams] = useSearchParams();
+	const [searchParams, setSearchParams] = useSearchParams();
 
 	const { startTour, resetTour } = useTour({
 		steps: participantPageTourSteps,
@@ -34,7 +53,7 @@ const Participant = () => {
 	});
 
 	const [certificateId, setCertificateId] = useState(
-		searchParams.get("id") || ""
+		searchParams.get("id") || "",
 	);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -43,7 +62,7 @@ const Participant = () => {
 
 	const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
 	const [selectedFont, setSelectedFont] = useState(
-		"Bickham Script Pro Regular"
+		"Bickham Script Pro Regular",
 	);
 	const [fontSize, setFontSize] = useState(48);
 	const [fontWeight, setFontWeight] = useState("400");
@@ -51,9 +70,14 @@ const Participant = () => {
 	const [participantName, setParticipantName] = useState("");
 	const [anchorMode, setAnchorMode] = useState<"center" | "left">("center");
 	const [isDownloading, setIsDownloading] = useState(false);
+	const [isLocalDraft, setIsLocalDraft] = useState(false);
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+	const [showShareDialog, setShowShareDialog] = useState(false);
+	const [generatedLink, setGeneratedLink] = useState("");
 
 	const previewRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// Auto-load if ID is in URL
 	useEffect(() => {
@@ -65,6 +89,69 @@ const Participant = () => {
 	}, [searchParams]);
 
 	const CLOUD_NAME = "demtelhcc";
+
+	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			const url = URL.createObjectURL(file);
+			setTemplateUrl(url);
+			setTemplateLoaded(true);
+			setSelectedFile(file);
+			setIsLocalDraft(true);
+			// Reset presets to defaults for new file
+			setTextPosition({ x: 0, y: 0 });
+			setSelectedFont("Bickham Script Pro Regular");
+			setFontSize(48);
+			toast.success(
+				"Image loaded. Adjust settings and click Share to publish.",
+			);
+		}
+	};
+
+	const handlePublish = async () => {
+		if (!selectedFile) return;
+
+		const toastId = toast.loading("Uploading and saving configuration...");
+
+		try {
+			const formData = new FormData();
+			formData.append("template", selectedFile);
+			// Assuming we let Cloudinary/Backend generate ID, or we can provide one.
+			// If we want a specific ID, we can ask user. For now, let's let backend handle it
+			// or use filename. Let's use a timestamp/random string logic if needed,
+			// but backend 'upload' view accepts 'public_id' optionally.
+
+			formData.append("selectedFont", selectedFont);
+			formData.append("fontSize", fontSize.toString());
+			formData.append("fontWeight", fontWeight);
+			formData.append("textColor", textColor);
+			formData.append("x", textPosition.x.toString());
+			formData.append("y", textPosition.y.toString());
+			formData.append("anchorMode", anchorMode);
+
+			const res = await axios.post(`${BASE_URL}/upload/`, formData);
+
+			if (res.data.public_id) {
+				const newId = res.data.public_id;
+				setCertificateId(newId);
+				setSearchParams({ id: newId });
+				setIsLocalDraft(false);
+				setSelectedFile(null);
+
+				const link = `${window.location.origin}/participant?id=${newId}`;
+				setGeneratedLink(link);
+				setShowShareDialog(true);
+
+				toast.dismiss(toastId);
+				toast.success("Published successfully!");
+			}
+		} catch (error) {
+			console.error(error);
+			toast.dismiss(toastId);
+			toast.error("Failed to publish.");
+		}
+	};
+
 	const handleFetchTemplate = async (id?: string) => {
 		const idToUse = id || certificateId;
 
@@ -79,7 +166,7 @@ const Participant = () => {
 
 		if (idToUse.toLowerCase().includes("error")) {
 			setError(
-				"Failed to fetch template. Please check the ID and try again."
+				"Failed to fetch template. Please check the ID and try again.",
 			);
 			setTemplateUrl(null);
 			setIsLoading(false);
@@ -88,7 +175,7 @@ const Participant = () => {
 
 		if (idToUse.toLowerCase().includes("notfound")) {
 			setError(
-				"Certificate template not found. The ID may be invalid or expired."
+				"Certificate template not found. The ID may be invalid or expired.",
 			);
 			setTemplateUrl(null);
 			setIsLoading(false);
@@ -102,6 +189,26 @@ const Participant = () => {
 			setTemplateUrl(url);
 			setTemplateLoaded(true);
 			toast.success("Template loaded successfully!");
+
+			//  Fetch presets from backend
+			try {
+				const presetRes = await axios.get(
+					`${BASE_URL}/get_preset/${idToUse}/`,
+				);
+				const data = presetRes.data;
+
+				if (data) {
+					setSelectedFont(data.selectedFont);
+					setFontSize(data.fontSize);
+					setFontWeight(data.fontWeight);
+					setTextColor(data.textColor);
+					setTextPosition(data.textPosition);
+					setAnchorMode(data.anchorMode);
+					toast.success("Design presets applied.");
+				}
+			} catch (err) {
+				console.log("No presets found, using defaults.");
+			}
 		} catch {
 			toast.dismiss();
 			toast.error("Template not found. Check the ID.");
@@ -156,7 +263,7 @@ const Participant = () => {
 					participantName,
 					anchorMode,
 				},
-				{ responseType: "blob" }
+				{ responseType: "blob" },
 			);
 
 			const url = window.URL.createObjectURL(response.data);
@@ -214,7 +321,26 @@ const Participant = () => {
 						</nav>
 					</div>
 					<div className="flex items-center gap-2">
-						<TourButton onClick={() => { resetTour(); startTour(); }} />
+						<input
+							type="file"
+							ref={fileInputRef}
+							className="hidden"
+							accept="image/*"
+							onChange={handleFileSelect}
+						/>
+						<Button
+							className="gap-2"
+							onClick={() => fileInputRef.current?.click()}
+						>
+							<Upload className="w-4 h-4" />
+							Create & Share
+						</Button>
+						<TourButton
+							onClick={() => {
+								resetTour();
+								startTour();
+							}}
+						/>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -263,7 +389,7 @@ const Participant = () => {
 												value={certificateId}
 												onChange={(e) => {
 													setCertificateId(
-														e.target.value
+														e.target.value,
 													);
 													setError(null);
 												}}
@@ -316,64 +442,130 @@ const Participant = () => {
 					</div>
 				) : (
 					// Certificate Editor View
-					<div className="h-full container mx-auto px-6 py-8">
-						<div className="h-full grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-8">
-							{/* Left Controls - Position */}
-							<div className="hidden lg:block h-full max-w-[264px]">
-								<PositionControls
-									onPositionChange={handlePositionChange}
-									textPosition={textPosition}
-									onManualPositionChange={
-										handleManualPositionChange
-									}
-									previewName={participantName || "Your Name"}
-									onPreviewTextChange={setParticipantName}
-									anchorMode={anchorMode}
-									onAnchorModeChange={setAnchorMode}
-								/>
-							</div>
+					<>
+						<div className="h-full container mx-auto px-6 py-8">
+							<div className="h-full grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-8">
+								{/* Left Controls - Position */}
+								<div className="hidden lg:block h-full max-w-[264px]">
+									<PositionControls
+										onPositionChange={handlePositionChange}
+										textPosition={textPosition}
+										onManualPositionChange={
+											handleManualPositionChange
+										}
+										previewName={
+											participantName || "Your Name"
+										}
+										onPreviewTextChange={setParticipantName}
+										anchorMode={anchorMode}
+										onAnchorModeChange={setAnchorMode}
+									/>
+								</div>
 
-							{/* Center Preview */}
-							<div className="flex items-center justify-center">
-								<CertificatePreview
-									templateUrl={templateUrl}
-									previewName={participantName || "Your Name"}
-									showPreview={true}
-									textPosition={textPosition}
-									selectedFont={selectedFont}
-									imgRef={imgRef}
-									fontSize={fontSize}
-									fontWeight={fontWeight}
-									previewRef={previewRef}
-									textColor={textColor}
-									anchorMode={anchorMode}
-								/>
-							</div>
+								{/* Center Preview */}
+								<div className="flex items-center justify-center">
+									<CertificatePreview
+										templateUrl={templateUrl}
+										previewName={
+											participantName || "Your Name"
+										}
+										showPreview={true}
+										textPosition={textPosition}
+										selectedFont={selectedFont}
+										imgRef={imgRef}
+										fontSize={fontSize}
+										fontWeight={fontWeight}
+										previewRef={previewRef}
+										textColor={textColor}
+										anchorMode={anchorMode}
+									/>
+								</div>
 
-							{/* Right Controls - Styling & Download */}
-							<div className="h-full max-w-[264px]">
-								<ParticipantControlPanel
-									participantName={participantName}
-									onParticipantNameChange={setParticipantName}
-									selectedFont={selectedFont}
-									onFontChange={setSelectedFont}
-									fontSize={fontSize}
-									onFontSizeChange={setFontSize}
-									fontWeight={fontWeight}
-									onFontWeightChange={setFontWeight}
-									textColor={textColor}
-									onTextColorChange={setTextColor}
-									onDownload={handleDownload}
-									onBack={() => {
-										setTemplateLoaded(false);
-										setTemplateUrl(null);
-										setParticipantName("");
-									}}
-									hasName={!!participantName.trim()}
-								/>
+								{/* Right Controls - Styling & Download */}
+								<div className="h-full max-w-[264px] flex flex-col gap-4">
+									<ParticipantControlPanel
+										participantName={participantName}
+										onParticipantNameChange={
+											setParticipantName
+										}
+										selectedFont={selectedFont}
+										onFontChange={setSelectedFont}
+										fontSize={fontSize}
+										onFontSizeChange={setFontSize}
+										fontWeight={fontWeight}
+										onFontWeightChange={setFontWeight}
+										textColor={textColor}
+										onTextColorChange={setTextColor}
+										onDownload={handleDownload}
+										onBack={() => {
+											setTemplateLoaded(false);
+											setTemplateUrl(null);
+											setParticipantName("");
+											setIsLocalDraft(false);
+										}}
+										hasName={!!participantName.trim()}
+									/>
+									{isLocalDraft && (
+										<Button
+											onClick={handlePublish}
+											className="w-full gap-2"
+											variant="secondary"
+										>
+											<Share2 className="w-4 h-4" />
+											Publish & Share
+										</Button>
+									)}
+								</div>
 							</div>
 						</div>
-					</div>
+
+						<Dialog
+							open={showShareDialog}
+							onOpenChange={setShowShareDialog}
+						>
+							<DialogContent>
+								<DialogHeader>
+									<DialogTitle>
+										Certificate Published!
+									</DialogTitle>
+									<DialogDescription>
+										Share this link with your participants
+										to let them fill their details.
+									</DialogDescription>
+								</DialogHeader>
+								<div className="flex items-center space-x-2">
+									<div className="grid flex-1 gap-2">
+										<Label
+											htmlFor="link"
+											className="sr-only"
+										>
+											Link
+										</Label>
+										<Input
+											id="link"
+											defaultValue={generatedLink}
+											readOnly
+										/>
+									</div>
+									<Button
+										size="sm"
+										className="px-3"
+										onClick={() => {
+											navigator.clipboard.writeText(
+												generatedLink,
+											);
+											toast.success(
+												"Copied to clipboard",
+											);
+										}}
+									>
+										<span className="sr-only">Copy</span>
+										Copy
+									</Button>
+								</div>
+							</DialogContent>
+						</Dialog>
+					</>
 				)}
 			</main>
 		</div>
