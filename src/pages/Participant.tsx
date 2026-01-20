@@ -66,17 +66,23 @@ const Participant = () => {
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [showShareDialog, setShowShareDialog] = useState(false);
 	const [generatedLink, setGeneratedLink] = useState("");
+	
+	// New state for shared link flow
+	const [isSharedLinkFlow, setIsSharedLinkFlow] = useState(false);
+	const [showNameInputDialog, setShowNameInputDialog] = useState(false);
+	const [hasDownloaded, setHasDownloaded] = useState(false);
 
 	const previewRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// Auto-load if ID is in URL
+	// Auto-load if ID is in URL (shared link flow)
 	useEffect(() => {
 		const id = searchParams.get("id");
 		if (id) {
 			setCertificateId(id);
-			handleFetchTemplate(id);
+			setIsSharedLinkFlow(true);
+			handleFetchTemplate(id, true);
 		}
 	}, [searchParams]);
 
@@ -142,7 +148,7 @@ const Participant = () => {
 		}
 	};
 
-	const handleFetchTemplate = async (id?: string) => {
+	const handleFetchTemplate = async (id?: string, isFromSharedLink = false) => {
 		const idToUse = id || certificateId;
 
 		if (!idToUse.trim()) {
@@ -178,7 +184,13 @@ const Participant = () => {
 			if (!res.data) throw new Error("Template not found");
 			setTemplateUrl(url);
 			setTemplateLoaded(true);
-			toast.success("Template loaded successfully!");
+			
+			// Show name input dialog for shared link flow
+			if (isFromSharedLink) {
+				setShowNameInputDialog(true);
+			} else {
+				toast.success("Template loaded successfully!");
+			}
 
 			//  Fetch presets from backend
 			try {
@@ -194,7 +206,6 @@ const Participant = () => {
 					setTextColor(data.textColor);
 					setTextPosition(data.textPosition);
 					setAnchorMode(data.anchorMode);
-					toast.success("Design presets applied.");
 				}
 			} catch (err) {
 				console.log("No presets found, using defaults.");
@@ -272,6 +283,23 @@ const Participant = () => {
 		}
 	};
 
+	const handleSharedFlowDownload = async () => {
+		if (!participantName.trim()) {
+			toast.error("Please enter your name");
+			return;
+		}
+
+		setShowNameInputDialog(false);
+		await handleDownload();
+		setHasDownloaded(true);
+	};
+
+	const handleNameInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter" && participantName.trim()) {
+			handleSharedFlowDownload();
+		}
+	};
+
 	return (
 		<div className="min-h-screen bg-background flex flex-col">
 			{/* Header */}
@@ -281,6 +309,41 @@ const Participant = () => {
 					startTour();
 				}}
 			/>
+
+			{/* Name Input Dialog for Shared Link Flow */}
+			<Dialog open={showNameInputDialog} onOpenChange={setShowNameInputDialog}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle className="text-xl">Enter Your Name</DialogTitle>
+						<DialogDescription>
+							Type your name below to generate your personalized certificate.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 pt-4">
+						<div className="space-y-2">
+							<Label htmlFor="participant-name">Your Name</Label>
+							<Input
+								id="participant-name"
+								value={participantName}
+								onChange={(e) => setParticipantName(e.target.value)}
+								onKeyDown={handleNameInputKeyDown}
+								placeholder="Enter your full name..."
+								autoFocus
+							/>
+						</div>
+						<Button
+							onClick={handleSharedFlowDownload}
+							disabled={!participantName.trim() || isDownloading}
+							className="w-full"
+						>
+							{isDownloading ? (
+								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+							) : null}
+							Generate & Download Certificate
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 
 			{/* Main Content */}
 			<main className="flex-1 overflow-hidden">
@@ -365,8 +428,59 @@ const Participant = () => {
 							</Card>
 						</motion.div>
 					</div>
+				) : isSharedLinkFlow ? (
+					// Simplified Shared Link View - Only Certificate Preview
+					<div className="h-full flex flex-col items-center justify-center p-6">
+						<div className="w-full max-w-4xl">
+							<CertificatePreview
+								templateUrl={templateUrl}
+								previewName={participantName || "Your Name"}
+								showPreview={true}
+								textPosition={textPosition}
+								selectedFont={selectedFont}
+								imgRef={imgRef}
+								fontSize={fontSize}
+								fontWeight={fontWeight}
+								previewRef={previewRef}
+								textColor={textColor}
+								anchorMode={anchorMode}
+							/>
+							
+							{hasDownloaded && (
+								<motion.div
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									className="mt-6 flex flex-col items-center gap-4"
+								>
+									<p className="text-muted-foreground text-center">
+										Your certificate has been downloaded!
+									</p>
+									<div className="flex gap-3">
+										<Button
+											variant="outline"
+											onClick={() => {
+												setShowNameInputDialog(true);
+												setHasDownloaded(false);
+											}}
+										>
+											Download Again
+										</Button>
+										<Button
+											variant="ghost"
+											onClick={() => {
+												setIsSharedLinkFlow(false);
+												setHasDownloaded(false);
+											}}
+										>
+											Advanced Editor
+										</Button>
+									</div>
+								</motion.div>
+							)}
+						</div>
+					</div>
 				) : (
-					// Certificate Editor View
+					// Full Certificate Editor View
 					<>
 						<div className="h-full container mx-auto px-6 py-8">
 							<div className="h-full grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-8">
