@@ -199,6 +199,7 @@ const ControlPanel = ({
 							disabled={!hasTemplate}
 							variant="secondary"
 							className="w-full gap-2 transition-smooth"
+							data-tour="share-button"
 						>
 							<Share2 className="w-4 h-4" />
 							Share Template

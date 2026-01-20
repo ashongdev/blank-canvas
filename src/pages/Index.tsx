@@ -53,6 +53,9 @@ const Index = () => {
 	const [displayedSize, setDisplayedSize] = useState({ width: 0, height: 0 });
 	const [showShareDialog, setShowShareDialog] = useState(false);
 	const [generatedLink, setGeneratedLink] = useState("");
+	const [showIdDialog, setShowIdDialog] = useState(false);
+	const [customPublicId, setCustomPublicId] = useState("");
+	const [isPublishing, setIsPublishing] = useState(false);
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -146,17 +149,45 @@ const Index = () => {
 		}
 	};
 
-	const handlePublish = async () => {
+	const handleShareClick = () => {
 		if (!templateFile) {
 			toast.error("Please upload a template first");
 			return;
 		}
+		setShowIdDialog(true);
+	};
 
+	const checkId = async (publicId: string) => {
+		const res = await axios.post(`${BASE_URL}/check_public_id/`, {
+			public_id: publicId,
+		});
+
+		return res.data.exists;
+	};
+
+	const handlePublish = async () => {
+		if (!templateFile || isPublishing) return;
+
+		setIsPublishing(true);
 		const toastId = toast.loading("Uploading and saving configuration...");
 
 		try {
+			let finalPublicId = customPublicId.trim();
+
+			if (finalPublicId) {
+				const exists = await checkId(finalPublicId);
+				if (exists) {
+					const randomSuffix = Date.now().toString();
+					finalPublicId = `${finalPublicId}_${randomSuffix}`;
+					toast.info(`ID exists. Using ${finalPublicId} instead.`);
+				}
+			}
+
 			const formData = new FormData();
 			formData.append("template", templateFile);
+			if (finalPublicId) {
+				formData.append("public_id", finalPublicId);
+			}
 			formData.append("selectedFont", selectedFont);
 			formData.append("fontSize", fontSize.toString());
 			formData.append("fontWeight", fontWeight);
@@ -172,6 +203,7 @@ const Index = () => {
 				const newId = res.data.public_id;
 				const link = `${window.location.origin}/participant?id=${newId}`;
 				setGeneratedLink(link);
+				setShowIdDialog(false);
 				setShowShareDialog(true);
 
 				toast.dismiss(toastId);
@@ -181,6 +213,8 @@ const Index = () => {
 			console.error(error);
 			toast.dismiss(toastId);
 			toast.error("Failed to publish.");
+		} finally {
+			setIsPublishing(false);
 		}
 	};
 
@@ -288,7 +322,7 @@ const Index = () => {
 										onTextColorChange={setTextColor}
 										onTemplateUpload={handleTemplateUpload}
 										onGenerate={handleDownload}
-										onShare={handlePublish}
+										onShare={handleShareClick}
 										hasTemplate={!!templateUrl}
 									/>
 								</div>
@@ -340,6 +374,43 @@ const Index = () => {
 						>
 							<span className="sr-only">Copy</span>
 							Copy
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={showIdDialog} onOpenChange={setShowIdDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Set a Public ID</DialogTitle>
+						<DialogDescription>
+							Enter a custom ID for your template or leave blank
+							for a random one.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						<div className="grid grid-cols-4 items-center gap-4">
+							<Label htmlFor="public-id" className="">
+								Public ID Here:
+							</Label>
+							<Input
+								id="public-id"
+								value={customPublicId}
+								onChange={(e) =>
+									setCustomPublicId(e.target.value)
+								}
+								className="col-span-3"
+								placeholder="e.g. hackathon-2024"
+							/>
+						</div>
+					</div>
+					<div className="flex w-full">
+						<Button
+							className="w-full"
+							onClick={handlePublish}
+							disabled={isPublishing}
+						>
+							{isPublishing ? "Publishing..." : "Publish"}
 						</Button>
 					</div>
 				</DialogContent>
