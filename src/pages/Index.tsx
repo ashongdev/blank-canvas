@@ -179,6 +179,7 @@ const Index = () => {
 				if (exists) {
 					const randomSuffix = Date.now().toString();
 					finalPublicId = `${finalPublicId}_${randomSuffix}`;
+					setCustomPublicId(finalPublicId);
 					toast.info(`ID exists. Using ${finalPublicId} instead.`);
 				}
 			}

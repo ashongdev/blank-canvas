@@ -78,7 +78,7 @@ const Admin = () => {
 			const cloudinaryForm = new FormData();
 			cloudinaryForm.append("file", file);
 			cloudinaryForm.append("upload_preset", UPLOAD_PRESET);
-			cloudinaryForm.append("public_id", finalPublicId);
+			cloudinaryForm.append("public_id", `certificates/${finalPublicId}`);
 
 			const res = await axios.post(
 				`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
