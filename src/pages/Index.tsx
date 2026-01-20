@@ -131,7 +131,7 @@ const Index = () => {
 
 		try {
 			const response = await axios.post(
-				`${BASE_URL}/generate/`,
+				`${BASE_URL}/generate`,
 				formData,
 				{ responseType: "blob" },
 			);
