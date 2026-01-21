@@ -66,7 +66,7 @@ const Participant = () => {
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [showShareDialog, setShowShareDialog] = useState(false);
 	const [generatedLink, setGeneratedLink] = useState("");
-	
+
 	// New state for shared link flow
 	const [isSharedLinkFlow, setIsSharedLinkFlow] = useState(false);
 	const [showNameInputDialog, setShowNameInputDialog] = useState(false);
@@ -79,10 +79,30 @@ const Participant = () => {
 	// Auto-load if ID is in URL (shared link flow)
 	useEffect(() => {
 		const id = searchParams.get("id");
+		const font = searchParams.get("font");
+		const size = searchParams.get("size");
+		const weight = searchParams.get("weight");
+		const color = searchParams.get("color");
+		const x = searchParams.get("x");
+		const y = searchParams.get("y");
+		const anchor = searchParams.get("anchor");
+
 		if (id) {
 			setCertificateId(id);
-			setIsSharedLinkFlow(true);
-			handleFetchTemplate(id, true);
+
+			if (font && size && weight && color && x && y) {
+				setSelectedFont(font);
+				setFontSize(Number(size));
+				setFontWeight(weight);
+				setTextColor(color);
+				setTextPosition({ x: Number(x), y: Number(y) });
+				setAnchorMode(anchor as "center" | "left");
+
+				setIsSharedLinkFlow(true);
+				handleFetchTemplate(id, true);
+			} else {
+				handleFetchTemplate(id, false);
+			}
 		}
 	}, [searchParams]);
 
@@ -148,7 +168,10 @@ const Participant = () => {
 		}
 	};
 
-	const handleFetchTemplate = async (id?: string, isFromSharedLink = false) => {
+	const handleFetchTemplate = async (
+		id?: string,
+		isFromSharedLink = false,
+	) => {
 		const idToUse = id || certificateId;
 
 		if (!idToUse.trim()) {
@@ -184,7 +207,7 @@ const Participant = () => {
 			if (!res.data) throw new Error("Template not found");
 			setTemplateUrl(url);
 			setTemplateLoaded(true);
-			
+
 			// Show name input dialog for shared link flow
 			if (isFromSharedLink) {
 				setShowNameInputDialog(true);
@@ -193,23 +216,23 @@ const Participant = () => {
 			}
 
 			//  Fetch presets from backend
-			try {
-				const presetRes = await axios.get(
-					`${BASE_URL}/get_preset/${idToUse}/`,
-				);
-				const data = presetRes.data;
+			// try {
+			// 	const presetRes = await axios.get(
+			// 		`${BASE_URL}/get_preset/${idToUse}/`,
+			// 	);
+			// 	const data = presetRes.data;
 
-				if (data) {
-					setSelectedFont(data.selectedFont);
-					setFontSize(data.fontSize);
-					setFontWeight(data.fontWeight);
-					setTextColor(data.textColor);
-					setTextPosition(data.textPosition);
-					setAnchorMode(data.anchorMode);
-				}
-			} catch (err) {
-				console.log("No presets found, using defaults.");
-			}
+			// 	if (data) {
+			// 		setSelectedFont(data.selectedFont);
+			// 		setFontSize(data.fontSize);
+			// 		setFontWeight(data.fontWeight);
+			// 		setTextColor(data.textColor);
+			// 		setTextPosition(data.textPosition);
+			// 		setAnchorMode(data.anchorMode);
+			// 	}
+			// } catch (err) {
+			// 	console.log("No presets found, using defaults.");
+			// }
 		} catch {
 			toast.dismiss();
 			toast.error("Template not found. Check the ID.");
@@ -294,7 +317,9 @@ const Participant = () => {
 		setHasDownloaded(true);
 	};
 
-	const handleNameInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+	const handleNameInputKeyDown = (
+		e: React.KeyboardEvent<HTMLInputElement>,
+	) => {
 		if (e.key === "Enter" && participantName.trim()) {
 			handleSharedFlowDownload();
 		}
@@ -311,12 +336,18 @@ const Participant = () => {
 			/>
 
 			{/* Name Input Dialog for Shared Link Flow */}
-			<Dialog open={showNameInputDialog} onOpenChange={setShowNameInputDialog}>
+			<Dialog
+				open={showNameInputDialog}
+				onOpenChange={setShowNameInputDialog}
+			>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle className="text-xl">Enter Your Name</DialogTitle>
+						<DialogTitle className="text-xl">
+							Enter Your Name
+						</DialogTitle>
 						<DialogDescription>
-							Type your name below to generate your personalized certificate.
+							Type your name below to generate your personalized
+							certificate.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 pt-4">
@@ -325,7 +356,9 @@ const Participant = () => {
 							<Input
 								id="participant-name"
 								value={participantName}
-								onChange={(e) => setParticipantName(e.target.value)}
+								onChange={(e) =>
+									setParticipantName(e.target.value)
+								}
 								onKeyDown={handleNameInputKeyDown}
 								placeholder="Enter your full name..."
 								autoFocus
@@ -445,7 +478,7 @@ const Participant = () => {
 								textColor={textColor}
 								anchorMode={anchorMode}
 							/>
-							
+
 							{hasDownloaded && (
 								<motion.div
 									initial={{ opacity: 0, y: 20 }}

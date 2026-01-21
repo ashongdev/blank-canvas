@@ -129,7 +129,7 @@ const CertificatePreview = ({
 										? spanSize.h / 2
 										: 0)
 								}px`,
-								fontFamily: selectedFont,
+								fontFamily: `"${selectedFont}"`,
 								fontSize: `${fontSize * imageScale.scale}px`,
 								fontWeight,
 								color: textColor,

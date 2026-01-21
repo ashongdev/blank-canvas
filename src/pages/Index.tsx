@@ -202,7 +202,17 @@ const Index = () => {
 
 			if (res.data.public_id) {
 				const newId = res.data.public_id;
-				const link = `${window.location.origin}/participant?id=${newId}`;
+				const params = new URLSearchParams({
+					id: newId,
+					font: `${selectedFont}`,
+					size: fontSize.toString(),
+					weight: fontWeight,
+					color: textColor,
+					x: textPosition.x.toString(),
+					y: textPosition.y.toString(),
+					anchor: anchorMode,
+				});
+				const link = `${window.location.origin}/participant?${params.toString()}`;
 				setGeneratedLink(link);
 				setShowIdDialog(false);
 				setShowShareDialog(true);
