@@ -45,7 +45,7 @@ const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
 							to="/"
 							className="hover:text-primary transition-smooth"
 						>
-							Certificate Generator
+							genC
 						</Link>
 					</h1>
 					<nav className="flex items-center gap-4 hidden md:flex">

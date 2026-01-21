@@ -143,9 +143,9 @@ const Index = () => {
 			link.click();
 			URL.revokeObjectURL(url);
 
-			toast.success("Download Complete.");
+			// toast.success("Download Complete.");
 		} catch (error) {
-			toast.error("Failed to generate certificates");
+			// toast.error("Failed to generate certificates");
 		}
 	};
 

@@ -10,7 +10,7 @@ export const indexPageTourSteps: DriveStep[] = [
 		popover: {
 			title: "Welcome! 👋",
 			description:
-				"Let me show you around the Certificate Generator. This quick tour will help you get started.",
+				"Let me show you around. This quick tour will help you get started.",
 			side: "bottom",
 			align: "start",
 		},
