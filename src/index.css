@@ -3,32 +3,8 @@
 @tailwind utilities;
 
 @font-face {
-	font-family: "Alex Brush";
-	src: url("/fonts/Alex Brush.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
 	font-family: "Bickham Script Pro Regular";
 	src: url("/fonts/Bickham Script Pro Regular.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Cinzel";
-	src: url("/fonts/Cinzel.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Cormorant Garamond";
-	src: url("/fonts/Cormorant Garamond.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Crimson Text";
-	src: url("/fonts/Crimson Text.ttf") format("truetype");
 	font-display: swap;
 }
 
@@ -39,81 +15,14 @@
 }
 
 @font-face {
-	font-family: "Georgia";
-	src: url("/fonts/Georgia.ttf") format("truetype");
-	font-display: swap;
-	/* Local fallback for common system font if desired, but file ensures consistency */
-}
-
-@font-face {
-	font-family: "Great Vibes";
-	src: url("/fonts/Great Vibes.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Inter";
-	src: url("/fonts/Inter.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
 	font-family: "Kunstler Script";
 	src: url("/fonts/Kunstler Script.ttf") format("truetype");
 	font-display: swap;
 }
 
 @font-face {
-	font-family: "Lato";
-	src: url("/fonts/Lato.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Libre Baskerville";
-	src: url("/fonts/Libre Baskerville.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Marcellus";
-	src: url("/fonts/Marcellus.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Montserrat";
-	src: url("/fonts/Montserrat.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Open Sans";
-	src: url("/fonts/Open Sans.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Playfair Display";
-	src: url("/fonts/Playfair Display.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Raleway";
-	src: url("/fonts/Raleway.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
 	font-family: "Snell Roundhand";
 	src: url("/fonts/Snell Roundhand.ttf") format("truetype");
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Times New Roman";
-	src: url("/fonts/Times New Roman.ttf") format("truetype");
 	font-display: swap;
 }
 
