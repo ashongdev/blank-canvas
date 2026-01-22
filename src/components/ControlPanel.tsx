@@ -24,6 +24,17 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+const PREDEFINED_COLORS = [
+	"#000000", // Black
+	"#FFFFFF", // White
+	"#1E293B", // Slope Slate
+	"#EF4444", // Red
+	"#22C55E", // Green
+	"#3B82F6", // Blue
+	"#F59E0B", // Amber
+	"#8B5CF6", // Violet
+];
+
 interface ControlPanelProps {
 	fields: TextField[];
 	selectedFieldId: string;
@@ -55,6 +66,10 @@ const ControlPanel = ({
 	const activeField =
 		fields.find((f) => f.id === selectedFieldId) || fields[0];
 
+	// Identify if the active field is the primary (first) field
+	const isPrimaryField =
+		fields.length > 0 && activeField?.id === fields[0].id;
+
 	const handleDownload = async () => {
 		if (isGenerating) return;
 		setIsGenerating(true);
@@ -79,7 +94,16 @@ const ControlPanel = ({
 						<Upload className="w-4 h-4" />
 						Template
 					</h3>
-					<div className="grid w-full max-w-sm items-center gap-1.5">
+					<div className="grid w-full max-w-sm items-center gap-1.5 relative">
+						<Button
+							variant="outline"
+							className="w-full relative z-10 pointer-events-none justify-start px-3 text-muted-foreground font-normal"
+						>
+							<Upload className="w-4 h-4 mr-2" />
+							{hasTemplate
+								? "Change Template"
+								: "Upload Template"}
+						</Button>
 						<Input
 							id="picture"
 							type="file"
@@ -88,7 +112,7 @@ const ControlPanel = ({
 								const file = e.target.files?.[0];
 								if (file) onTemplateUpload(file);
 							}}
-							className="cursor-pointer file:text-foreground"
+							className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
 						/>
 					</div>
 				</div>
@@ -100,7 +124,10 @@ const ControlPanel = ({
 					<>
 						<div className="space-y-3">
 							<div className="flex items-center justify-between">
-								<h3 className="text-sm font-medium flex items-center gap-2">
+								<h3
+									className="text-sm font-medium flex items-center gap-2"
+									data-tour="fields-list"
+								>
 									<Type className="w-4 h-4" />
 									Fields
 								</h3>
@@ -109,6 +136,7 @@ const ControlPanel = ({
 									size="sm"
 									onClick={onAddField}
 									className="h-8"
+									data-tour="add-field-btn"
 								>
 									<Plus className="w-3 h-3 mr-1" />
 									Add
@@ -195,19 +223,34 @@ const ControlPanel = ({
 										className="h-8"
 									/>
 								</div>
-								<div className="flex items-center justify-between border rounded-md p-2">
-									<label className="text-xs text-muted-foreground">
-										Required for Participant
-									</label>
-									<Switch
-										checked={activeField.required ?? false}
-										onCheckedChange={(checked) =>
-											onFieldUpdate(activeField.id, {
-												required: checked,
-											})
-										}
-									/>
-								</div>
+								{!simpleView && (
+									<div
+										className="flex items-center justify-between border rounded-md p-2"
+										data-tour="required-toggle"
+									>
+										<label
+											className={`text-xs ${
+												isPrimaryField
+													? "text-muted-foreground/50"
+													: "text-muted-foreground"
+											}`}
+										>
+											Required for Participant
+										</label>
+										<Switch
+											checked={
+												isPrimaryField ||
+												(activeField.required ?? false)
+											}
+											disabled={isPrimaryField}
+											onCheckedChange={(checked) =>
+												onFieldUpdate(activeField.id, {
+													required: checked,
+												})
+											}
+										/>
+									</div>
+								)}
 							</div>
 
 							{/* Font Family */}
@@ -302,27 +345,52 @@ const ControlPanel = ({
 								<label className="text-xs text-muted-foreground">
 									Color
 								</label>
-								<div className="flex gap-2">
-									<Input
-										type="color"
-										value={activeField.color}
-										onChange={(e) =>
-											onFieldUpdate(activeField.id, {
-												color: e.target.value,
-											})
-										}
-										className="w-8 h-8 p-0 border-0"
-									/>
-									<Input
-										type="text"
-										value={activeField.color}
-										onChange={(e) =>
-											onFieldUpdate(activeField.id, {
-												color: e.target.value,
-											})
-										}
-										className="flex-1 h-8 font-mono"
-									/>
+								<div className="flex flex-col gap-2">
+									<div className="flex flex-wrap gap-1.5">
+										{PREDEFINED_COLORS.map((color) => (
+											<button
+												key={color}
+												className={`w-6 h-6 rounded-full border shadow-sm transition-transform hover:scale-110 active:scale-95 ${
+													activeField.color === color
+														? "ring-2 ring-primary ring-offset-2"
+														: ""
+												}`}
+												style={{
+													backgroundColor: color,
+												}}
+												onClick={() =>
+													onFieldUpdate(
+														activeField.id,
+														{
+															color: color,
+														},
+													)
+												}
+											/>
+										))}
+									</div>
+									<div className="flex gap-2">
+										<Input
+											type="color"
+											value={activeField.color}
+											onChange={(e) =>
+												onFieldUpdate(activeField.id, {
+													color: e.target.value,
+												})
+											}
+											className="w-10 h-8 p-0 border-0 cursor-pointer"
+										/>
+										<Input
+											type="text"
+											value={activeField.color}
+											onChange={(e) =>
+												onFieldUpdate(activeField.id, {
+													color: e.target.value,
+												})
+											}
+											className="flex-1 h-8 font-mono uppercase"
+										/>
+									</div>
 								</div>
 							</div>
 						</div>

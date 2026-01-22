@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { indexPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
+import { advancedPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
 import { TextField } from "@/types/TextField";
 import axios from "axios";
@@ -35,8 +35,8 @@ const Advanced = () => {
 	const location = useLocation();
 	// const { theme, setTheme } = useTheme(); // Moved to Header
 	const { startTour, resetTour } = useTour({
-		steps: indexPageTourSteps,
-		storageKey: TOUR_STORAGE_KEYS.index,
+		steps: advancedPageTourSteps,
+		storageKey: TOUR_STORAGE_KEYS.advanced,
 		autoStart: true,
 	});
 	const [templateFile, setTemplateFile] = useState<File | null>(

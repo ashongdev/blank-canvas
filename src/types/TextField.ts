@@ -1,7 +1,7 @@
 export interface TextField {
 	id: string;
-	label: string; // "Name", "Course", "Date"
-	text: string; // The sample text
+	label: string;
+	text: string;
 	x: number;
 	y: number;
 	font: string;
@@ -9,5 +9,5 @@ export interface TextField {
 	fontWeight: string;
 	color: string;
 	anchorMode: "center" | "left";
-	required?: boolean; // If true, participant must provide value. If false, text remains static.
+	required?: boolean;
 }

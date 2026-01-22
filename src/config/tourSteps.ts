@@ -8,20 +8,10 @@ export const indexPageTourSteps: DriveStep[] = [
 	{
 		element: '[data-tour="tabs"]',
 		popover: {
-			title: "Welcome! 👋",
+			title: "Simple Editor",
 			description:
-				"Let me show you around. This quick tour will help you get started.",
+				"You are in Simple Mode. Perfect for certificates with just a name. Switch to Advanced below for multiple fields.",
 			side: "bottom",
-			align: "start",
-		},
-	},
-	{
-		element: '[data-tour="position-controls"]',
-		popover: {
-			title: "Position Controls",
-			description:
-				"Adjust where the recipient name appears on your certificate. Use the arrow buttons or enter exact X/Y coordinates.",
-			side: "right",
 			align: "start",
 		},
 	},
@@ -30,7 +20,60 @@ export const indexPageTourSteps: DriveStep[] = [
 		popover: {
 			title: "Live Preview",
 			description:
-				"See your certificate update in real-time as you make changes. The name position is shown exactly as it will appear.",
+				"Drag and drop the name anywhere on the certificate. Use the control panel to change fonts and colors.",
+			side: "left",
+			align: "center",
+		},
+	},
+	{
+		element: "header",
+		popover: {
+			title: "Ready to Start?",
+			description:
+				"Upload a template and customize the participant name style.",
+			side: "bottom",
+			align: "center",
+		},
+	},
+];
+
+export const advancedPageTourSteps: DriveStep[] = [
+	{
+		element: '[data-tour="tabs"]',
+		popover: {
+			title: "Advanced Editor 🚀",
+			description:
+				"Welcome to the Advanced Editor! Here you can add multiple dynamic fields like Date, Position etc.",
+			side: "bottom",
+			align: "start",
+		},
+	},
+	{
+		element: '[data-tour="fields-list"]',
+		popover: {
+			title: "Manage Fields",
+			description:
+				"View all your text fields here. Click on a field to edit its settings.",
+			side: "right",
+			align: "start",
+		},
+	},
+	{
+		element: '[data-tour="add-field-btn"]',
+		popover: {
+			title: "Add New Fields",
+			description:
+				"Need more text? Click Add to place a new text block on the certificate.",
+			side: "left",
+			align: "center",
+		},
+	},
+	{
+		element: '[data-tour="required-toggle"]',
+		popover: {
+			title: "Participant Input Control",
+			description:
+				"Toggle this ON to force participants to enter this data. Toggle OFF to make it static text (read-only for them).",
 			side: "left",
 			align: "center",
 		},
@@ -38,9 +81,9 @@ export const indexPageTourSteps: DriveStep[] = [
 	{
 		element: '[data-tour="control-panel"]',
 		popover: {
-			title: "Styling & Actions",
+			title: "Full Customization",
 			description:
-				"Upload templates, customize fonts, colors, and sizes. When ready, generate certificates for all your recipients.",
+				"Control fonts, colors, and sizes for each field independently.",
 			side: "left",
 			align: "start",
 		},
@@ -50,28 +93,8 @@ export const indexPageTourSteps: DriveStep[] = [
 		popover: {
 			title: "Share Template",
 			description:
-				"Create a shareable link for this design. Recipients can open the link to enter their name and download their certificate instantly.",
+				"Generate a unique link. Participants will get a form asking only for the 'Required' fields you set up.",
 			side: "left",
-			align: "center",
-		},
-	},
-	{
-		element: '[data-tour="tabs"]',
-		popover: {
-			title: "Manage Recipients",
-			description:
-				"Switch to the Recipients tab to add names and emails for bulk certificate generation.",
-			side: "bottom",
-			align: "center",
-		},
-	},
-	{
-		element: "header",
-		popover: {
-			title: "You're All Set! 🎉",
-			description:
-				'Start by uploading a certificate template. Click "Take a Tour" anytime to see this guide again.',
-			side: "bottom",
 			align: "center",
 		},
 	},
@@ -135,6 +158,7 @@ export const participantPageTourSteps: DriveStep[] = [
 
 export const TOUR_STORAGE_KEYS = {
 	index: "tour_completed_index",
+	advanced: "tour_completed_advanced",
 	admin: "tour_completed_admin",
 	participant: "tour_completed_participant",
 } as const;
