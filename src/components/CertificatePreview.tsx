@@ -111,24 +111,24 @@ const CertificatePreview = ({
 						<motion.span
 							ref={spanRef}
 							className="absolute pointer-events-none"
-							// Inside the motion.span style object
 							style={{
 								left: `${textPosition.x * imageScale.scale + imageScale.offsetX}px`,
 								top: `${textPosition.y * imageScale.scale + imageScale.offsetY}px`,
 								transform:
 									anchorMode === "center"
 										? "translate(-50%, -50%)"
-										: "translate(0, 0)",
+										: "translate(0%, -50%)",
+
 								fontFamily: `"${selectedFont}"`,
 								fontSize: `${fontSize * imageScale.scale}px`,
 								fontWeight,
 								color: textColor,
 								whiteSpace: "nowrap",
-								display: "block", // Changed from inline-block to block
-								lineHeight: "0.8", // Script fonts often need slightly less than 1 to kill the 'leading'
+								display: "inline-flex",
+								alignItems: "center",
+								lineHeight: "1",
 								padding: "0",
 								margin: "0",
-								dominantBaseline: "hanging", // Helps with SVG-like positioning
 							}}
 						>
 							{previewName}
