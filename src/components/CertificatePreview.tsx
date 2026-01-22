@@ -105,7 +105,7 @@ const CertificatePreview = ({
 								className={`absolute cursor-pointer ${
 									!isParticipant &&
 									field.id === selectedFieldId
-										? "ring-2 ring-primary ring-offset-2 rounded-sm"
+										? ""
 										: ""
 								}`}
 								style={{

@@ -30,7 +30,7 @@ interface Recipient {
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-const Index = () => {
+const Advanced = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	// const { theme, setTheme } = useTheme(); // Moved to Header
@@ -103,7 +103,7 @@ const Index = () => {
 			fontWeight: "300",
 			color: "#000000",
 			anchorMode: "center",
-			required: false, // Default to false for extra fields
+			required: false,
 		};
 		setFields((prev) => [...prev, newField]);
 		setSelectedFieldId(newField.id);
@@ -369,21 +369,20 @@ const Index = () => {
 									data-tour="control-panel"
 								>
 									<Button
-										variant="outline"
+										variant="ghost"
 										size="sm"
-										className="w-full mb-2 border-dashed text-muted-foreground hover:text-primary"
+										className="w-full mb-2 text-muted-foreground hover:text-primary"
 										onClick={() =>
-											navigate("/advanced", {
+											navigate("/", {
 												state: {
-													fields,
+													fields: [fields[0]], // Only pass back the first field to simple mode
 													templateUrl,
-													// sending file might struggle if it's large but let's try, or just URL
 													templateFile,
 												},
 											})
 										}
 									>
-										Switch to Multi-Field (Advanced)
+										&larr; Back to Simple Editor
 									</Button>
 
 									<ControlPanel
@@ -397,7 +396,6 @@ const Index = () => {
 										onGenerate={handleDownload}
 										onShare={handleShareClick}
 										hasTemplate={!!templateUrl}
-										simpleView={true}
 									/>
 								</div>
 							</div>
@@ -493,4 +491,4 @@ const Index = () => {
 	);
 };
 
-export default Index;
+export default Advanced;

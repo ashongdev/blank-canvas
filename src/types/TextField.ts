@@ -9,4 +9,5 @@ export interface TextField {
 	fontWeight: string;
 	color: string;
 	anchorMode: "center" | "left";
+	required?: boolean; // If true, participant must provide value. If false, text remains static.
 }

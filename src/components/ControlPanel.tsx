@@ -9,6 +9,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { CERTIFICATE_FONTS, FONT_WEIGHTS } from "@/lib/utils";
 import { TextField } from "@/types/TextField";
 import { motion } from "framer-motion";
@@ -34,6 +35,7 @@ interface ControlPanelProps {
 	onGenerate: () => Promise<void> | void;
 	onShare?: () => Promise<void> | void;
 	hasTemplate: boolean;
+	simpleView?: boolean;
 }
 
 const ControlPanel = ({
@@ -47,6 +49,7 @@ const ControlPanel = ({
 	onGenerate,
 	onShare,
 	hasTemplate,
+	simpleView = false,
 }: ControlPanelProps) => {
 	const [isGenerating, setIsGenerating] = useState(false);
 	const activeField =
@@ -93,59 +96,63 @@ const ControlPanel = ({
 				<Separator />
 
 				{/* Field Management */}
-				<div className="space-y-3">
-					<div className="flex items-center justify-between">
-						<h3 className="text-sm font-medium flex items-center gap-2">
-							<Type className="w-4 h-4" />
-							Fields
-						</h3>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={onAddField}
-							className="h-8"
-						>
-							<Plus className="w-3 h-3 mr-1" />
-							Add
-						</Button>
-					</div>
-
-					<div className="flex flex-col gap-2">
-						{fields.map((field) => (
-							<div
-								key={field.id}
-								className={`flex items-center gap-2 p-2 rounded-md border transition-colors cursor-pointer ${
-									selectedFieldId === field.id
-										? "bg-accent border-primary"
-										: "bg-card border-border hover:bg-muted"
-								}`}
-								onClick={() => onFieldSelect(field.id)}
-							>
-								<div className="flex-1 min-w-0">
-									<p className="text-xs font-medium truncate">
-										{field.label}
-									</p>
-									<p className="text-[10px] text-muted-foreground truncate">
-										{field.text}
-									</p>
-								</div>
+				{!simpleView && (
+					<>
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<h3 className="text-sm font-medium flex items-center gap-2">
+									<Type className="w-4 h-4" />
+									Fields
+								</h3>
 								<Button
-									variant="ghost"
-									size="icon"
-									className="h-6 w-6 text-muted-foreground hover:text-destructive"
-									onClick={(e) => {
-										e.stopPropagation();
-										onRemoveField(field.id);
-									}}
+									variant="outline"
+									size="sm"
+									onClick={onAddField}
+									className="h-8"
 								>
-									<Trash2 className="w-3 h-3" />
+									<Plus className="w-3 h-3 mr-1" />
+									Add
 								</Button>
 							</div>
-						))}
-					</div>
-				</div>
 
-				<Separator />
+							<div className="flex flex-col gap-2">
+								{fields.map((field) => (
+									<div
+										key={field.id}
+										className={`flex items-center gap-2 p-2 rounded-md border transition-colors cursor-pointer ${
+											selectedFieldId === field.id
+												? "bg-accent border-primary"
+												: "bg-card border-border hover:bg-muted"
+										}`}
+										onClick={() => onFieldSelect(field.id)}
+									>
+										<div className="flex-1 min-w-0">
+											<p className="text-xs font-medium truncate">
+												{field.label}
+											</p>
+											<p className="text-[10px] text-muted-foreground truncate">
+												{field.text}
+											</p>
+										</div>
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-6 w-6 text-muted-foreground hover:text-destructive"
+											onClick={(e) => {
+												e.stopPropagation();
+												onRemoveField(field.id);
+											}}
+										>
+											<Trash2 className="w-3 h-3" />
+										</Button>
+									</div>
+								))}
+							</div>
+						</div>
+
+						<Separator />
+					</>
+				)}
 
 				{activeField && (
 					<>
@@ -153,7 +160,9 @@ const ControlPanel = ({
 						<div className="space-y-4">
 							<h3 className="text-sm font-medium flex items-center gap-2">
 								<Settings2 className="w-4 h-4" />
-								Selected Field Settings
+								{simpleView
+									? "Text Settings"
+									: "Selected Field Settings"}
 							</h3>
 
 							{/* Label & Value */}
@@ -184,6 +193,19 @@ const ControlPanel = ({
 											})
 										}
 										className="h-8"
+									/>
+								</div>
+								<div className="flex items-center justify-between border rounded-md p-2">
+									<label className="text-xs text-muted-foreground">
+										Required for Participant
+									</label>
+									<Switch
+										checked={activeField.required ?? false}
+										onCheckedChange={(checked) =>
+											onFieldUpdate(activeField.id, {
+												required: checked,
+											})
+										}
 									/>
 								</div>
 							</div>

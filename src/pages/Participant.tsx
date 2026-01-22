@@ -57,10 +57,11 @@ const Participant = () => {
 	const [selectedFont, setSelectedFont] = useState(
 		"Bickham Script Pro Regular",
 	);
-	const [fontSize, setFontSize] = useState(48);
+	const [fontSize, setFontSize] = useState(100);
 	const [fontWeight, setFontWeight] = useState("400");
 	const [textColor, setTextColor] = useState("#000000");
 	const [participantName, setParticipantName] = useState("");
+	const [inputValues, setInputValues] = useState<Record<string, string>>({});
 	const [anchorMode, setAnchorMode] = useState<"center" | "left">("center");
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [isLocalDraft, setIsLocalDraft] = useState(false);
@@ -104,6 +105,15 @@ const Participant = () => {
 						atob(dataEncoded),
 					);
 					setFields(parsedFields);
+
+					const initialValues: Record<string, string> = {};
+					parsedFields.forEach((f) => {
+						// Initialize input values with the template text
+						if (f.required) {
+							initialValues[f.id] = f.text;
+						}
+					});
+					setInputValues(initialValues);
 
 					if (parsedFields.length > 0) {
 						const mainField = parsedFields[0];
@@ -169,7 +179,7 @@ const Participant = () => {
 
 			setTextPosition({ x: 0, y: 0 });
 			setSelectedFont("Bickham Script Pro Regular");
-			setFontSize(48);
+			setFontSize(100);
 			toast.success(
 				"Image loaded. Adjust settings and click Share to publish.",
 			);
@@ -319,12 +329,21 @@ const Participant = () => {
 		toast.success("Generating certificates...");
 
 		try {
-			// Update fields with current participant name (first field)
+			// Update fields with input values
 			let currentFields = [...fields];
 			if (currentFields.length > 0) {
+				currentFields = currentFields.map((f) => ({
+					...f,
+					text: f.required
+						? inputValues[f.id] !== undefined
+							? inputValues[f.id]
+							: f.text
+						: f.text,
+				}));
+
+				// Update first field with potential style overrides
 				currentFields[0] = {
 					...currentFields[0],
-					text: participantName,
 					x: textPosition.x,
 					y: textPosition.y,
 					font: selectedFont,
@@ -387,7 +406,16 @@ const Participant = () => {
 	};
 
 	const handleSharedFlowDownload = async () => {
-		if (!participantName.trim()) {
+		const missingFields = fields.filter(
+			(f) => f.required && !inputValues[f.id]?.trim(),
+		);
+
+		if (missingFields.length > 0) {
+			toast.error(`Please enter: ${missingFields[0].label}`);
+			return;
+		}
+
+		if (fields.length === 0 && !participantName.trim()) {
 			toast.error("Please enter your name");
 			return;
 		}
@@ -400,7 +428,7 @@ const Participant = () => {
 	const handleNameInputKeyDown = (
 		e: React.KeyboardEvent<HTMLInputElement>,
 	) => {
-		if (e.key === "Enter" && participantName.trim()) {
+		if (e.key === "Enter") {
 			handleSharedFlowDownload();
 		}
 	};
@@ -431,22 +459,63 @@ const Participant = () => {
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 pt-4">
-						<div className="space-y-2">
-							<Label htmlFor="participant-name">Your Name</Label>
-							<Input
-								id="participant-name"
-								value={participantName}
-								onChange={(e) =>
-									setParticipantName(e.target.value)
-								}
-								onKeyDown={handleNameInputKeyDown}
-								placeholder="Enter your full name..."
-								autoFocus
-							/>
-						</div>
+						{fields.filter((f) => f.required).length > 0 ? (
+							fields
+								.filter((f) => f.required)
+								.map((field) => (
+									<div className="space-y-2" key={field.id}>
+										<Label htmlFor={`field-${field.id}`}>
+											{field.label}
+										</Label>
+										<Input
+											id={`field-${field.id}`}
+											value={inputValues[field.id] || ""}
+											onChange={(e) => {
+												setInputValues((prev) => ({
+													...prev,
+													[field.id]: e.target.value,
+												}));
+												if (
+													fields.indexOf(field) === 0
+												) {
+													setParticipantName(
+														e.target.value,
+													);
+												}
+											}}
+											onKeyDown={handleNameInputKeyDown}
+											placeholder={`Enter ${field.label}...`}
+										/>
+									</div>
+								))
+						) : (
+							<div className="space-y-2">
+								<Label htmlFor="participant-name">
+									Your Name
+								</Label>
+								<Input
+									id="participant-name"
+									value={participantName}
+									onChange={(e) => {
+										setParticipantName(e.target.value);
+										// Update first field if no required flags found (legacy fallback)
+										if (fields.length > 0) {
+											setInputValues((prev) => ({
+												...prev,
+												[fields[0].id]: e.target.value,
+											}));
+										}
+									}}
+									onKeyDown={handleNameInputKeyDown}
+									placeholder="Enter your full name..."
+									autoFocus
+								/>
+							</div>
+						)}
+
 						<Button
 							onClick={handleSharedFlowDownload}
-							disabled={!participantName.trim() || isDownloading}
+							disabled={isDownloading}
 							className="w-full"
 						>
 							{isDownloading ? (
@@ -549,16 +618,16 @@ const Participant = () => {
 								templateUrl={templateUrl}
 								fields={
 									fields.length > 0
-										? fields.map((f, i) =>
-												i === 0
-													? {
-															...f,
-															text:
-																participantName ||
-																"Your Name",
-														}
-													: f,
-											)
+										? fields.map((f) => ({
+												...f,
+												text:
+													inputValues[f.id] !==
+													undefined
+														? inputValues[f.id]
+														: f.required
+															? f.text
+															: f.text,
+											}))
 										: [
 												{
 													id: "preview",
