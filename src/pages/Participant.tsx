@@ -107,9 +107,9 @@ const Participant = () => {
 					setFields(parsedFields);
 
 					const initialValues: Record<string, string> = {};
-					parsedFields.forEach((f) => {
+					parsedFields.forEach((f, i) => {
 						// Initialize input values with the template text
-						if (f.required) {
+						if (f.required || i === 0) {
 							initialValues[f.id] = f.text;
 						}
 					});
@@ -332,9 +332,9 @@ const Participant = () => {
 			// Update fields with input values
 			let currentFields = [...fields];
 			if (currentFields.length > 0) {
-				currentFields = currentFields.map((f) => ({
+				currentFields = currentFields.map((f, i) => ({
 					...f,
-					text: f.required
+					text: (f.required || i === 0)
 						? inputValues[f.id] !== undefined
 							? inputValues[f.id]
 							: f.text
@@ -407,7 +407,7 @@ const Participant = () => {
 
 	const handleSharedFlowDownload = async () => {
 		const missingFields = fields.filter(
-			(f) => f.required && !inputValues[f.id]?.trim(),
+			(f, i) => (f.required || i === 0) && !inputValues[f.id]?.trim(),
 		);
 
 		if (missingFields.length > 0) {
@@ -459,9 +459,9 @@ const Participant = () => {
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 pt-4">
-						{fields.filter((f) => f.required).length > 0 ? (
+						{fields.length > 0 ? (
 							fields
-								.filter((f) => f.required)
+								.filter((f, i) => f.required || i === 0)
 								.map((field) => (
 									<div className="space-y-2" key={field.id}>
 										<Label htmlFor={`field-${field.id}`}>
