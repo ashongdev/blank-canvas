@@ -15,8 +15,6 @@ interface PositionControlsProps {
 	onPositionChange: (axis: "x" | "y", direction: number) => void;
 	textPosition: { x: number; y: number };
 	onManualPositionChange: (axis: "x" | "y", value: number) => void;
-	previewName: string;
-	onPreviewTextChange: (value: string) => void;
 	anchorMode: "center" | "left";
 	onAnchorModeChange: (mode: "center" | "left") => void;
 }
@@ -25,15 +23,13 @@ const PositionControls = ({
 	onPositionChange,
 	textPosition,
 	onManualPositionChange,
-	previewName,
-	onPreviewTextChange,
 	anchorMode,
 	onAnchorModeChange,
 }: PositionControlsProps) => {
 	const controlButton = (
 		icon: React.ReactNode,
 		onClick: () => void,
-		label: string
+		label: string,
 	) => (
 		<Button
 			variant="outline"
@@ -62,12 +58,12 @@ const PositionControls = ({
 						{controlButton(
 							<ChevronUp className="w-4 h-4" />,
 							() => onPositionChange("y", -5),
-							"Move up"
+							"Move up",
 						)}
 						{controlButton(
 							<ChevronDown className="w-4 h-4" />,
 							() => onPositionChange("y", 5),
-							"Move down"
+							"Move down",
 						)}
 					</div>
 				</div>
@@ -80,12 +76,12 @@ const PositionControls = ({
 						{controlButton(
 							<ChevronLeft className="w-4 h-4" />,
 							() => onPositionChange("x", -5),
-							"Move left"
+							"Move left",
 						)}
 						{controlButton(
 							<ChevronRight className="w-4 h-4" />,
 							() => onPositionChange("x", 5),
-							"Move right"
+							"Move right",
 						)}
 					</div>
 				</div>
@@ -105,7 +101,7 @@ const PositionControls = ({
 							onChange={(e) =>
 								onManualPositionChange(
 									"x",
-									Number(e.target.value)
+									Number(e.target.value),
 								)
 							}
 							className="h-8 text-xs text-center"
@@ -127,31 +123,11 @@ const PositionControls = ({
 							onChange={(e) =>
 								onManualPositionChange(
 									"y",
-									Number(e.target.value)
+									Number(e.target.value),
 								)
 							}
 							className="h-8 text-xs text-center"
 							maxLength={5}
-						/>
-					</div>
-				</div>
-
-				<div className="flex items-center justify-center gap-3">
-					<div className="w-full">
-						<Label
-							htmlFor="preview-text"
-							className="text-xs text-muted-foreground"
-						>
-							Preview Text Here
-						</Label>
-						<Input
-							id="preview-text"
-							type="text"
-							value={previewName}
-							onChange={(e) =>
-								onPreviewTextChange(e.target.value)
-							}
-							className="h-8 text-xs"
 						/>
 					</div>
 				</div>

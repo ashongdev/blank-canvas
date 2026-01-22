@@ -24,6 +24,7 @@ import {
 	TOUR_STORAGE_KEYS,
 } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
+import { TextField } from "@/types/TextField";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { AlertCircle, Loader2, Search, Share2 } from "lucide-react";
@@ -67,6 +68,8 @@ const Participant = () => {
 	const [showShareDialog, setShowShareDialog] = useState(false);
 	const [generatedLink, setGeneratedLink] = useState("");
 
+	const [fields, setFields] = useState<TextField[]>([]);
+
 	// New state for shared link flow
 	const [isSharedLinkFlow, setIsSharedLinkFlow] = useState(false);
 	const [showNameInputDialog, setShowNameInputDialog] = useState(false);
@@ -79,6 +82,8 @@ const Participant = () => {
 	// Auto-load if ID is in URL (shared link flow)
 	useEffect(() => {
 		const id = searchParams.get("id");
+
+		// Legacy parameters
 		const font = searchParams.get("font");
 		const size = searchParams.get("size");
 		const weight = searchParams.get("weight");
@@ -87,16 +92,58 @@ const Participant = () => {
 		const y = searchParams.get("y");
 		const anchor = searchParams.get("anchor");
 
+		// New encoded data parameter
+		const dataEncoded = searchParams.get("data");
+
 		if (id) {
 			setCertificateId(id);
 
-			if (font && size && weight && color && x && y) {
+			if (dataEncoded) {
+				try {
+					const parsedFields: TextField[] = JSON.parse(
+						atob(dataEncoded),
+					);
+					setFields(parsedFields);
+
+					if (parsedFields.length > 0) {
+						const mainField = parsedFields[0];
+						setParticipantName(mainField.text);
+						setSelectedFont(mainField.font);
+						setFontSize(mainField.fontSize);
+						setFontWeight(mainField.fontWeight);
+						setTextColor(mainField.color);
+						setTextPosition({ x: mainField.x, y: mainField.y });
+						setAnchorMode(mainField.anchorMode);
+					}
+
+					setIsSharedLinkFlow(true);
+					handleFetchTemplate(id, true);
+				} catch (e) {
+					console.error("Failed to parse field data", e);
+					handleFetchTemplate(id, false);
+				}
+			} else if (font && size && weight && color && x && y) {
 				setSelectedFont(font);
 				setFontSize(Number(size));
 				setFontWeight(weight);
 				setTextColor(color);
 				setTextPosition({ x: Number(x), y: Number(y) });
 				setAnchorMode(anchor as "center" | "left");
+
+				setFields([
+					{
+						id: "legacy",
+						label: "Participant Name",
+						text: "",
+						x: Number(x),
+						y: Number(y),
+						font: font,
+						fontSize: Number(size),
+						fontWeight: weight,
+						color: color,
+						anchorMode: (anchor as "center" | "left") || "center",
+					},
+				]);
 
 				setIsSharedLinkFlow(true);
 				handleFetchTemplate(id, true);
@@ -272,6 +319,38 @@ const Participant = () => {
 		toast.success("Generating certificates...");
 
 		try {
+			// Update fields with current participant name (first field)
+			let currentFields = [...fields];
+			if (currentFields.length > 0) {
+				currentFields[0] = {
+					...currentFields[0],
+					text: participantName,
+					x: textPosition.x,
+					y: textPosition.y,
+					font: selectedFont,
+					fontSize: fontSize,
+					fontWeight: fontWeight,
+					color: textColor,
+					anchorMode: anchorMode,
+				};
+			} else {
+				// Fallback if no fields exist yet
+				currentFields = [
+					{
+						id: "participant",
+						label: "Participant Name",
+						text: participantName,
+						x: textPosition.x,
+						y: textPosition.y,
+						font: selectedFont,
+						fontSize: fontSize,
+						fontWeight: fontWeight,
+						color: textColor,
+						anchorMode: anchorMode,
+					},
+				];
+			}
+
 			const response = await axios.post(
 				`${BASE_URL}/generate/`,
 				{
@@ -283,9 +362,10 @@ const Participant = () => {
 					fontSize: fontSize,
 					fontWeight,
 					textColor,
+					anchorMode,
 					certificateId,
 					participantName,
-					anchorMode,
+					fields: JSON.stringify(currentFields),
 				},
 				{ responseType: "blob" },
 			);
@@ -467,16 +547,41 @@ const Participant = () => {
 						<div className="w-full max-w-4xl">
 							<CertificatePreview
 								templateUrl={templateUrl}
-								previewName={participantName || "Your Name"}
+								fields={
+									fields.length > 0
+										? fields.map((f, i) =>
+												i === 0
+													? {
+															...f,
+															text:
+																participantName ||
+																"Your Name",
+														}
+													: f,
+											)
+										: [
+												{
+													id: "preview",
+													label: "Preview",
+													text:
+														participantName ||
+														"Your Name",
+													x: textPosition.x,
+													y: textPosition.y,
+													font: selectedFont,
+													fontSize: fontSize,
+													fontWeight: fontWeight,
+													color: textColor,
+													anchorMode: anchorMode,
+												},
+											]
+								}
+								selectedFieldId={fields[0]?.id || "preview"}
+								onFieldSelect={() => {}}
 								showPreview={true}
-								textPosition={textPosition}
-								selectedFont={selectedFont}
-								imgRef={imgRef}
-								fontSize={fontSize}
-								fontWeight={fontWeight}
 								previewRef={previewRef}
-								textColor={textColor}
-								anchorMode={anchorMode}
+								imgRef={imgRef}
+								isParticipant={true}
 							/>
 
 							{hasDownloaded && (
@@ -525,10 +630,6 @@ const Participant = () => {
 										onManualPositionChange={
 											handleManualPositionChange
 										}
-										previewName={
-											participantName || "Your Name"
-										}
-										onPreviewTextChange={setParticipantName}
 										anchorMode={anchorMode}
 										onAnchorModeChange={setAnchorMode}
 									/>
@@ -538,18 +639,45 @@ const Participant = () => {
 								<div className="flex items-center justify-center">
 									<CertificatePreview
 										templateUrl={templateUrl}
-										previewName={
-											participantName || "Your Name"
+										fields={
+											fields.length > 0
+												? fields.map((f, i) =>
+														i === 0
+															? {
+																	...f,
+																	text:
+																		participantName ||
+																		"Your Name",
+																}
+															: f,
+													)
+												: [
+														{
+															id: "preview",
+															label: "Preview",
+															text:
+																participantName ||
+																"Your Name",
+															x: textPosition.x,
+															y: textPosition.y,
+															font: selectedFont,
+															fontSize: fontSize,
+															fontWeight:
+																fontWeight,
+															color: textColor,
+															anchorMode:
+																anchorMode,
+														},
+													]
 										}
+										selectedFieldId={
+											fields[0]?.id || "preview"
+										}
+										onFieldSelect={() => {}}
 										showPreview={true}
-										textPosition={textPosition}
-										selectedFont={selectedFont}
-										imgRef={imgRef}
-										fontSize={fontSize}
-										fontWeight={fontWeight}
 										previewRef={previewRef}
-										textColor={textColor}
-										anchorMode={anchorMode}
+										imgRef={imgRef}
+										isParticipant={true}
 									/>
 								</div>
 

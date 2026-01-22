@@ -1,35 +1,28 @@
+import { TextField } from "@/types/TextField";
 import { motion } from "framer-motion";
-import { RefObject, useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useState } from "react";
 
 interface CertificatePreviewProps {
 	templateUrl: string | null;
-	previewName: string;
+	fields: TextField[];
+	selectedFieldId: string;
+	onFieldSelect: (id: string) => void;
 	showPreview: boolean;
-	textPosition: { x: number; y: number };
-	selectedFont: string;
-	fontSize: number;
-	fontWeight: string;
-	textColor: string;
 	previewRef: RefObject<HTMLDivElement>;
 	imgRef: RefObject<HTMLImageElement>;
-	anchorMode: "center" | "left";
+	isParticipant?: boolean;
 }
 
 const CertificatePreview = ({
 	templateUrl,
-	previewName,
+	fields,
+	selectedFieldId,
+	onFieldSelect,
 	showPreview,
-	textPosition,
-	selectedFont,
-	fontSize,
-	fontWeight,
-	textColor,
 	previewRef,
 	imgRef,
-	anchorMode,
+	isParticipant = false,
 }: CertificatePreviewProps) => {
-	const spanRef = useRef<HTMLSpanElement>(null);
-	const [spanSize, setSpanSize] = useState({ w: 0, h: 0 });
 	const [imageScale, setImageScale] = useState({
 		scale: 1,
 		offsetX: 0,
@@ -81,13 +74,6 @@ const CertificatePreview = ({
 		return () => window.removeEventListener("resize", calculateImageScale);
 	}, [templateUrl, imgRef, previewRef]);
 
-	useEffect(() => {
-		if (spanRef.current) {
-			const rect = spanRef.current.getBoundingClientRect();
-			setSpanSize({ w: rect.width, h: rect.height });
-		}
-	}, [previewName, fontSize, selectedFont, fontWeight, imageScale]);
-
 	return (
 		<motion.div
 			initial={{ opacity: 0, scale: 0.95 }}
@@ -107,33 +93,44 @@ const CertificatePreview = ({
 						className="w-full h-full object-contain"
 					/>
 
-					{showPreview && (
-						<motion.span
-							ref={spanRef}
-							className="absolute pointer-events-none"
-							style={{
-								left: `${textPosition.x * imageScale.scale + imageScale.offsetX}px`,
-								top: `${textPosition.y * imageScale.scale + imageScale.offsetY}px`,
-								transform:
-									anchorMode === "center"
-										? "translate(-50%, -50%)"
-										: "translate(0%, -50%)",
+					{showPreview &&
+						fields &&
+						fields?.length &&
+						fields?.map((field) => (
+							<motion.span
+								key={field.id}
+								onClick={() =>
+									!isParticipant && onFieldSelect(field.id)
+								}
+								className={`absolute cursor-pointer ${
+									!isParticipant &&
+									field.id === selectedFieldId
+										? "ring-2 ring-primary ring-offset-2 rounded-sm"
+										: ""
+								}`}
+								style={{
+									left: `${field.x * imageScale.scale + imageScale.offsetX}px`,
+									top: `${field.y * imageScale.scale + imageScale.offsetY}px`,
+									transform:
+										field.anchorMode === "center"
+											? "translate(-50%, -50%)"
+											: "translate(0%, -50%)",
 
-								fontFamily: `"${selectedFont}"`,
-								fontSize: `${fontSize * imageScale.scale}px`,
-								fontWeight,
-								color: textColor,
-								whiteSpace: "nowrap",
-								display: "inline-flex",
-								alignItems: "center",
-								lineHeight: "1",
-								padding: "0",
-								margin: "0",
-							}}
-						>
-							{previewName}
-						</motion.span>
-					)}
+									fontFamily: `"${field.font}"`,
+									fontSize: `${field.fontSize * imageScale.scale}px`,
+									fontWeight: field.fontWeight,
+									color: field.color,
+									whiteSpace: "nowrap",
+									display: "inline-flex",
+									alignItems: "center",
+									lineHeight: "1",
+									padding: "0",
+									margin: "0",
+								}}
+							>
+								{field.text}
+							</motion.span>
+						))}
 				</div>
 			) : (
 				<div className="flex flex-col items-center justify-center max-w-md text-center space-y-4">

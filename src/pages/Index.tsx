@@ -16,9 +16,11 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { indexPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
+import { TextField } from "@/types/TextField";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 
 interface Recipient {
 	name: string;
@@ -37,16 +39,29 @@ const Index = () => {
 	const [templateFile, setTemplateFile] = useState<File | null>(null);
 	const [templateUrl, setTemplateUrl] = useState<string | null>();
 	const [showPreview, setShowPreview] = useState(true);
-	const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
-	const [selectedFont, setSelectedFont] = useState(
-		"Bickham Script Pro Regular",
+
+	const [fields, setFields] = useState<TextField[]>([
+		{
+			id: uuidv4(),
+			label: "Participant Name",
+			text: "John Doe",
+			x: 0,
+			y: 0,
+			font: "Bickham Script Pro Regular",
+			fontSize: 48,
+			fontWeight: "300",
+			color: "#000000",
+			anchorMode: "center",
+		},
+	]);
+	const [selectedFieldId, setSelectedFieldId] = useState<string>(
+		fields[0].id,
 	);
-	const [fontSize, setFontSize] = useState(48);
-	const [fontWeight, setFontWeight] = useState("300");
-	const [textColor, setTextColor] = useState("#000000");
-	const [previewName, setPreviewName] = useState("John Doe");
+
+	const activeField =
+		fields.find((f) => f.id === selectedFieldId) || fields[0];
+
 	const [recipients, setRecipients] = useState<Recipient[]>([]);
-	const [anchorMode, setAnchorMode] = useState<"center" | "left">("center");
 	const previewRef = useRef<HTMLDivElement>(null);
 
 	const imgRef = useRef<HTMLImageElement>(null);
@@ -58,6 +73,41 @@ const Index = () => {
 	const [isPublishing, setIsPublishing] = useState(false);
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	// Helper to update active field
+	const updateField = (id: string, updates: Partial<TextField>) => {
+		setFields((prev) =>
+			prev.map((f) => (f.id === id ? { ...f, ...updates } : f)),
+		);
+	};
+
+	const addField = () => {
+		const newField: TextField = {
+			id: uuidv4(),
+			label: "New Field",
+			text: "New Text",
+			x: 0,
+			y: 0,
+			font: "Bickham Script Pro Regular",
+			fontSize: 48,
+			fontWeight: "300",
+			color: "#000000",
+			anchorMode: "center",
+		};
+		setFields((prev) => [...prev, newField]);
+		setSelectedFieldId(newField.id);
+	};
+
+	const removeField = (id: string) => {
+		if (fields.length <= 1) {
+			toast.error("Cannot remove the last field");
+			return;
+		}
+		setFields((prev) => prev.filter((f) => f.id !== id));
+		if (selectedFieldId === id) {
+			setSelectedFieldId(fields[0].id);
+		}
+	};
 
 	useEffect(() => {
 		if (imgRef.current) {
@@ -90,17 +140,15 @@ const Index = () => {
 	}, [templateUrl]);
 
 	const handlePositionChange = (axis: "x" | "y", direction: number) => {
-		setTextPosition((prev) => ({
-			...prev,
-			[axis]: prev[axis] + direction,
-		}));
+		updateField(selectedFieldId, {
+			[axis]: activeField[axis] + direction,
+		});
 	};
 
 	const handleManualPositionChange = (axis: "x" | "y", value: number) => {
-		setTextPosition((prev) => ({
-			...prev,
+		updateField(selectedFieldId, {
 			[axis]: value,
-		}));
+		});
 	};
 
 	const handleDownload = async () => {
@@ -109,25 +157,11 @@ const Index = () => {
 			return;
 		}
 
-		// if (recipients.length === 0) {
-		// 	toast.error("Please add at least one recipient");
-		// 	return;
-		// }
-
 		const formData = new FormData();
 		formData.append("template", templateFile);
 		formData.append("recipients", JSON.stringify(recipients));
-		formData.append(
-			"textPosition",
-			JSON.stringify({ x: textPosition.x, y: textPosition.y }),
-		);
-		formData.append("selectedFont", selectedFont);
-		formData.append("fontSize", fontSize.toString());
-		formData.append("fontWeight", fontWeight);
-		formData.append("textColor", textColor);
-		formData.append("anchorMode", anchorMode);
+		formData.append("fields", JSON.stringify(fields));
 		formData.append("inEditor", "true");
-		formData.append("participantName", previewName);
 
 		try {
 			const response = await axios.post(
@@ -139,7 +173,7 @@ const Index = () => {
 			const url = URL.createObjectURL(response.data);
 			const link = document.createElement("a");
 			link.href = url;
-			link.download = `${previewName}.png`;
+			link.download = `Certificate.png`;
 			link.click();
 			URL.revokeObjectURL(url);
 
@@ -189,28 +223,28 @@ const Index = () => {
 			if (finalPublicId) {
 				formData.append("public_id", finalPublicId);
 			}
-			formData.append("selectedFont", selectedFont);
-			formData.append("fontSize", fontSize.toString());
-			formData.append("fontWeight", fontWeight);
-			formData.append("textColor", textColor);
-			// Index.tsx has textPosition.x/y
-			formData.append("x", textPosition.x.toString());
-			formData.append("y", textPosition.y.toString());
-			formData.append("anchorMode", anchorMode);
+
+			// Encode fields as JSON string? Or send individually?
+			// Ideally we save this to a database.
+			// Currently the endpoint expects flat params for 1 field.
+			// But we'll try to just rely on URL params for now as a quick hack unless we update the DB.
+
+			// For multi-field, we can't easily put it all in URL params without bloat.
+			// Let's assume we send "fields" as a JSON string and the backend could save it if we uncommented the DB code.
+			// But for "Sharing URL", we have to pack it.
+
+			const fieldsJson = JSON.stringify(fields);
+			const encodedFields = btoa(fieldsJson); // Simple Base64 encoding
 
 			const res = await axios.post(`${BASE_URL}/upload/`, formData);
 
 			if (res.data.public_id) {
 				const newId = res.data.public_id;
+
+				// New URL structure: ?id=...&data=...
 				const params = new URLSearchParams({
 					id: newId,
-					font: `${selectedFont}`,
-					size: fontSize.toString(),
-					weight: fontWeight,
-					color: textColor,
-					x: textPosition.x.toString(),
-					y: textPosition.y.toString(),
-					anchor: anchorMode,
+					data: encodedFields,
 				});
 				const link = `${window.location.origin}/participant?${params.toString()}`;
 				setGeneratedLink(link);
@@ -286,14 +320,19 @@ const Index = () => {
 								>
 									<PositionControls
 										onPositionChange={handlePositionChange}
-										textPosition={textPosition}
+										textPosition={{
+											x: activeField.x,
+											y: activeField.y,
+										}}
 										onManualPositionChange={
 											handleManualPositionChange
 										}
-										previewName={previewName}
-										onPreviewTextChange={setPreviewName}
-										anchorMode={anchorMode}
-										onAnchorModeChange={setAnchorMode}
+										anchorMode={activeField.anchorMode}
+										onAnchorModeChange={(mode) =>
+											updateField(activeField.id, {
+												anchorMode: mode,
+											})
+										}
 									/>
 								</div>
 
@@ -304,16 +343,12 @@ const Index = () => {
 								>
 									<CertificatePreview
 										templateUrl={templateUrl}
-										previewName={previewName}
 										showPreview={showPreview}
-										textPosition={textPosition}
-										selectedFont={selectedFont}
 										imgRef={imgRef}
-										fontSize={fontSize}
-										fontWeight={fontWeight}
 										previewRef={previewRef}
-										textColor={textColor}
-										anchorMode={anchorMode}
+										fields={fields}
+										selectedFieldId={selectedFieldId}
+										onFieldSelect={setSelectedFieldId}
 									/>
 								</div>
 
@@ -323,14 +358,12 @@ const Index = () => {
 									data-tour="control-panel"
 								>
 									<ControlPanel
-										selectedFont={selectedFont}
-										onFontChange={setSelectedFont}
-										fontSize={fontSize}
-										onFontSizeChange={setFontSize}
-										fontWeight={fontWeight}
-										onFontWeightChange={setFontWeight}
-										textColor={textColor}
-										onTextColorChange={setTextColor}
+										fields={fields}
+										selectedFieldId={selectedFieldId}
+										onFieldUpdate={updateField}
+										onAddField={addField}
+										onRemoveField={removeField}
+										onFieldSelect={setSelectedFieldId}
 										onTemplateUpload={handleTemplateUpload}
 										onGenerate={handleDownload}
 										onShare={handleShareClick}

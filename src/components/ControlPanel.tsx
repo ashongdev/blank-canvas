@@ -8,24 +8,28 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	CERTIFICATE_FONTS,
-	FONT_WEIGHTS,
-	PREDEFINED_COLORS,
-} from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
+import { CERTIFICATE_FONTS, FONT_WEIGHTS } from "@/lib/utils";
+import { TextField } from "@/types/TextField";
 import { motion } from "framer-motion";
-import { Loader2, Share2, Upload } from "lucide-react";
-import React, { useState } from "react";
+import {
+	Loader2,
+	Plus,
+	Settings2,
+	Share2,
+	Trash2,
+	Type,
+	Upload,
+} from "lucide-react";
+import { useState } from "react";
 
 interface ControlPanelProps {
-	selectedFont: string;
-	onFontChange: (font: string) => void;
-	fontSize: number;
-	onFontSizeChange: (size: number) => void;
-	fontWeight: string;
-	onFontWeightChange: (weight: string) => void;
-	textColor: string;
-	onTextColorChange: (color: string) => void;
+	fields: TextField[];
+	selectedFieldId: string;
+	onFieldUpdate: (id: string, updates: Partial<TextField>) => void;
+	onAddField: () => void;
+	onRemoveField: (id: string) => void;
+	onFieldSelect: (id: string) => void;
 	onTemplateUpload: (file: File) => void;
 	onGenerate: () => Promise<void> | void;
 	onShare?: () => Promise<void> | void;
@@ -33,29 +37,22 @@ interface ControlPanelProps {
 }
 
 const ControlPanel = ({
-	selectedFont,
-	onFontChange,
-	fontSize,
-	onFontSizeChange,
-	fontWeight,
-	onFontWeightChange,
-	textColor,
-	onTextColorChange,
+	fields,
+	selectedFieldId,
+	onFieldUpdate,
+	onAddField,
+	onRemoveField,
+	onFieldSelect,
 	onTemplateUpload,
 	onGenerate,
 	onShare,
 	hasTemplate,
 }: ControlPanelProps) => {
 	const [isGenerating, setIsGenerating] = useState(false);
+	const activeField =
+		fields.find((f) => f.id === selectedFieldId) || fields[0];
 
-	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			onTemplateUpload(file);
-		}
-	};
-
-	const handleGenerate = async () => {
+	const handleDownload = async () => {
 		if (isGenerating) return;
 		setIsGenerating(true);
 		try {
@@ -66,155 +63,278 @@ const ControlPanel = ({
 	};
 
 	return (
-		<ScrollArea className="h-[70vh] pr-3 overflow-x-hidden">
+		<ScrollArea className="h-[calc(100vh-120px)] pr-3 overflow-x-hidden">
 			<motion.div
 				initial={{ opacity: 0, x: 20 }}
 				animate={{ opacity: 1, x: 0 }}
 				transition={{ duration: 0.4, delay: 0.1 }}
-				className="flex flex-col space-y-8 pl-4"
+				className="flex flex-col space-y-6 pl-4 pb-10"
 			>
-				{/* Upload Section */}
+				{/* Template Upload */}
 				<div className="space-y-3">
-					<h3 className="text-sm font-medium">Template</h3>
-					<label htmlFor="template-upload">
-						<input
-							id="template-upload"
+					<h3 className="text-sm font-medium flex items-center gap-2">
+						<Upload className="w-4 h-4" />
+						Template
+					</h3>
+					<div className="grid w-full max-w-sm items-center gap-1.5">
+						<Input
+							id="picture"
 							type="file"
 							accept="image/*"
-							onChange={handleFileChange}
-							className="hidden"
+							onChange={(e) => {
+								const file = e.target.files?.[0];
+								if (file) onTemplateUpload(file);
+							}}
+							className="cursor-pointer file:text-foreground"
 						/>
-						<Button
-							variant="outline"
-							className="w-full justify-start gap-2 hover:border-primary transition-smooth"
-							asChild
-						>
-							<span>
-								<Upload className="w-4 h-4" />
-								Upload
-							</span>
-						</Button>
-					</label>
-				</div>
-
-				{/* Font Selection */}
-				<div className="space-y-3">
-					<h3 className="text-sm font-medium">Font Family</h3>
-					<Select value={selectedFont} onValueChange={onFontChange}>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select font" />
-						</SelectTrigger>
-						<SelectContent>
-							{CERTIFICATE_FONTS.map((font) => (
-								<SelectItem key={font.value} value={font.value}>
-									<span style={{ fontFamily: font.value }}>
-										{font.label}
-									</span>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-
-				{/* Font Size */}
-				<div className="space-y-3">
-					<h3 className="text-sm font-medium">Font Size</h3>
-					<Input
-						type="number"
-						value={fontSize}
-						onChange={(e) =>
-							onFontSizeChange(Number(e.target.value))
-						}
-						min={12}
-						max={200}
-						className="w-full"
-					/>
-				</div>
-
-				{/* Font Weight */}
-				<div className="space-y-3">
-					<h3 className="text-sm font-medium">Font Weight</h3>
-					<Select
-						value={fontWeight}
-						onValueChange={onFontWeightChange}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select weight" />
-						</SelectTrigger>
-						<SelectContent>
-							{FONT_WEIGHTS.map((weight) => (
-								<SelectItem
-									key={weight.value}
-									value={weight.value}
-								>
-									{weight.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-
-				{/* Text Color */}
-				<div className="space-y-3">
-					<h3 className="text-sm font-medium">Text Color</h3>
-					<div className="space-y-2">
-						{/* Custom Color Input */}
-						<Input
-							type="text"
-							value={textColor}
-							onChange={(e) => onTextColorChange(e.target.value)}
-							placeholder="#000000 or rgb(0,0,0)"
-							className="w-full font-mono text-sm"
-							maxLength={30}
-						/>
-
-						{/* Predefined Colors */}
-						<div className="grid grid-cols-4 gap-2">
-							{PREDEFINED_COLORS.map((color) => (
-								<button
-									key={color.value}
-									onClick={() =>
-										onTextColorChange(color.value)
-									}
-									className="h-10 rounded border-2 transition-smooth hover:scale-105"
-									style={{
-										backgroundColor: color.value,
-										borderColor:
-											textColor === color.value
-												? "hsl(var(--primary))"
-												: "hsl(var(--border))",
-									}}
-									title={color.label}
-								/>
-							))}
-						</div>
 					</div>
 				</div>
 
-				{/* Action Buttons */}
-				<div className="space-y-3 pt-4 border-t border-border">
+				<Separator />
+
+				{/* Field Management */}
+				<div className="space-y-3">
+					<div className="flex items-center justify-between">
+						<h3 className="text-sm font-medium flex items-center gap-2">
+							<Type className="w-4 h-4" />
+							Fields
+						</h3>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={onAddField}
+							className="h-8"
+						>
+							<Plus className="w-3 h-3 mr-1" />
+							Add
+						</Button>
+					</div>
+
+					<div className="flex flex-col gap-2">
+						{fields.map((field) => (
+							<div
+								key={field.id}
+								className={`flex items-center gap-2 p-2 rounded-md border transition-colors cursor-pointer ${
+									selectedFieldId === field.id
+										? "bg-accent border-primary"
+										: "bg-card border-border hover:bg-muted"
+								}`}
+								onClick={() => onFieldSelect(field.id)}
+							>
+								<div className="flex-1 min-w-0">
+									<p className="text-xs font-medium truncate">
+										{field.label}
+									</p>
+									<p className="text-[10px] text-muted-foreground truncate">
+										{field.text}
+									</p>
+								</div>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-6 w-6 text-muted-foreground hover:text-destructive"
+									onClick={(e) => {
+										e.stopPropagation();
+										onRemoveField(field.id);
+									}}
+								>
+									<Trash2 className="w-3 h-3" />
+								</Button>
+							</div>
+						))}
+					</div>
+				</div>
+
+				<Separator />
+
+				{activeField && (
+					<>
+						{/* Field Settings */}
+						<div className="space-y-4">
+							<h3 className="text-sm font-medium flex items-center gap-2">
+								<Settings2 className="w-4 h-4" />
+								Selected Field Settings
+							</h3>
+
+							{/* Label & Value */}
+							<div className="grid grid-cols-1 gap-3">
+								<div className="space-y-2">
+									<label className="text-xs text-muted-foreground">
+										Label (Internal)
+									</label>
+									<Input
+										value={activeField.label}
+										onChange={(e) =>
+											onFieldUpdate(activeField.id, {
+												label: e.target.value,
+											})
+										}
+										className="h-8"
+									/>
+								</div>
+								<div className="space-y-2">
+									<label className="text-xs text-muted-foreground">
+										Preview Text
+									</label>
+									<Input
+										value={activeField.text}
+										onChange={(e) =>
+											onFieldUpdate(activeField.id, {
+												text: e.target.value,
+											})
+										}
+										className="h-8"
+									/>
+								</div>
+							</div>
+
+							{/* Font Family */}
+							<div className="space-y-2">
+								<label className="text-xs text-muted-foreground">
+									Font Family
+								</label>
+								<Select
+									value={activeField.font}
+									onValueChange={(val) =>
+										onFieldUpdate(activeField.id, {
+											font: val,
+										})
+									}
+								>
+									<SelectTrigger className="w-full h-8">
+										<SelectValue placeholder="Select font" />
+									</SelectTrigger>
+									<SelectContent>
+										{CERTIFICATE_FONTS.map((font) => (
+											<SelectItem
+												key={font.value}
+												value={font.value}
+											>
+												<span
+													style={{
+														fontFamily: font.value,
+													}}
+												>
+													{font.label}
+												</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							<div className="grid grid-cols-2 gap-3">
+								{/* Font Size */}
+								<div className="space-y-2">
+									<label className="text-xs text-muted-foreground">
+										Size (px)
+									</label>
+									<Input
+										type="number"
+										value={activeField.fontSize}
+										onChange={(e) =>
+											onFieldUpdate(activeField.id, {
+												fontSize: Number(
+													e.target.value,
+												),
+											})
+										}
+										min={8}
+										max={300}
+										className="h-8"
+									/>
+								</div>
+
+								{/* Font Weight */}
+								<div className="space-y-2">
+									<label className="text-xs text-muted-foreground">
+										Weight
+									</label>
+									<Select
+										value={activeField.fontWeight}
+										onValueChange={(val) =>
+											onFieldUpdate(activeField.id, {
+												fontWeight: val,
+											})
+										}
+									>
+										<SelectTrigger className="w-full h-8">
+											<SelectValue placeholder="Weight" />
+										</SelectTrigger>
+										<SelectContent>
+											{FONT_WEIGHTS.map((weight) => (
+												<SelectItem
+													key={weight.value}
+													value={weight.value}
+												>
+													{weight.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+
+							{/* Color */}
+							<div className="space-y-2">
+								<label className="text-xs text-muted-foreground">
+									Color
+								</label>
+								<div className="flex gap-2">
+									<Input
+										type="color"
+										value={activeField.color}
+										onChange={(e) =>
+											onFieldUpdate(activeField.id, {
+												color: e.target.value,
+											})
+										}
+										className="w-8 h-8 p-0 border-0"
+									/>
+									<Input
+										type="text"
+										value={activeField.color}
+										onChange={(e) =>
+											onFieldUpdate(activeField.id, {
+												color: e.target.value,
+											})
+										}
+										className="flex-1 h-8 font-mono"
+									/>
+								</div>
+							</div>
+						</div>
+
+						<Separator />
+					</>
+				)}
+
+				{/* Actions */}
+				<div className="space-y-3 pt-2">
+					<Button
+						onClick={handleDownload}
+						disabled={!hasTemplate || isGenerating}
+						className="w-full"
+					>
+						{isGenerating ? (
+							<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+						) : (
+							<Upload className="w-4 h-4 mr-2" />
+						)}
+						Generate Sample
+					</Button>
+
 					{onShare && (
 						<Button
 							onClick={onShare}
 							disabled={!hasTemplate}
 							variant="secondary"
-							className="w-full gap-2 transition-smooth"
-							data-tour="share-button"
+							className="w-full"
 						>
-							<Share2 className="w-4 h-4" />
-							Share Template
+							<Share2 className="w-4 h-4 mr-2" />
+							Publish & Share
 						</Button>
 					)}
-					<Button
-						onClick={handleGenerate}
-						disabled={!hasTemplate || isGenerating}
-						className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground transition-smooth"
-					>
-						{isGenerating && (
-							<Loader2 className="w-4 h-4 mr-2 animate-spin inline-block" />
-						)}
-						Generate
-					</Button>
 				</div>
 			</motion.div>
 		</ScrollArea>
