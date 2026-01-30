@@ -32,6 +32,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { logEvent } from "@/lib/analytics";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -395,6 +396,8 @@ const Participant = () => {
 			link.download = `${participantName}.png`;
 			link.click();
 			window.URL.revokeObjectURL(url);
+
+			logEvent("Certificate", "Generate", "Participant Generation");
 
 			toast.success("Download Complete.");
 		} catch (error) {

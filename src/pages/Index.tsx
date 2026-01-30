@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { logEvent } from "@/lib/analytics";
 
 interface Recipient {
 	name: string;
@@ -188,6 +189,8 @@ const Index = () => {
 			link.click();
 			URL.revokeObjectURL(url);
 
+			logEvent("Certificate", "Generate", "Editor Generation");
+
 			toast.success("Download Complete.");
 		} catch (error) {
 			toast.error("Failed to generate certificates");
@@ -261,6 +264,8 @@ const Index = () => {
 				setGeneratedLink(link);
 				setShowIdDialog(false);
 				setShowShareDialog(true);
+
+				logEvent("Certificate", "Publish", "New Template Published");
 
 				toast.dismiss(toastId);
 				toast.success("Published successfully!");
