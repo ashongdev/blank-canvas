@@ -16,13 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { indexPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
+import { logEvent } from "@/lib/analytics";
 import { TextField } from "@/types/TextField";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import { logEvent } from "@/lib/analytics";
 
 interface Recipient {
 	name: string;

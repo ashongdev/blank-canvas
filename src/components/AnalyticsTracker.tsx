@@ -1,19 +1,19 @@
+import { initGA, logPageView } from "@/lib/analytics";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { initGA, logPageView } from "@/lib/analytics";
 
 const AnalyticsTracker = () => {
-    const location = useLocation();
+	const location = useLocation();
 
-    useEffect(() => {
-        initGA();
-    }, []);
+	useEffect(() => {
+		initGA();
+	}, []);
 
-    useEffect(() => {
-        logPageView();
-    }, [location]);
+	useEffect(() => {
+		logPageView();
+	}, [location]);
 
-    return null;
+	return null;
 };
 
 export default AnalyticsTracker;

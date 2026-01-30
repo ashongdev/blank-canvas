@@ -24,6 +24,7 @@ import {
 	TOUR_STORAGE_KEYS,
 } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
+import { logEvent } from "@/lib/analytics";
 import { TextField } from "@/types/TextField";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -32,7 +33,6 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { logEvent } from "@/lib/analytics";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -335,11 +335,12 @@ const Participant = () => {
 			if (currentFields.length > 0) {
 				currentFields = currentFields.map((f, i) => ({
 					...f,
-					text: (f.required || i === 0)
-						? inputValues[f.id] !== undefined
-							? inputValues[f.id]
-							: f.text
-						: f.text,
+					text:
+						f.required || i === 0
+							? inputValues[f.id] !== undefined
+								? inputValues[f.id]
+								: f.text
+							: f.text,
 				}));
 
 				// Update first field with potential style overrides
