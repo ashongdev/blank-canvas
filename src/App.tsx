@@ -12,7 +12,6 @@ import Participant from "./pages/Participant";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 
 const queryClient = new QueryClient();
-
 const App = () => (
 	<QueryClientProvider client={queryClient}>
 		<TooltipProvider>
