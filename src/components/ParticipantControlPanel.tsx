@@ -18,7 +18,7 @@ import { Download, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 interface ParticipantControlPanelProps {
-	participantName: string;
+	participantEmail: string;
 	onParticipantNameChange: (name: string) => void;
 	selectedFont: string;
 	onFontChange: (font: string) => void;
@@ -34,7 +34,7 @@ interface ParticipantControlPanelProps {
 }
 
 const ParticipantControlPanel = ({
-	participantName,
+	participantEmail,
 	onParticipantNameChange,
 	selectedFont,
 	onFontChange,
@@ -72,7 +72,7 @@ const ParticipantControlPanel = ({
 				<div className="space-y-3">
 					<h3 className="text-sm font-medium">Your Name</h3>
 					<Input
-						value={participantName}
+						value={participantEmail}
 						onChange={(e) =>
 							onParticipantNameChange(e.target.value)
 						}

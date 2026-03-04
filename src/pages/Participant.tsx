@@ -61,7 +61,7 @@ const Participant = () => {
 	const [fontSize, setFontSize] = useState(100);
 	const [fontWeight, setFontWeight] = useState("400");
 	const [textColor, setTextColor] = useState("#000000");
-	const [participantName, setParticipantName] = useState("");
+	const [participantEmail, setParticipantEmail] = useState("");
 	const [inputValues, setInputValues] = useState<Record<string, string>>({});
 	const [anchorMode, setAnchorMode] = useState<"center" | "left">("center");
 	const [isDownloading, setIsDownloading] = useState(false);
@@ -79,7 +79,6 @@ const Participant = () => {
 
 	const previewRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// Auto-load if ID is in URL (shared link flow)
 	useEffect(() => {
@@ -118,7 +117,7 @@ const Participant = () => {
 
 					if (parsedFields.length > 0) {
 						const mainField = parsedFields[0];
-						setParticipantName(mainField.text);
+						setParticipantEmail(mainField.text);
 						setSelectedFont(mainField.font);
 						setFontSize(mainField.fontSize);
 						setFontWeight(mainField.fontWeight);
@@ -144,7 +143,7 @@ const Participant = () => {
 				setFields([
 					{
 						id: "legacy",
-						label: "Participant Name",
+						label: "Participant Email",
 						text: "",
 						x: Number(x),
 						y: Number(y),
@@ -266,7 +265,7 @@ const Participant = () => {
 			setTemplateUrl(url);
 			setTemplateLoaded(true);
 
-			// Show name input dialog for shared link flow
+			// Show email input dialog for shared link flow
 			if (isFromSharedLink) {
 				setShowNameInputDialog(true);
 			} else {
@@ -316,8 +315,8 @@ const Participant = () => {
 	};
 
 	const handleDownload = async () => {
-		if (!participantName.trim()) {
-			toast.error("Please enter your name");
+		if (!participantEmail.trim()) {
+			toast.error("Please enter your email");
 			return;
 		}
 
@@ -359,8 +358,8 @@ const Participant = () => {
 				currentFields = [
 					{
 						id: "participant",
-						label: "Participant Name",
-						text: participantName,
+						label: "Participant Email",
+						text: participantEmail,
 						x: textPosition.x,
 						y: textPosition.y,
 						font: selectedFont,
@@ -370,6 +369,17 @@ const Participant = () => {
 						anchorMode: anchorMode,
 					},
 				];
+			}
+
+			// check email
+			const res = await axios.get(`${BASE_URL}/email/`, {
+				params: { email: participantEmail, public_id: certificateId },
+			});
+			const participantName = res.data.participantName;
+
+			if (!participantName) {
+				toast.error("Could not download");
+				return;
 			}
 
 			const response = await axios.post(
@@ -419,8 +429,8 @@ const Participant = () => {
 			return;
 		}
 
-		if (fields.length === 0 && !participantName.trim()) {
-			toast.error("Please enter your name");
+		if (fields.length === 0 && !participantEmail.trim()) {
+			toast.error("Please enter your email");
 			return;
 		}
 
@@ -447,7 +457,7 @@ const Participant = () => {
 				}}
 			/>
 
-			{/* Name Input Dialog for Shared Link Flow */}
+			{/* Email Input Dialog for Shared Link Flow */}
 			<Dialog
 				open={showNameInputDialog}
 				onOpenChange={setShowNameInputDialog}
@@ -455,10 +465,10 @@ const Participant = () => {
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
 						<DialogTitle className="text-xl">
-							Enter Your Name
+							Enter Your Email
 						</DialogTitle>
 						<DialogDescription>
-							Type your name below to generate your personalized
+							Type your email below to generate your personalized
 							certificate.
 						</DialogDescription>
 					</DialogHeader>
@@ -469,7 +479,9 @@ const Participant = () => {
 								.map((field) => (
 									<div className="space-y-2" key={field.id}>
 										<Label htmlFor={`field-${field.id}`}>
-											{field.label}
+											{fields.indexOf(field) === 0
+												? "Your Email"
+												: field.label}
 										</Label>
 										<Input
 											id={`field-${field.id}`}
@@ -482,26 +494,30 @@ const Participant = () => {
 												if (
 													fields.indexOf(field) === 0
 												) {
-													setParticipantName(
+													setParticipantEmail(
 														e.target.value,
 													);
 												}
 											}}
 											onKeyDown={handleNameInputKeyDown}
-											placeholder={`Enter ${field.label}...`}
+											placeholder={
+												fields.indexOf(field) === 0
+													? "Enter your email..."
+													: `Enter ${field.label}...`
+											}
 										/>
 									</div>
 								))
 						) : (
 							<div className="space-y-2">
-								<Label htmlFor="participant-name">
-									Your Name
+								<Label htmlFor="participant-email">
+									Your Email
 								</Label>
 								<Input
-									id="participant-name"
-									value={participantName}
+									id="participant-email"
+									value={participantEmail}
 									onChange={(e) => {
-										setParticipantName(e.target.value);
+										setParticipantEmail(e.target.value);
 										// Update first field if no required flags found (legacy fallback)
 										if (fields.length > 0) {
 											setInputValues((prev) => ({
@@ -511,7 +527,7 @@ const Participant = () => {
 										}
 									}}
 									onKeyDown={handleNameInputKeyDown}
-									placeholder="Enter your full name..."
+									placeholder="Enter your full email..."
 									autoFocus
 								/>
 							</div>
@@ -622,23 +638,23 @@ const Participant = () => {
 								templateUrl={templateUrl}
 								fields={
 									fields.length > 0
-										? fields.map((f) => ({
+										? fields.map((f, i) => ({
 												...f,
 												text:
-													inputValues[f.id] !==
-													undefined
-														? inputValues[f.id]
-														: f.required
-															? f.text
-															: f.text,
+													i === 0
+														? "John Doe"
+														: inputValues[f.id] !==
+															  undefined
+															? inputValues[f.id]
+															: f.required
+																? f.text
+																: f.text,
 											}))
 										: [
 												{
 													id: "preview",
 													label: "Preview",
-													text:
-														participantName ||
-														"Your Name",
+													text: "John Doe",
 													x: textPosition.x,
 													y: textPosition.y,
 													font: selectedFont,
@@ -719,8 +735,8 @@ const Participant = () => {
 															? {
 																	...f,
 																	text:
-																		participantName ||
-																		"Your Name",
+																		participantEmail ||
+																		"Your Email",
 																}
 															: f,
 													)
@@ -729,8 +745,8 @@ const Participant = () => {
 															id: "preview",
 															label: "Preview",
 															text:
-																participantName ||
-																"Your Name",
+																participantEmail ||
+																"Your Email",
 															x: textPosition.x,
 															y: textPosition.y,
 															font: selectedFont,
@@ -757,9 +773,9 @@ const Participant = () => {
 								{/* Right Controls - Styling & Download */}
 								<div className="h-full max-w-[264px] flex flex-col gap-4">
 									<ParticipantControlPanel
-										participantName={participantName}
+										participantEmail={participantEmail}
 										onParticipantNameChange={
-											setParticipantName
+											setParticipantEmail
 										}
 										selectedFont={selectedFont}
 										onFontChange={setSelectedFont}
@@ -773,10 +789,10 @@ const Participant = () => {
 										onBack={() => {
 											setTemplateLoaded(false);
 											setTemplateUrl(null);
-											setParticipantName("");
+											setParticipantEmail("");
 											setIsLocalDraft(false);
 										}}
-										hasName={!!participantName.trim()}
+										hasName={!!participantEmail.trim()}
 									/>
 									{isLocalDraft && (
 										<Button

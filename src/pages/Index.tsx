@@ -234,18 +234,10 @@ const Index = () => {
 
 			const formData = new FormData();
 			formData.append("template", templateFile);
+			formData.append("recipients", JSON.stringify(recipients));
 			if (finalPublicId) {
 				formData.append("public_id", finalPublicId);
 			}
-
-			// Encode fields as JSON string? Or send individually?
-			// Ideally we save this to a database.
-			// Currently the endpoint expects flat params for 1 field.
-			// But we'll try to just rely on URL params for now as a quick hack unless we update the DB.
-
-			// For multi-field, we can't easily put it all in URL params without bloat.
-			// Let's assume we send "fields" as a JSON string and the backend could save it if we uncommented the DB code.
-			// But for "Sharing URL", we have to pack it.
 
 			const fieldsJson = JSON.stringify(fields);
 			const encodedFields = btoa(fieldsJson); // Simple Base64 encoding
