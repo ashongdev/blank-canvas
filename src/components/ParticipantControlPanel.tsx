@@ -28,7 +28,7 @@ interface ParticipantControlPanelProps {
 	onFontWeightChange: (weight: string) => void;
 	textColor: string;
 	onTextColorChange: (color: string) => void;
-	onDownload: () => Promise<void> | void;
+	onDownload: () => Promise<boolean> | boolean;
 	onBack: () => void;
 	hasName: boolean;
 }

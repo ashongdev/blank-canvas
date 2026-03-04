@@ -314,16 +314,16 @@ const Participant = () => {
 		}));
 	};
 
-	const handleDownload = async () => {
+	const handleDownload = async (): Promise<boolean> => {
 		if (!participantEmail.trim()) {
 			toast.error("Please enter your email");
-			return;
+			return false;
 		}
 
 		setIsDownloading(true);
 		if (!templateUrl) {
 			toast.error("Please upload a template first");
-			return;
+			return false;
 		}
 
 		toast.success("Generating certificates...");
@@ -379,7 +379,7 @@ const Participant = () => {
 
 			if (!participantName) {
 				toast.error("Could not download");
-				return;
+				return false;
 			}
 
 			const response = await axios.post(
@@ -411,9 +411,13 @@ const Participant = () => {
 			logEvent("Certificate", "Generate", "Participant Generation");
 
 			toast.success("Download Complete.");
+			return true;
 		} catch (error) {
 			console.log("Error generating certificates:", error);
-			toast.error("Failed to generate certificates");
+			toast.error(
+				"Failed to generate certificates. Please check your email and try again.",
+			);
+			return false;
 		} finally {
 			setIsDownloading(false);
 		}
@@ -434,9 +438,11 @@ const Participant = () => {
 			return;
 		}
 
-		setShowNameInputDialog(false);
-		await handleDownload();
-		setHasDownloaded(true);
+		const success = await handleDownload();
+		if (success) {
+			setShowNameInputDialog(false);
+			setHasDownloaded(true);
+		}
 	};
 
 	const handleNameInputKeyDown = (
