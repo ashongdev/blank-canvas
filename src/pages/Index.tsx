@@ -1,5 +1,6 @@
 import CertificatePreview from "@/components/CertificatePreview";
 import ControlPanel from "@/components/ControlPanel";
+import GoogleLoginButton from "@/components/GoogleLoginButton";
 import Header from "@/components/Header";
 import PositionControls from "@/components/PositionControls";
 import RecipientManager from "@/components/RecipientManager";
@@ -17,8 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { indexPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
 import { logEvent } from "@/lib/analytics";
+import api from "@/services/axios";
 import { TextField } from "@/types/TextField";
-import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -54,8 +55,8 @@ const Index = () => {
 				id: uuidv4(),
 				label: "Participant Name",
 				text: "John Doe",
-				x: 0,
-				y: 0,
+				x: 900,
+				y: 650,
 				font: "Bickham Script Pro Regular",
 				fontSize: 100,
 				fontWeight: "300",
@@ -97,8 +98,8 @@ const Index = () => {
 			id: uuidv4(),
 			label: "New Field",
 			text: "New Text",
-			x: 0,
-			y: 0,
+			x: 900,
+			y: 650,
 			font: "Bickham Script Pro Regular",
 			fontSize: 100,
 			fontWeight: "300",
@@ -176,11 +177,9 @@ const Index = () => {
 		formData.append("inEditor", "true");
 
 		try {
-			const response = await axios.post(
-				`${BASE_URL}/generate/`,
-				formData,
-				{ responseType: "blob" },
-			);
+			const response = await api.post(`/generate/`, formData, {
+				responseType: "blob",
+			});
 
 			const url = URL.createObjectURL(response.data);
 			const link = document.createElement("a");
@@ -206,7 +205,7 @@ const Index = () => {
 	};
 
 	const checkId = async (publicId: string) => {
-		const res = await axios.post(`${BASE_URL}/check_public_id/`, {
+		const res = await api.post(`/check_public_id/`, {
 			public_id: publicId,
 		});
 
@@ -242,7 +241,7 @@ const Index = () => {
 			const fieldsJson = JSON.stringify(fields);
 			const encodedFields = btoa(fieldsJson); // Simple Base64 encoding
 
-			const res = await axios.post(`${BASE_URL}/upload/`, formData);
+			const res = await api.post(`/upload/`, formData);
 
 			if (res.data.public_id) {
 				const newId = res.data.public_id;
@@ -289,6 +288,8 @@ const Index = () => {
 				accept="image/*"
 				onChange={handleFileSelect}
 			/>
+
+			<GoogleLoginButton />
 
 			{/* Main Content */}
 			<main className="flex-1 overflow-hidden">

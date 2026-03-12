@@ -16,8 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { advancedPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
+import api from "@/services/axios";
 import { TextField } from "@/types/TextField";
-import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -175,11 +175,9 @@ const Advanced = () => {
 		formData.append("inEditor", "true");
 
 		try {
-			const response = await axios.post(
-				`${BASE_URL}/generate/`,
-				formData,
-				{ responseType: "blob" },
-			);
+			const response = await api.post(`/generate/`, formData, {
+				responseType: "blob",
+			});
 
 			const url = URL.createObjectURL(response.data);
 			const link = document.createElement("a");
@@ -203,7 +201,7 @@ const Advanced = () => {
 	};
 
 	const checkId = async (publicId: string) => {
-		const res = await axios.post(`${BASE_URL}/check_public_id/`, {
+		const res = await api.post(`/check_public_id/`, {
 			public_id: publicId,
 		});
 
@@ -247,7 +245,7 @@ const Advanced = () => {
 			const fieldsJson = JSON.stringify(fields);
 			const encodedFields = btoa(fieldsJson); // Simple Base64 encoding
 
-			const res = await axios.post(`${BASE_URL}/upload/`, formData);
+			const res = await api.post(`/upload/`, formData);
 
 			if (res.data.public_id) {
 				const newId = res.data.public_id;

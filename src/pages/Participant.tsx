@@ -25,6 +25,7 @@ import {
 } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
 import { logEvent } from "@/lib/analytics";
+import api from "@/services/axios";
 import { TextField } from "@/types/TextField";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -202,7 +203,7 @@ const Participant = () => {
 			formData.append("y", textPosition.y.toString());
 			formData.append("anchorMode", anchorMode);
 
-			const res = await axios.post(`${BASE_URL}/upload/`, formData);
+			const res = await api.post(`/upload/`, formData);
 
 			if (res.data.public_id) {
 				const newId = res.data.public_id;
@@ -274,8 +275,8 @@ const Participant = () => {
 
 			//  Fetch presets from backend
 			// try {
-			// 	const presetRes = await axios.get(
-			// 		`${BASE_URL}/get_preset/${idToUse}/`,
+			// 	const presetRes = await api.get(
+			// 		`/get_preset/${idToUse}/`,
 			// 	);
 			// 	const data = presetRes.data;
 
@@ -372,7 +373,7 @@ const Participant = () => {
 			}
 
 			// check email
-			const res = await axios.get(`${BASE_URL}/email/`, {
+			const res = await api.get(`/email/`, {
 				params: { email: participantEmail, public_id: certificateId },
 			});
 			const participantName = res.data.participantName;
@@ -382,8 +383,8 @@ const Participant = () => {
 				return false;
 			}
 
-			const response = await axios.post(
-				`${BASE_URL}/generate/`,
+			const response = await api.post(
+				`/generate/`,
 				{
 					textPosition: {
 						x: textPosition.x,

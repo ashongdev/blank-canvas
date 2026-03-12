@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { adminPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
+import api from "@/services/axios";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Check, Copy, Upload } from "lucide-react";
@@ -39,7 +40,7 @@ const Admin = () => {
 	const [publicId, setPublicId] = useState("");
 
 	const checkId = async (publicId: string) => {
-		const res = await axios.post(`${BASE_URL}/check_public_id/`, {
+		const res = await api.post(`/check_public_id/`, {
 			public_id: publicId,
 		});
 
