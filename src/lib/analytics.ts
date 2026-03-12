@@ -7,7 +7,10 @@ export const initGA = () => {
 };
 
 export const logPageView = () => {
-	ReactGA.send({ hitType: "pageview", page: window.location.pathname });
+	ReactGA.send({
+	  hitType: "pageview",
+	  page: window.location.pathname + window.location.search
+	});
 };
 
 export const logEvent = (category: string, action: string, label?: string) => {
