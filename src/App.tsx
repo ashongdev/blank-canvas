@@ -6,8 +6,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Admin from "./pages/Admin";
 import Advanced from "./pages/Advanced";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Participant from "./pages/Participant";
+import Signup from "./pages/Signup";
 
 import AnalyticsTracker from "./components/AnalyticsTracker";
 
@@ -24,6 +26,8 @@ const App = () => (
 					<Route path="/advanced" element={<Advanced />} />
 					<Route path="/admin" element={<Admin />} />
 					<Route path="/participant" element={<Participant />} />
+					<Route path="/login" element={<Login />} />
+					<Route path="/signup" element={<Signup />} />
 					{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
 					<Route path="*" element={<NotFound />} />
 				</Routes>
