@@ -7,51 +7,55 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Admin from "./pages/Admin";
 import Advanced from "./pages/Advanced";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Participant from "./pages/Participant";
+import Signup from "./pages/Signup";
 
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import GoogleCallback from "./components/GoogleCallback";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+
+const App = () => (
 	useEffect(() => {
 		const wakeUpServer = async () => {
-			try {
-				const baseUrl = import.meta.env.VITE_BASE_URL;
-				await fetch(`${baseUrl}/wake/`);
-			} catch (error) {
-				console.log("Server wake-up ping failed", error);
-			}
-		};
+					try {
+						const baseUrl = import.meta.env.VITE_BASE_URL;
+						await fetch(`${baseUrl}/wake/`);
+					} catch (error) {
+						console.log("Server wake-up ping failed", error);
+					}
+				};
 
-		wakeUpServer();
-	}, []);
+		wakeUpServer();	
+	}, [])
+	
 
-	return (
-		<QueryClientProvider client={queryClient}>
-			<TooltipProvider>
-				<Toaster />
-				<Sonner />
-				<BrowserRouter>
-					<AnalyticsTracker />
-					<Routes>
-						<Route path="/" element={<Index />} />
-						<Route path="/advanced" element={<Advanced />} />
-						<Route path="/admin" element={<Admin />} />
-						<Route
+	<QueryClientProvider client={queryClient}>
+		<TooltipProvider>
+			<Toaster />
+			<Sonner />
+			<BrowserRouter>
+				<AnalyticsTracker />
+				<Routes>
+					<Route path="/" element={<Index />} />
+					<Route path="/advanced" element={<Advanced />} />
+					<Route path="/admin" element={<Admin />} />
+					<Route path="/participant" element={<Participant />} />
+					<Route path="/login" element={<Login />} />
+					<Route path="/signup" element={<Signup />} />
+					<Route
 							path="/accounts/google/login/callback"
 							element={<GoogleCallback />}
 						/>
-						<Route path="/participant" element={<Participant />} />
-						{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-						<Route path="*" element={<NotFound />} />
-					</Routes>
-				</BrowserRouter>
-			</TooltipProvider>
-		</QueryClientProvider>
-	);
-};
+					{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+					<Route path="*" element={<NotFound />} />
+				</Routes>
+			</BrowserRouter>
+		</TooltipProvider>
+	</QueryClientProvider>
+);
 
 export default App;
