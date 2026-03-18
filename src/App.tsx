@@ -6,8 +6,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Admin from "./pages/Admin";
 import Advanced from "./pages/Advanced";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Participant from "./pages/Participant";
+import Signup from "./pages/Signup";
 
 import AnalyticsTracker from "./components/AnalyticsTracker";
 
