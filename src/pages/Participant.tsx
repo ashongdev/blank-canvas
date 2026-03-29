@@ -25,6 +25,7 @@ import {
 } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
 import { logEvent } from "@/lib/analytics";
+import api from "@/services/axios";
 import { TextField } from "@/types/TextField";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -272,25 +273,6 @@ const Participant = () => {
 			} else {
 				toast.success("Template loaded successfully!");
 			}
-
-			//  Fetch presets from backend
-			// try {
-			// 	const presetRes = await axios.get(
-			// 		`${BASE_URL}/get_preset/${idToUse}/`,
-			// 	);
-			// 	const data = presetRes.data;
-
-			// 	if (data) {
-			// 		setSelectedFont(data.selectedFont);
-			// 		setFontSize(data.fontSize);
-			// 		setFontWeight(data.fontWeight);
-			// 		setTextColor(data.textColor);
-			// 		setTextPosition(data.textPosition);
-			// 		setAnchorMode(data.anchorMode);
-			// 	}
-			// } catch (err) {
-			// 	console.log("No presets found, using defaults.");
-			// }
 		} catch {
 			toast.dismiss();
 			toast.error("Template not found. Check the ID.");
@@ -372,7 +354,7 @@ const Participant = () => {
 				];
 			}
 
-			const response = await axios.post(
+			const response = await api.post(
 				`${BASE_URL}/generate/`,
 				{
 					textPosition: {
@@ -402,7 +384,6 @@ const Participant = () => {
 
 			toast.success("Download Complete.");
 		} catch (error) {
-			console.log("Error generating certificates:", error);
 			toast.error("Failed to generate certificates");
 		} finally {
 			setIsDownloading(false);

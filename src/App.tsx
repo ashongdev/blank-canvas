@@ -12,6 +12,7 @@ import Participant from "./pages/Participant";
 import Signup from "./pages/Signup";
 
 import AnalyticsTracker from "./components/AnalyticsTracker";
+import GoogleCallback from "./pages/GoogleCallback";
 
 const queryClient = new QueryClient();
 const App = () => (
@@ -26,6 +27,10 @@ const App = () => (
 					<Route path="/advanced" element={<Advanced />} />
 					<Route path="/admin" element={<Admin />} />
 					<Route path="/participant" element={<Participant />} />
+					<Route
+						path="/auth/google/callback"
+						element={<GoogleCallback />}
+					/>
 					<Route path="/login" element={<Login />} />
 					<Route path="/signup" element={<Signup />} />
 					{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
