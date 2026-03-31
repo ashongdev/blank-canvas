@@ -11,3 +11,8 @@ export interface TextField {
 	anchorMode: "center" | "left";
 	required?: boolean;
 }
+
+export interface Recipient {
+	name: string;
+	email: string;
+}

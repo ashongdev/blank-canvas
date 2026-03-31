@@ -15,22 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { indexPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
+import useFunctions from "@/hooks/useFunctions";
+import useTemplateManager from "@/hooks/useTemplateManager";
 import { useTour } from "@/hooks/useTour";
-import { logEvent } from "@/lib/analytics";
-import api from "@/services/axios";
-import { TextField } from "@/types/TextField";
-import axios from "axios";
+import { Recipient, TextField } from "@/types/TextField";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-
-interface Recipient {
-	name: string;
-	email: string;
-}
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Index = () => {
 	const navigate = useNavigate();
@@ -86,42 +78,6 @@ const Index = () => {
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// Helper to update active field
-	const updateField = (id: string, updates: Partial<TextField>) => {
-		setFields((prev) =>
-			prev.map((f) => (f.id === id ? { ...f, ...updates } : f)),
-		);
-	};
-
-	const addField = () => {
-		const newField: TextField = {
-			id: uuidv4(),
-			label: "New Field",
-			text: "New Text",
-			x: 0,
-			y: 0,
-			font: "Bickham Script Pro Regular",
-			fontSize: 100,
-			fontWeight: "300",
-			color: "#000000",
-			anchorMode: "center",
-			required: false, // Default to false for extra fields
-		};
-		setFields((prev) => [...prev, newField]);
-		setSelectedFieldId(newField.id);
-	};
-
-	const removeField = (id: string) => {
-		if (fields.length <= 1) {
-			toast.error("Cannot remove the last field");
-			return;
-		}
-		setFields((prev) => prev.filter((f) => f.id !== id));
-		if (selectedFieldId === id) {
-			setSelectedFieldId(fields[0].id);
-		}
-	};
-
 	useEffect(() => {
 		if (imgRef.current) {
 			const { width, height } = imgRef.current.getBoundingClientRect();
@@ -129,157 +85,41 @@ const Index = () => {
 		}
 	}, [templateUrl]);
 
-	const handleTemplateUpload = (file: File) => {
-		setTemplateFile(file);
-		const url = URL.createObjectURL(file);
-		setTemplateUrl(url);
+	const {
+		addField,
+		removeField,
+		handlePositionChange,
+		handleManualPositionChange,
+		updateField,
+	} = useFunctions({
+		fields,
+		selectedFieldId,
+		activeField,
+		setFields,
+		setSelectedFieldId,
+	});
 
-		toast.success("Template loaded locally");
-	};
-
-	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			handleTemplateUpload(file);
-		}
-	};
-
-	useEffect(() => {
-		return () => {
-			if (templateUrl?.startsWith("blob:")) {
-				URL.revokeObjectURL(templateUrl);
-			}
-		};
-	}, [templateUrl]);
-
-	const handlePositionChange = (axis: "x" | "y", direction: number) => {
-		updateField(selectedFieldId, {
-			[axis]: activeField[axis] + direction,
-		});
-	};
-
-	const handleManualPositionChange = (axis: "x" | "y", value: number) => {
-		updateField(selectedFieldId, {
-			[axis]: value,
-		});
-	};
-
-	const handleDownload = async () => {
-		if (!templateFile) {
-			toast.error("Please upload a template first");
-			return;
-		}
-
-		const formData = new FormData();
-		formData.append("template", templateFile);
-		formData.append("recipients", JSON.stringify(recipients));
-		formData.append("fields", JSON.stringify(fields));
-		formData.append("inEditor", "true");
-
-		try {
-			const response = await api.post(`${BASE_URL}/generate/`, formData, {
-				responseType: "blob",
-				headers: {
-					"Content-Type": "multipart/form-data",
-				},
-			});
-
-			const url = URL.createObjectURL(response.data);
-			const link = document.createElement("a");
-			link.href = url;
-			link.download = `Certificate.png`;
-			link.click();
-			URL.revokeObjectURL(url);
-
-			logEvent("Certificate", "Generate", "Editor Generation");
-
-			toast.success("Download Complete.");
-		} catch (error) {
-			toast.error("Failed to generate certificates");
-		}
-	};
-
-	const handleShareClick = () => {
-		if (!templateFile) {
-			toast.error("Please upload a template first");
-			return;
-		}
-		setShowIdDialog(true);
-	};
-
-	const checkId = async (publicId: string) => {
-		const res = await axios.post(`${BASE_URL}/check_public_id/`, {
-			public_id: publicId,
-		});
-
-		return res.data.exists;
-	};
-
-	const handlePublish = async () => {
-		if (!templateFile || isPublishing) return;
-
-		setIsPublishing(true);
-		const toastId = toast.loading("Uploading and saving configuration...");
-
-		try {
-			let finalPublicId = customPublicId.trim();
-
-			if (finalPublicId) {
-				const exists = await checkId(finalPublicId);
-				if (exists) {
-					const randomSuffix = Date.now().toString();
-					finalPublicId = `${finalPublicId}_${randomSuffix}`;
-					setCustomPublicId(finalPublicId);
-					toast.info(`ID exists. Using ${finalPublicId} instead.`);
-				}
-			}
-
-			const formData = new FormData();
-			formData.append("template", templateFile);
-			if (finalPublicId) {
-				formData.append("public_id", finalPublicId);
-			}
-
-			// Encode fields as JSON string? Or send individually?
-			// Ideally we save this to a database.
-			// Currently the endpoint expects flat params for 1 field.
-			// But we'll try to just rely on URL params for now as a quick hack unless we update the DB.
-
-			// For multi-field, we can't easily put it all in URL params without bloat.
-			// Let's assume we send "fields" as a JSON string and the backend could save it if we uncommented the DB code.
-			// But for "Sharing URL", we have to pack it.
-
-			const fieldsJson = JSON.stringify(fields);
-			const encodedFields = btoa(fieldsJson); // Simple Base64 encoding
-
-			const res = await axios.post(`${BASE_URL}/upload/`, formData);
-
-			if (res.data.public_id) {
-				const newId = res.data.public_id;
-
-				// New URL structure: ?id=...&data=...
-				const params = new URLSearchParams({
-					id: newId,
-					data: encodedFields,
-				});
-				const link = `${window.location.origin}/participant?${params.toString()}`;
-				setGeneratedLink(link);
-				setShowIdDialog(false);
-				setShowShareDialog(true);
-
-				logEvent("Certificate", "Publish", "New Template Published");
-
-				toast.dismiss(toastId);
-				toast.success("Published successfully!");
-			}
-		} catch (error) {
-			console.error(error);
-			toast.dismiss(toastId);
-			toast.error("Failed to publish.");
-		} finally {
-			setIsPublishing(false);
-		}
-	};
+	const {
+		handleDownload,
+		handleFileSelect,
+		handleShareClick,
+		handlePublish,
+		handleTemplateUpload,
+	} = useTemplateManager({
+		templateFile,
+		templateUrl,
+		fields,
+		recipients,
+		customPublicId,
+		isPublishing,
+		setTemplateFile,
+		setTemplateUrl,
+		setCustomPublicId,
+		setIsPublishing,
+		setShowIdDialog,
+		setShowShareDialog,
+		setGeneratedLink,
+	});
 
 	return (
 		<div className="min-h-screen bg-background flex flex-col overflow-hidden">

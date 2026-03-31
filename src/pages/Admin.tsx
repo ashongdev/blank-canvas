@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { adminPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useTour } from "@/hooks/useTour";
+import api from "@/services/axios";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Check, Copy, Upload } from "lucide-react";
@@ -39,7 +40,7 @@ const Admin = () => {
 	const [publicId, setPublicId] = useState("");
 
 	const checkId = async (publicId: string) => {
-		const res = await axios.post(`${BASE_URL}/check_public_id/`, {
+		const res = await api.post(`${BASE_URL}/check_public_id/`, {
 			public_id: publicId,
 		});
 
@@ -80,7 +81,7 @@ const Admin = () => {
 			cloudinaryForm.append("upload_preset", UPLOAD_PRESET);
 			cloudinaryForm.append("public_id", finalPublicId);
 
-			const res = await axios.post(
+			const res = await api.post(
 				`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
 				cloudinaryForm,
 			);
