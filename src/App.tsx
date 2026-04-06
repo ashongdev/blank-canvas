@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Participant from "./pages/Participant";
 import Signup from "./pages/Signup";
+import DashboardLayout from "./pages/dashboard/DashboardLayout";
 
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import GoogleCallback from "./pages/GoogleCallback";
@@ -31,8 +32,9 @@ const App = () => (
 						path="/auth/google/callback"
 						element={<GoogleCallback />}
 					/>
-					<Route path="/login" element={<Login />} />
+				<Route path="/login" element={<Login />} />
 					<Route path="/signup" element={<Signup />} />
+					<Route path="/dashboard/*" element={<DashboardLayout />} />
 					{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
 					<Route path="*" element={<NotFound />} />
 				</Routes>
