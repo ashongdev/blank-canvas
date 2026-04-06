@@ -127,7 +127,7 @@ export function useDashboardStore({
 		});
 
 		try {
-			await api.put(`${BASE_URL}/delete-templates/?state=restore`, {
+			await api.put(`${BASE_URL}/delete-template/?state=restore`, {
 				templateId: id,
 			});
 		} catch (error) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2, RotateCcw, AlertTriangle } from "lucide-react";
+import { Trash2, RotateCcw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,9 @@ const TrashPage = ({
 	onPermanentlyDelete,
 	fetchMyTemplates,
 }: Props) => {
+	const [restoreId, setRestoreId] = useState<number | null>(null);
 	const [deleteId, setDeleteId] = useState<number | null>(null);
+	const templateToRestore = templates.find((t) => t.id === restoreId);
 	const templateToDelete = templates.find((t) => t.id === deleteId);
 
 	useEffect(() => {
@@ -81,7 +83,7 @@ const TrashPage = ({
 										variant="outline"
 										size="sm"
 										className="flex-1"
-										onClick={() => onRestore(t.id)}
+										onClick={() => setRestoreId(t.id)}
 									>
 										<RotateCcw className="mr-1 h-3 w-3" />{" "}
 										Restore
@@ -109,14 +111,11 @@ const TrashPage = ({
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle className="flex items-center gap-2">
-							<AlertTriangle className="h-5 w-5 text-destructive" />{" "}
-							Permanently Delete?
-						</AlertDialogTitle>
+						<AlertDialogTitle>Delete Template?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will permanently remove "
-							{templateToDelete?.name}". This action cannot be
-							undone.
+							This will permanently delete "
+							{templateToDelete?.name}" from Trash. This action
+							cannot be undone.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
@@ -129,7 +128,35 @@ const TrashPage = ({
 								}
 							}}
 						>
-							Delete Forever
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog
+				open={!!restoreId}
+				onOpenChange={(o) => !o && setRestoreId(null)}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Restore Template?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will move "{templateToRestore?.name}" back to your
+							templates list.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() => {
+								if (restoreId) {
+									onRestore(restoreId);
+									setRestoreId(null);
+								}
+							}}
+						>
+							Restore
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
