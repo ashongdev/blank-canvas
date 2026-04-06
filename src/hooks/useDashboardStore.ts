@@ -106,7 +106,7 @@ export function useDashboardStore({
 		});
 
 		try {
-			await api.put(`${BASE_URL}/delete-template/`, {
+			await api.put(`${BASE_URL}/delete-template/?state=delete`, {
 				templateId: id,
 			});
 		} catch (error) {
@@ -115,10 +115,25 @@ export function useDashboardStore({
 		}
 	}, []);
 
-	const restoreTemplate = useCallback((id: number) => {
-		setTemplates((prev) =>
-			prev.map((t) => (t.id === id ? { ...t, trashed: false } : t)),
-		);
+	const restoreTemplate = useCallback(async (id: number) => {
+		let previousTemplates: Template[] = [];
+
+		setTemplates((prev) => {
+			previousTemplates = prev;
+
+			return prev.map((t) =>
+				t.id === id ? { ...t, trashed: false } : t,
+			);
+		});
+
+		try {
+			await api.put(`${BASE_URL}/delete-templates/?state=restore`, {
+				templateId: id,
+			});
+		} catch (error) {
+			setTemplates(previousTemplates); // rollback if server fails
+			toast.error("Failed to delete template");
+		}
 	}, []);
 
 	const permanentlyDelete = useCallback((id: number) => {
