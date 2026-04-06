@@ -21,7 +21,7 @@ const DashboardLayout = () => {
             <h1 className="text-lg font-semibold text-foreground">Dashboard</h1>
           </header>
           <main className="flex-1 overflow-auto p-6">
-            <Outlet />
+            <DashboardRoutes />
           </main>
         </div>
       </div>
