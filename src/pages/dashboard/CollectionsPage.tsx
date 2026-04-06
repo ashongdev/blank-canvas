@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	FolderOpen,
 	MoreVertical,
@@ -7,10 +7,12 @@ import {
 	Plus,
 	X,
 	ChevronRight,
+	Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -41,6 +43,7 @@ import type { Collection } from "@/hooks/useDashboardStore";
 import { Template } from "@/types/Template";
 
 interface Props {
+	isLoading: boolean;
 	collections: Collection[];
 	templates: Template[];
 	onCreate: (name: string) => void;
@@ -53,6 +56,7 @@ interface Props {
 }
 
 const CollectionsPage = ({
+	isLoading,
 	collections,
 	templates,
 	onCreate,
@@ -62,6 +66,7 @@ const CollectionsPage = ({
 }: Props) => {
 	const [creating, setCreating] = useState(false);
 	const [newName, setNewName] = useState("");
+	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
 	const [editCol, setEditCol] = useState<Collection | null>(null);
 	const [editName, setEditName] = useState("");
 	const [deleteColId, setDeleteColId] = useState<number | null>(null);
@@ -86,6 +91,49 @@ const CollectionsPage = ({
 
 	const templatesInCollection = (colId: number) =>
 		templates.filter((t) => t.collection_id === colId && !t.trashed);
+
+	useEffect(() => {
+		if (!isLoading) return;
+
+		setVisibleSkeletons(1);
+		const timer = window.setInterval(() => {
+			setVisibleSkeletons((prev) => Math.min(prev + 1, 6));
+		}, 90);
+
+		return () => {
+			window.clearInterval(timer);
+		};
+	}, [isLoading]);
+
+	if (isLoading) {
+		return (
+			<div className="space-y-6">
+				<div className="min-h-[30vh] flex flex-col items-center justify-center gap-3">
+					<div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+						<Loader2 className="h-6 w-6 animate-spin text-primary" />
+					</div>
+					<p className="text-sm text-muted-foreground">
+						Loading collections...
+					</p>
+				</div>
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+					{Array.from({ length: visibleSkeletons }).map(
+						(_, index) => (
+							<Card
+								key={`collection-skeleton-${index}`}
+								className="border-border"
+							>
+								<CardContent className="p-4 space-y-3">
+									<Skeleton className="h-5 w-3/4" />
+									<Skeleton className="h-4 w-1/2" />
+								</CardContent>
+							</Card>
+						),
+					)}
+				</div>
+			</div>
+		);
+	}
 
 	// If a collection is opened, show the detail view
 	if (openedCollection) {

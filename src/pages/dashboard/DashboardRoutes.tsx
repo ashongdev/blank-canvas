@@ -1,31 +1,61 @@
 import { useDashboardStore } from "@/hooks/useDashboardStore";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import TemplatesPage from "./TemplatesPage";
 import CollectionsPage from "./CollectionsPage";
 import TrashPage from "./TrashPage";
 import SettingsPage from "./SettingsPage";
 import DashboardIndex from "./DashboardIndex";
-import { Dispatch, FC, SetStateAction } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Template } from "@/types/Template";
 import api from "@/services/axios";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const DashboardRoutes = () => {
 	const [templates, setTemplates] = useState<Template[]>([]);
+	const [isActiveLoading, setIsActiveLoading] = useState(false);
+	const [isDeletedLoading, setIsDeletedLoading] = useState(false);
 	const store = useDashboardStore({ templates, setTemplates });
 	const BASE_URL = import.meta.env.VITE_BASE_URL;
+	const location = useLocation();
 
-	const fetchMyTemplates = async (state: "active" | "deleted") => {
-		try {
-			const response = await api.get(
-				`${BASE_URL}/my-templates?state=${state}`,
-			);
-			setTemplates(response.data.templates);
-		} catch (error) {
-			toast.error("Error fetching templates.");
+	const fetchMyTemplates = useCallback(
+		async (state: "active" | "deleted") => {
+			if (state === "active") {
+				setIsActiveLoading(true);
+			} else {
+				setIsDeletedLoading(true);
+			}
+
+			try {
+				const response = await api.get(
+					`${BASE_URL}/my-templates?state=${state}`,
+				);
+				setTemplates(response.data.templates);
+			} catch (error) {
+				toast.error("Error fetching templates.");
+			} finally {
+				if (state === "active") {
+					setIsActiveLoading(false);
+				} else {
+					setIsDeletedLoading(false);
+				}
+			}
+		},
+		[BASE_URL],
+	);
+
+	useEffect(() => {
+		if (
+			location.pathname === "/dashboard/templates" ||
+			location.pathname === "/dashboard/collections"
+		) {
+			void fetchMyTemplates("active");
 		}
-	};
+
+		if (location.pathname === "/dashboard/trash") {
+			void fetchMyTemplates("deleted");
+		}
+	}, [fetchMyTemplates, location.pathname]);
 
 	return (
 		<Routes>
@@ -35,11 +65,11 @@ const DashboardRoutes = () => {
 				element={
 					<TemplatesPage
 						templates={templates}
+						isLoading={isActiveLoading}
 						collections={store.collections}
 						onTrash={store.trashTemplate}
 						onUpdate={store.updateTemplate}
 						onAssignCollection={store.assignCollection}
-						fetchMyTemplates={fetchMyTemplates}
 					/>
 				}
 			/>
@@ -47,6 +77,7 @@ const DashboardRoutes = () => {
 				path="collections"
 				element={
 					<CollectionsPage
+						isLoading={isActiveLoading}
 						collections={store.collections}
 						templates={store.templates}
 						onCreate={store.createCollection}
@@ -61,9 +92,9 @@ const DashboardRoutes = () => {
 				element={
 					<TrashPage
 						templates={store.trashedTemplates}
+						isLoading={isDeletedLoading}
 						onRestore={store.restoreTemplate}
 						onPermanentlyDelete={store.permanentlyDelete}
-						fetchMyTemplates={fetchMyTemplates}
 					/>
 				}
 			/>

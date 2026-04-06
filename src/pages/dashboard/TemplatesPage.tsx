@@ -5,9 +5,11 @@ import {
 	Trash2,
 	FolderPlus,
 	RefreshCw,
+	Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import {
 	DropdownMenu,
@@ -43,6 +45,7 @@ import { Template } from "@/types/Template";
 
 interface Props {
 	templates: Template[];
+	isLoading: boolean;
 	collections: Collection[];
 	onTrash: (id: number) => void;
 	onUpdate: (id: number, updates: Partial<Template>) => void;
@@ -50,25 +53,34 @@ interface Props {
 		templateId: number,
 		collectionId: number | null,
 	) => void;
-	fetchMyTemplates: (state: "active" | "deleted") => void;
 }
 
 const TemplatesPage = ({
 	templates,
+	isLoading,
 	collections,
 	onTrash,
 	onUpdate,
 	onAssignCollection,
-	fetchMyTemplates,
 }: Props) => {
 	const navigate = useNavigate();
 	const [editTemplate, setEditTemplate] = useState<Template | null>(null);
 	const [editName, setEditName] = useState("");
 	const [deleteId, setDeleteId] = useState<number | null>(null);
+	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
 
 	useEffect(() => {
-		fetchMyTemplates("active");
-	}, []);
+		if (!isLoading) return;
+
+		setVisibleSkeletons(1);
+		const timer = window.setInterval(() => {
+			setVisibleSkeletons((prev) => Math.min(prev + 1, 8));
+		}, 90);
+
+		return () => {
+			window.clearInterval(timer);
+		};
+	}, [isLoading]);
 
 	const openEdit = (t: Template) => {
 		setEditTemplate(t);
@@ -110,117 +122,158 @@ const TemplatesPage = ({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<h2 className="text-2xl font-semibold text-foreground">
-					My Templates
-				</h2>
-				<p className="text-sm text-muted-foreground">
-					{templates.length} template
-					{templates.length !== 1 ? "s" : ""}
-				</p>
-			</div>
-
-			{templates.length === 0 ? (
-				<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-					<p className="text-lg">No templates yet</p>
-					<p className="text-sm">Upload a template to get started.</p>
-				</div>
+			{isLoading ? (
+				<>
+					<div className="min-h-[30vh] flex flex-col items-center justify-center gap-3">
+						<div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+							<Loader2 className="h-6 w-6 animate-spin text-primary" />
+						</div>
+						<p className="text-sm text-muted-foreground">
+							Loading templates...
+						</p>
+					</div>
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+						{Array.from({ length: visibleSkeletons }).map(
+							(_, index) => (
+								<Card
+									key={`template-skeleton-${index}`}
+									className="border-border"
+								>
+									<Skeleton className="aspect-[4/3] w-full rounded-b-none rounded-t-lg" />
+									<CardContent className="p-3 space-y-3">
+										<Skeleton className="h-4 w-2/3" />
+										<Skeleton className="h-3 w-1/2" />
+									</CardContent>
+								</Card>
+							),
+						)}
+					</div>
+				</>
 			) : (
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-					{templates &&
-						templates.length > 0 &&
-						templates.map((t) => (
-							<Card
-								key={t.id}
-								className="group overflow-hidden border-border hover:shadow-md transition-shadow"
-							>
-								<div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-									<img
-										src={t.url}
-										alt={t.name}
-										className="w-full h-full object-cover"
-									/>
-								</div>
-								<CardContent className="p-3 flex items-center justify-between">
-									<div className="min-w-0">
-										<p className="text-sm font-medium text-foreground truncate">
-											{t.name}
-										</p>
-										<p className="text-xs text-muted-foreground truncate">
-											{t.public_id}
-										</p>
-									</div>
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="shrink-0 h-8 w-8"
-											>
-												<MoreVertical className="h-4 w-4" />
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end">
-											<DropdownMenuItem
-												onClick={() => openEdit(t)}
-											>
-												<Pencil className="mr-2 h-4 w-4" />{" "}
-												Edit
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() =>
-													handleUpdateTemplate(t)
-												}
-											>
-												<RefreshCw className="mr-2 h-4 w-4" />{" "}
-												Update Template
-											</DropdownMenuItem>
-											<DropdownMenuSub>
-												<DropdownMenuSubTrigger>
-													<FolderPlus className="mr-2 h-4 w-4" />{" "}
-													Add to Collection
-												</DropdownMenuSubTrigger>
-												<DropdownMenuSubContent>
+				<>
+					<div className="flex items-center justify-between">
+						<h2 className="text-2xl font-semibold text-foreground">
+							My Templates
+						</h2>
+						<p className="text-sm text-muted-foreground">
+							{templates.length} template
+							{templates.length !== 1 ? "s" : ""}
+						</p>
+					</div>
+
+					{templates.length === 0 ? (
+						<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+							<p className="text-lg">No templates yet</p>
+							<p className="text-sm">
+								Upload a template to get started.
+							</p>
+						</div>
+					) : (
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+							{templates &&
+								templates.length > 0 &&
+								templates.map((t) => (
+									<Card
+										key={t.id}
+										className="group overflow-hidden border-border hover:shadow-md transition-shadow"
+									>
+										<div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+											<img
+												src={t.url}
+												alt={t.name}
+												className="w-full h-full object-cover"
+											/>
+										</div>
+										<CardContent className="p-3 flex items-center justify-between">
+											<div className="min-w-0">
+												<p className="text-sm font-medium text-foreground truncate">
+													{t.name}
+												</p>
+												<p className="text-xs text-muted-foreground truncate">
+													{t.public_id}
+												</p>
+											</div>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="shrink-0 h-8 w-8"
+													>
+														<MoreVertical className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end">
 													<DropdownMenuItem
 														onClick={() =>
-															onAssignCollection(
-																t.id,
-																null,
+															openEdit(t)
+														}
+													>
+														<Pencil className="mr-2 h-4 w-4" />{" "}
+														Edit
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														onClick={() =>
+															handleUpdateTemplate(
+																t,
 															)
 														}
 													>
-														None
+														<RefreshCw className="mr-2 h-4 w-4" />{" "}
+														Update Template
 													</DropdownMenuItem>
-													{collections.map((c) => (
-														<DropdownMenuItem
-															key={c.id}
-															onClick={() =>
-																onAssignCollection(
-																	t.id,
-																	c.id,
-																)
-															}
-														>
-															{c.name}
-														</DropdownMenuItem>
-													))}
-												</DropdownMenuSubContent>
-											</DropdownMenuSub>
-											<DropdownMenuItem
-												className="text-destructive"
-												onClick={() =>
-													setDeleteId(t.id)
-												}
-											>
-												<Trash2 className="mr-2 h-4 w-4" />{" "}
-												Delete
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</CardContent>
-							</Card>
-						))}
-				</div>
+													<DropdownMenuSub>
+														<DropdownMenuSubTrigger>
+															<FolderPlus className="mr-2 h-4 w-4" />{" "}
+															Add to Collection
+														</DropdownMenuSubTrigger>
+														<DropdownMenuSubContent>
+															<DropdownMenuItem
+																onClick={() =>
+																	onAssignCollection(
+																		t.id,
+																		null,
+																	)
+																}
+															>
+																None
+															</DropdownMenuItem>
+															{collections.map(
+																(c) => (
+																	<DropdownMenuItem
+																		key={
+																			c.id
+																		}
+																		onClick={() =>
+																			onAssignCollection(
+																				t.id,
+																				c.id,
+																			)
+																		}
+																	>
+																		{c.name}
+																	</DropdownMenuItem>
+																),
+															)}
+														</DropdownMenuSubContent>
+													</DropdownMenuSub>
+													<DropdownMenuItem
+														className="text-destructive"
+														onClick={() =>
+															setDeleteId(t.id)
+														}
+													>
+														<Trash2 className="mr-2 h-4 w-4" />{" "}
+														Delete
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</CardContent>
+									</Card>
+								))}
+						</div>
+					)}
+				</>
 			)}
 
 			{/* Edit name dialog */}

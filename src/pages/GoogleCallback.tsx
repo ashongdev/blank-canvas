@@ -35,7 +35,7 @@ const GoogleCallback = () => {
 				);
 				toast.success("Login Successful!");
 				setTimeout(() => {
-					window.location.href = "/";
+					window.location.href = "/dashboard";
 				}, 1500);
 			} catch (error) {
 				const id = toast.error("Failed to log in. Please try again.");
