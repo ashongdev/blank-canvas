@@ -97,12 +97,22 @@ export function useDashboardStore({
 	const activeTemplates = templates.filter((t) => !t.trashed);
 	const trashedTemplates = templates.filter((t) => t.trashed);
 
-	const trashTemplate = useCallback((id: number) => {
-		setTemplates((prev) =>
-			prev.map((t) =>
-				t.id === id ? { ...t, trashed: true, collection_id: null } : t,
-			),
-		);
+	const trashTemplate = useCallback(async (id: number) => {
+		let previousTemplates: Template[] = [];
+
+		setTemplates((prev) => {
+			previousTemplates = prev;
+			return prev.filter((t) => t.id !== id); // remove from UI immediately
+		});
+
+		try {
+			await api.put(`${BASE_URL}/delete-template/`, {
+				templateId: id,
+			});
+		} catch (error) {
+			setTemplates(previousTemplates); // rollback if server fails
+			toast.error("Failed to delete template");
+		}
 	}, []);
 
 	const restoreTemplate = useCallback((id: number) => {
