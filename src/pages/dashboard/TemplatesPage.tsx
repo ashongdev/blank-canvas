@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MoreVertical, Pencil, Trash2, FolderPlus } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, FolderPlus, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,12 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
 import type { Template, Collection } from "@/hooks/useDashboardStore";
 
 interface Props {
@@ -22,8 +27,10 @@ interface Props {
 }
 
 const TemplatesPage = ({ templates, collections, onTrash, onUpdate, onAssignCollection }: Props) => {
+  const navigate = useNavigate();
   const [editTemplate, setEditTemplate] = useState<Template | null>(null);
   const [editName, setEditName] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const openEdit = (t: Template) => {
     setEditTemplate(t);
@@ -35,6 +42,32 @@ const TemplatesPage = ({ templates, collections, onTrash, onUpdate, onAssignColl
       onUpdate(editTemplate.id, { name: editName.trim() });
       setEditTemplate(null);
     }
+  };
+
+  const handleUpdateTemplate = (t: Template) => {
+    // Simulate loading template data + presets, then navigate to editor
+    const simulatedFields = [
+      {
+        id: "field-1",
+        label: "Participant Name",
+        text: "John Doe",
+        x: 0,
+        y: 0,
+        font: "Bickham Script Pro Regular",
+        fontSize: 100,
+        fontWeight: "300",
+        color: "#000000",
+        anchorMode: "center",
+        required: true,
+      },
+    ];
+    navigate("/", {
+      state: {
+        templateUrl: t.thumbnailUrl,
+        fields: simulatedFields,
+        templateFile: null,
+      },
+    });
   };
 
   return (
@@ -71,6 +104,9 @@ const TemplatesPage = ({ templates, collections, onTrash, onUpdate, onAssignColl
                     <DropdownMenuItem onClick={() => openEdit(t)}>
                       <Pencil className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleUpdateTemplate(t)}>
+                      <RefreshCw className="mr-2 h-4 w-4" /> Update Template
+                    </DropdownMenuItem>
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
                         <FolderPlus className="mr-2 h-4 w-4" /> Add to Collection
@@ -86,7 +122,7 @@ const TemplatesPage = ({ templates, collections, onTrash, onUpdate, onAssignColl
                         ))}
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
-                    <DropdownMenuItem className="text-destructive" onClick={() => onTrash(t.id)}>
+                    <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(t.id)}>
                       <Trash2 className="mr-2 h-4 w-4" /> Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -97,6 +133,7 @@ const TemplatesPage = ({ templates, collections, onTrash, onUpdate, onAssignColl
         </div>
       )}
 
+      {/* Edit name dialog */}
       <Dialog open={!!editTemplate} onOpenChange={(o) => !o && setEditTemplate(null)}>
         <DialogContent>
           <DialogHeader>
@@ -113,6 +150,24 @@ const TemplatesPage = ({ templates, collections, onTrash, onUpdate, onAssignColl
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This template will be moved to Trash. You can restore it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteId) { onTrash(deleteId); setDeleteId(null); } }}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

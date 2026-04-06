@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { Trash2, RotateCcw, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Template } from "@/hooks/useDashboardStore";
 
@@ -14,6 +15,9 @@ interface Props {
 }
 
 const TrashPage = ({ templates, onRestore, onPermanentlyDelete }: Props) => {
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const templateToDelete = templates.find((t) => t.id === deleteId);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -43,33 +47,35 @@ const TrashPage = ({ templates, onRestore, onPermanentlyDelete }: Props) => {
                   <Button variant="outline" size="sm" className="flex-1" onClick={() => onRestore(t.id)}>
                     <RotateCcw className="mr-1 h-3 w-3" /> Restore
                   </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm" className="flex-1">
-                        <Trash2 className="mr-1 h-3 w-3" /> Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center gap-2">
-                          <AlertTriangle className="h-5 w-5 text-destructive" /> Permanently Delete?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently remove "{t.name}". This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onPermanentlyDelete(t.id)}>Delete Forever</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button variant="destructive" size="sm" className="flex-1" onClick={() => setDeleteId(t.id)}>
+                    <Trash2 className="mr-1 h-3 w-3" /> Delete
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Permanent delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" /> Permanently Delete?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove "{templateToDelete?.name}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteId) { onPermanentlyDelete(deleteId); setDeleteId(null); } }}>
+              Delete Forever
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
