@@ -15,25 +15,16 @@ import {
 const GoogleCallback = () => {
 	const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-	const clearAuthCookies = () => {
-		const cookies = ["access-token", "refresh-token", "csrftoken"];
-		cookies.forEach((name) => {
-			document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-		});
-	};
-
 	useEffect(() => {
 		const handleGoogleCallback = async () => {
 			const params = new URLSearchParams(window.location.search);
 			const code = params.get("code");
 
-			clearAuthCookies();
 			try {
 				const response = await api.post(
 					`${BASE_URL}/auth/google/`,
 					{ code: code },
 					{
-						withCredentials: false,
 						headers: { "Content-Type": "application/json" },
 					},
 				);

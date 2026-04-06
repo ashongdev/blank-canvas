@@ -85,11 +85,28 @@ const useTemplateManager = ({
 		}
 	};
 
-	const handleTemplateUpload = (file: File) => {
+	const handleTemplateUpload = async (file: File) => {
 		setTemplateFile(file);
 		const url = URL.createObjectURL(file);
 		setTemplateUrl(url);
 		toast.success("Template loaded locally");
+
+		// If authenticated, save to db.
+		if (localStorage.getItem("user")) {
+			const formData = new FormData();
+			formData.append("template", templateFile);
+
+			const result = await api.post(
+				`${BASE_URL}/auto-upload/`,
+				formData,
+				{
+					responseType: "blob",
+				},
+			);
+			if (result.data) {
+				console.log("Uploaded");
+			}
+		}
 	};
 
 	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,82 +1,197 @@
-import { useState, useCallback } from "react";
-
-export interface Template {
-  id: string;
-  name: string;
-  thumbnailUrl: string;
-  publicId: string;
-  createdAt: string;
-  collectionId: string | null;
-  trashed: boolean;
-}
+import api from "@/services/axios";
+import { Template } from "@/types/Template";
+import { useState, useCallback, SetStateAction, Dispatch } from "react";
+import { toast } from "sonner";
 
 export interface Collection {
-  id: string;
-  name: string;
-  createdAt: string;
+	id: number;
+	name: string;
+	created_at: string;
 }
 
 const SEED_COLLECTIONS: Collection[] = [
-  { id: "c1", name: "Events", createdAt: "2025-12-01" },
-  { id: "c2", name: "Corporate", createdAt: "2025-12-10" },
+	{
+		id: 1,
+		name: "Events",
+		created_at: new Date("2025-12-01").toDateString(),
+	},
+	{
+		id: 2,
+		name: "Corporate",
+		created_at: new Date("2025-12-10").toDateString(),
+	},
 ];
 
 const SEED_TEMPLATES: Template[] = [
-  { id: "t1", name: "Award Certificate", thumbnailUrl: "/placeholder.svg", publicId: "cert_award_001", createdAt: "2026-01-15", collectionId: "c1", trashed: false },
-  { id: "t2", name: "Workshop Completion", thumbnailUrl: "/placeholder.svg", publicId: "cert_workshop_002", createdAt: "2026-02-01", collectionId: "c1", trashed: false },
-  { id: "t3", name: "Employee of the Month", thumbnailUrl: "/placeholder.svg", publicId: "cert_eom_003", createdAt: "2026-02-20", collectionId: "c2", trashed: false },
-  { id: "t4", name: "Training Badge", thumbnailUrl: "/placeholder.svg", publicId: "cert_badge_004", createdAt: "2026-03-05", collectionId: null, trashed: false },
-  { id: "t5", name: "Volunteer Appreciation", thumbnailUrl: "/placeholder.svg", publicId: "cert_vol_005", createdAt: "2026-03-12", collectionId: null, trashed: false },
+	{
+		id: 1,
+		name: "Award Certificate",
+		url: "/placeholder.svg",
+		public_id: "cert_award_001",
+		created_at: new Date("2026-01-15").toDateString(),
+		collection_id: 1,
+		trashed: false,
+		updated_at: new Date("2026-03-10").toDateString(),
+		user: null,
+	},
+	{
+		id: 2,
+		name: "Workshop Completion",
+		url: "/placeholder.svg",
+		public_id: "cert_workshop_002",
+		created_at: new Date("2026-02-01").toDateString(),
+		collection_id: 1,
+		trashed: false,
+		updated_at: new Date("2026-03-10").toDateString(),
+		user: null,
+	},
+	{
+		id: 3,
+		name: "Employee of the Month",
+		url: "/placeholder.svg",
+		public_id: "cert_eom_003",
+		created_at: new Date("2026-02-20").toDateString(),
+		collection_id: 2,
+		trashed: false,
+		updated_at: new Date("2026-03-10").toDateString(),
+		user: null,
+	},
+	{
+		id: 4,
+		name: "Training Badge",
+		url: "/placeholder.svg",
+		public_id: "cert_badge_004",
+		created_at: new Date("2026-03-05").toDateString(),
+		collection_id: null,
+		trashed: false,
+		updated_at: new Date("2026-03-10").toDateString(),
+		user: null,
+	},
+	{
+		id: 5,
+		name: "Volunteer Appreciation",
+		url: "/placeholder.svg",
+		public_id: "cert_vol_005",
+		created_at: new Date("2026-03-12").toDateString(),
+		collection_id: null,
+		trashed: false,
+		updated_at: new Date("2026-03-10").toDateString(),
+		user: null,
+	},
 ];
 
-export function useDashboardStore() {
-  const [templates, setTemplates] = useState<Template[]>(SEED_TEMPLATES);
-  const [collections, setCollections] = useState<Collection[]>(SEED_COLLECTIONS);
+export function useDashboardStore({
+	templates,
+	setTemplates,
+}: {
+	templates: Template[];
+	setTemplates: Dispatch<SetStateAction<Template[]>>;
+}) {
+	const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-  // Templates
-  const activeTemplates = templates.filter((t) => !t.trashed);
-  const trashedTemplates = templates.filter((t) => t.trashed);
+	// const [templates, setTemplates] = useState<Template[]>(SEED_TEMPLATES);
+	const [collections, setCollections] =
+		useState<Collection[]>(SEED_COLLECTIONS);
 
-  const trashTemplate = useCallback((id: string) => {
-    setTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, trashed: true, collectionId: null } : t)));
-  }, []);
+	// Templates
+	const activeTemplates = templates.filter((t) => !t.trashed);
+	const trashedTemplates = templates.filter((t) => t.trashed);
 
-  const restoreTemplate = useCallback((id: string) => {
-    setTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, trashed: false } : t)));
-  }, []);
+	const trashTemplate = useCallback((id: number) => {
+		setTemplates((prev) =>
+			prev.map((t) =>
+				t.id === id ? { ...t, trashed: true, collection_id: null } : t,
+			),
+		);
+	}, []);
 
-  const permanentlyDelete = useCallback((id: string) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+	const restoreTemplate = useCallback((id: number) => {
+		setTemplates((prev) =>
+			prev.map((t) => (t.id === id ? { ...t, trashed: false } : t)),
+		);
+	}, []);
 
-  const updateTemplate = useCallback((id: string, updates: Partial<Template>) => {
-    setTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
-  }, []);
+	const permanentlyDelete = useCallback((id: number) => {
+		setTemplates((prev) => prev.filter((t) => t.id !== id));
+	}, []);
 
-  const assignCollection = useCallback((templateId: string, collectionId: string | null) => {
-    setTemplates((prev) => prev.map((t) => (t.id === templateId ? { ...t, collectionId } : t)));
-  }, []);
+	const updateTemplate = useCallback(
+		async (id: number, updates: Partial<Template>) => {
+			// save the old template in case we need to rollback
+			const oldTemplate = templates.find((t) => t.id === id);
 
-  // Collections
-  const createCollection = useCallback((name: string) => {
-    const newCol: Collection = { id: `c${Date.now()}`, name, createdAt: new Date().toISOString() };
-    setCollections((prev) => [...prev, newCol]);
-    return newCol;
-  }, []);
+			setTemplates((prev) =>
+				prev.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+			);
 
-  const updateCollection = useCallback((id: string, name: string) => {
-    setCollections((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
-  }, []);
+			try {
+				await api.put(`${BASE_URL}/update-template/`, {
+					templateId: id,
+					...updates,
+				});
+			} catch (error) {
+				// rollback if server fails
+				if (oldTemplate) {
+					setTemplates((prev) =>
+						prev.map((t) => (t.id === id ? oldTemplate : t)),
+					);
+				}
+				toast.error("Failed to update template");
+			}
+		},
+		[templates],
+	);
 
-  const deleteCollection = useCallback((id: string) => {
-    // Unassign templates but don't trash them
-    setTemplates((prev) => prev.map((t) => (t.collectionId === id ? { ...t, collectionId: null } : t)));
-    setCollections((prev) => prev.filter((c) => c.id !== id));
-  }, []);
+	const assignCollection = useCallback(
+		(templateId: number, collection_id: number | null) => {
+			setTemplates((prev) =>
+				prev.map((t) =>
+					t.id === templateId ? { ...t, collection_id } : t,
+				),
+			);
+		},
+		[],
+	);
 
-  return {
-    templates, activeTemplates, trashedTemplates, collections,
-    trashTemplate, restoreTemplate, permanentlyDelete, updateTemplate, assignCollection,
-    createCollection, updateCollection, deleteCollection,
-  };
+	// Collections
+	const createCollection = useCallback((name: string) => {
+		const newCol: Collection = {
+			id: Date.now(),
+			name,
+			created_at: new Date().toISOString(),
+		};
+		setCollections((prev) => [...prev, newCol]);
+		return newCol;
+	}, []);
+
+	const updateCollection = useCallback((id: number, name: string) => {
+		setCollections((prev) =>
+			prev.map((c) => (c.id === id ? { ...c, name } : c)),
+		);
+	}, []);
+
+	const deleteCollection = useCallback((id: number) => {
+		// Unassign templates but don't trash them
+		setTemplates((prev) =>
+			prev.map((t) =>
+				t.collection_id === id ? { ...t, collection_id: null } : t,
+			),
+		);
+		setCollections((prev) => prev.filter((c) => c.id !== id));
+	}, []);
+
+	return {
+		templates,
+		activeTemplates,
+		trashedTemplates,
+		collections,
+		trashTemplate,
+		restoreTemplate,
+		permanentlyDelete,
+		updateTemplate,
+		assignCollection,
+		createCollection,
+		updateCollection,
+		deleteCollection,
+	};
 }
