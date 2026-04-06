@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2, RotateCcw, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,21 @@ interface Props {
 	templates: Template[];
 	onRestore: (id: number) => void;
 	onPermanentlyDelete: (id: number) => void;
+	fetchMyTemplates: (state: "active" | "deleted") => void;
 }
 
-const TrashPage = ({ templates, onRestore, onPermanentlyDelete }: Props) => {
+const TrashPage = ({
+	templates,
+	onRestore,
+	onPermanentlyDelete,
+	fetchMyTemplates,
+}: Props) => {
 	const [deleteId, setDeleteId] = useState<number | null>(null);
 	const templateToDelete = templates.find((t) => t.id === deleteId);
+
+	useEffect(() => {
+		fetchMyTemplates("deleted");
+	}, []);
 
 	return (
 		<div className="space-y-6">

@@ -7,14 +7,25 @@ import SettingsPage from "./SettingsPage";
 import DashboardIndex from "./DashboardIndex";
 import { Dispatch, FC, SetStateAction } from "react";
 import { Template } from "@/types/Template";
+import api from "@/services/axios";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
-interface Props {
-	templates: Template[];
-	setTemplates: Dispatch<SetStateAction<Template[]>>;
-}
-
-const DashboardRoutes: FC<Props> = ({ templates, setTemplates }) => {
+const DashboardRoutes = () => {
+	const [templates, setTemplates] = useState<Template[]>([]);
 	const store = useDashboardStore({ templates, setTemplates });
+	const BASE_URL = import.meta.env.VITE_BASE_URL;
+
+	const fetchMyTemplates = async (state: "active" | "deleted") => {
+		try {
+			const response = await api.get(
+				`${BASE_URL}/my-templates?state=${state}`,
+			);
+			setTemplates(response.data.templates);
+		} catch (error) {
+			toast.error("Error fetching templates.");
+		}
+	};
 
 	return (
 		<Routes>
@@ -28,6 +39,7 @@ const DashboardRoutes: FC<Props> = ({ templates, setTemplates }) => {
 						onTrash={store.trashTemplate}
 						onUpdate={store.updateTemplate}
 						onAssignCollection={store.assignCollection}
+						fetchMyTemplates={fetchMyTemplates}
 					/>
 				}
 			/>
@@ -51,6 +63,7 @@ const DashboardRoutes: FC<Props> = ({ templates, setTemplates }) => {
 						templates={store.trashedTemplates}
 						onRestore={store.restoreTemplate}
 						onPermanentlyDelete={store.permanentlyDelete}
+						fetchMyTemplates={fetchMyTemplates}
 					/>
 				}
 			/>

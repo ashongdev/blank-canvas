@@ -13,22 +13,6 @@ const DashboardLayout = () => {
 	// if (!isAuthenticated) {
 	//   return <Navigate to="/login" replace />;
 	// }
-	const [templates, setTemplates] = useState<Template[]>([]);
-	const BASE_URL = import.meta.env.VITE_BASE_URL;
-
-	const fetchMyTemplates = async () => {
-		try {
-			const response = await api.get(`${BASE_URL}/my-templates`);
-			console.log(response);
-			setTemplates(response.data.templates);
-		} catch (error) {
-			console.log("📝 [DashboardLayout.tsx:16] error:", error);
-		}
-	};
-
-	useEffect(() => {
-		fetchMyTemplates();
-	}, []);
 
 	return (
 		<SidebarProvider>
@@ -45,10 +29,7 @@ const DashboardLayout = () => {
 						<ThemeToggler />
 					</header>
 					<main className="flex-1 overflow-auto p-6">
-						<DashboardRoutes
-							templates={templates}
-							setTemplates={setTemplates}
-						/>
+						<DashboardRoutes />
 					</main>
 				</div>
 			</div>

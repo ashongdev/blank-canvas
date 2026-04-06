@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	MoreVertical,
 	Pencil,
@@ -50,6 +50,7 @@ interface Props {
 		templateId: number,
 		collectionId: number | null,
 	) => void;
+	fetchMyTemplates: (state: "active" | "deleted") => void;
 }
 
 const TemplatesPage = ({
@@ -58,11 +59,16 @@ const TemplatesPage = ({
 	onTrash,
 	onUpdate,
 	onAssignCollection,
+	fetchMyTemplates,
 }: Props) => {
 	const navigate = useNavigate();
 	const [editTemplate, setEditTemplate] = useState<Template | null>(null);
 	const [editName, setEditName] = useState("");
 	const [deleteId, setDeleteId] = useState<number | null>(null);
+
+	useEffect(() => {
+		fetchMyTemplates("active");
+	}, []);
 
 	const openEdit = (t: Template) => {
 		setEditTemplate(t);
