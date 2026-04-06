@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
-import { Outlet, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import DashboardRoutes from "./DashboardRoutes";
 
 const DashboardLayout = () => {
   // Simple auth check — replace with your real auth logic
