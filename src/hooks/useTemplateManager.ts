@@ -108,7 +108,7 @@ const useTemplateManager = ({
 	};
 
 	const checkId = async (publicId: string): Promise<boolean> => {
-		const res = await axios.post<CheckIdResponse>(
+		const res = await api.post<CheckIdResponse>(
 			`${BASE_URL}/check_public_id/`,
 			{
 				public_id: publicId,
@@ -144,7 +144,7 @@ const useTemplateManager = ({
 			}
 
 			const encodedFields = btoa(JSON.stringify(fields));
-			const res = await axios.post<UploadResponse>(
+			const res = await api.post<UploadResponse>(
 				`${BASE_URL}/upload/`,
 				formData,
 			);

@@ -23,6 +23,7 @@ import {
 	participantPageTourSteps,
 	TOUR_STORAGE_KEYS,
 } from "@/config/tourSteps";
+import useFunctions from "@/hooks/useFunctions";
 import { useTour } from "@/hooks/useTour";
 import { logEvent } from "@/lib/analytics";
 import api from "@/services/axios";
@@ -38,7 +39,6 @@ import { toast } from "sonner";
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Participant = () => {
-	const { theme, setTheme } = useTheme();
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	const { startTour, resetTour } = useTour({
@@ -80,7 +80,6 @@ const Participant = () => {
 
 	const previewRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// Auto-load if ID is in URL (shared link flow)
 	useEffect(() => {
@@ -166,27 +165,6 @@ const Participant = () => {
 	}, [searchParams]);
 
 	const CLOUD_NAME = "demtelhcc";
-
-	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			const url = URL.createObjectURL(file);
-			setTemplateUrl(url);
-			setTemplateLoaded(true);
-			setSelectedFile(file);
-			setIsLocalDraft(true);
-
-			setSearchParams({});
-			setCertificateId("");
-
-			setTextPosition({ x: 0, y: 0 });
-			setSelectedFont("Bickham Script Pro Regular");
-			setFontSize(100);
-			toast.success(
-				"Image loaded. Adjust settings and click Share to publish.",
-			);
-		}
-	};
 
 	const handlePublish = async () => {
 		if (!selectedFile) return;

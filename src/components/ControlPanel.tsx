@@ -14,6 +14,7 @@ import { CERTIFICATE_FONTS, FONT_WEIGHTS } from "@/lib/utils";
 import { TextField } from "@/types/TextField";
 import { motion } from "framer-motion";
 import {
+	Download,
 	Loader2,
 	Plus,
 	Settings2,
@@ -97,7 +98,7 @@ const ControlPanel = ({
 					<div className="grid w-full max-w-sm items-center gap-1.5 relative">
 						<Button
 							variant="outline"
-							className="w-full relative z-10 pointer-events-none justify-start px-3 text-muted-foreground font-normal"
+							className="w-full relative z-10 pointer-events-none justify-start px-3 font-normal cursor-pointer"
 						>
 							<Upload className="w-4 h-4 mr-2" />
 							{hasTemplate
@@ -409,7 +410,7 @@ const ControlPanel = ({
 						{isGenerating ? (
 							<Loader2 className="w-4 h-4 mr-2 animate-spin" />
 						) : (
-							<Upload className="w-4 h-4 mr-2" />
+							<Download className="w-4 h-4 mr-2" />
 						)}
 						Generate Sample
 					</Button>
