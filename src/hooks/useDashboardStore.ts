@@ -82,6 +82,7 @@ export function useDashboardStore({
 				await api.put(`${BASE_URL}/update-template/`, {
 					templateId: id,
 					...updates,
+					isTemplate: false,
 				});
 			} catch (error) {
 				// rollback if server fails
@@ -114,10 +115,12 @@ export function useDashboardStore({
 			name,
 			created_at: new Date().toISOString(),
 		};
-		setCollections((prev) => [...prev, newCol]);
 
 		try {
-			await api.put(`${BASE_URL}/create-collection/`, { name: name });
+			const res = await api.put(`${BASE_URL}/create-collection/`, {
+				name: name,
+			});
+			setCollections(res.data.collections);
 			toast.success("Collection created successfully.");
 		} catch (error) {
 			toast.error("Failed to add new collection");
@@ -125,11 +128,32 @@ export function useDashboardStore({
 		return newCol;
 	}, []);
 
-	const updateCollection = useCallback((id: number, name: string) => {
-		setCollections((prev) =>
-			prev.map((c) => (c.id === id ? { ...c, name } : c)),
-		);
-	}, []);
+	const updateCollection = useCallback(
+		async (id: number, name: string) => {
+			const oldCollection = collections.find((t) => t.id === id);
+
+			setCollections((prev) =>
+				prev.map((c) => (c.id === id ? { ...c, name } : c)),
+			);
+
+			try {
+				await api.put(`${BASE_URL}/update-template/`, {
+					collectionId: id,
+					isTemplate: true,
+					name,
+				});
+			} catch (error) {
+				// rollback if server fails
+				if (oldCollection) {
+					setCollections((prev) =>
+						prev.map((t) => (t.id === id ? oldCollection : t)),
+					);
+				}
+				toast.error("Failed to update template");
+			}
+		},
+		[collections],
+	);
 
 	const deleteCollection = useCallback((id: number) => {
 		// Unassign templates but don't trash them
