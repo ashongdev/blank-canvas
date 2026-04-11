@@ -9,89 +9,18 @@ export interface Collection {
 	created_at: string;
 }
 
-const SEED_COLLECTIONS: Collection[] = [
-	{
-		id: 1,
-		name: "Events",
-		created_at: new Date("2025-12-01").toDateString(),
-	},
-	{
-		id: 2,
-		name: "Corporate",
-		created_at: new Date("2025-12-10").toDateString(),
-	},
-];
-
-const SEED_TEMPLATES: Template[] = [
-	{
-		id: 1,
-		name: "Award Certificate",
-		url: "/placeholder.svg",
-		public_id: "cert_award_001",
-		created_at: new Date("2026-01-15").toDateString(),
-		collection_id: 1,
-		trashed: false,
-		updated_at: new Date("2026-03-10").toDateString(),
-		user: null,
-	},
-	{
-		id: 2,
-		name: "Workshop Completion",
-		url: "/placeholder.svg",
-		public_id: "cert_workshop_002",
-		created_at: new Date("2026-02-01").toDateString(),
-		collection_id: 1,
-		trashed: false,
-		updated_at: new Date("2026-03-10").toDateString(),
-		user: null,
-	},
-	{
-		id: 3,
-		name: "Employee of the Month",
-		url: "/placeholder.svg",
-		public_id: "cert_eom_003",
-		created_at: new Date("2026-02-20").toDateString(),
-		collection_id: 2,
-		trashed: false,
-		updated_at: new Date("2026-03-10").toDateString(),
-		user: null,
-	},
-	{
-		id: 4,
-		name: "Training Badge",
-		url: "/placeholder.svg",
-		public_id: "cert_badge_004",
-		created_at: new Date("2026-03-05").toDateString(),
-		collection_id: null,
-		trashed: false,
-		updated_at: new Date("2026-03-10").toDateString(),
-		user: null,
-	},
-	{
-		id: 5,
-		name: "Volunteer Appreciation",
-		url: "/placeholder.svg",
-		public_id: "cert_vol_005",
-		created_at: new Date("2026-03-12").toDateString(),
-		collection_id: null,
-		trashed: false,
-		updated_at: new Date("2026-03-10").toDateString(),
-		user: null,
-	},
-];
-
 export function useDashboardStore({
 	templates,
 	setTemplates,
+	collections,
+	setCollections,
 }: {
 	templates: Template[];
 	setTemplates: Dispatch<SetStateAction<Template[]>>;
+	collections: Collection[];
+	setCollections: Dispatch<SetStateAction<Collection[]>>;
 }) {
 	const BASE_URL = import.meta.env.VITE_BASE_URL;
-
-	// const [templates, setTemplates] = useState<Template[]>(SEED_TEMPLATES);
-	const [collections, setCollections] =
-		useState<Collection[]>(SEED_COLLECTIONS);
 
 	// Templates
 	const activeTemplates = templates.filter((t) => !t.trashed);
@@ -179,13 +108,20 @@ export function useDashboardStore({
 	);
 
 	// Collections
-	const createCollection = useCallback((name: string) => {
+	const createCollection = useCallback(async (name: string) => {
 		const newCol: Collection = {
 			id: Date.now(),
 			name,
 			created_at: new Date().toISOString(),
 		};
 		setCollections((prev) => [...prev, newCol]);
+
+		try {
+			await api.put(`${BASE_URL}/create-collection/`, { name: name });
+			toast.success("Collection created successfully.");
+		} catch (error) {
+			toast.error("Failed to add new collection");
+		}
 		return newCol;
 	}, []);
 

@@ -10,11 +10,24 @@ import { Template } from "@/types/Template";
 import api from "@/services/axios";
 import { toast } from "sonner";
 
+export interface Collection {
+	id: number;
+	name: string;
+	created_at: string;
+}
+
 const DashboardRoutes = () => {
 	const [templates, setTemplates] = useState<Template[]>([]);
+	const [collections, setCollections] = useState<Collection[]>([]);
+
 	const [isActiveLoading, setIsActiveLoading] = useState(false);
 	const [isDeletedLoading, setIsDeletedLoading] = useState(false);
-	const store = useDashboardStore({ templates, setTemplates });
+	const store = useDashboardStore({
+		templates,
+		setTemplates,
+		collections,
+		setCollections,
+	});
 	const BASE_URL = import.meta.env.VITE_BASE_URL;
 	const location = useLocation();
 
@@ -31,6 +44,7 @@ const DashboardRoutes = () => {
 					`${BASE_URL}/my-templates?state=${state}`,
 				);
 				setTemplates(response.data.templates);
+				setCollections(response.data.collections);
 			} catch (error) {
 				toast.error("Error fetching templates.");
 			} finally {
@@ -66,7 +80,7 @@ const DashboardRoutes = () => {
 					<TemplatesPage
 						templates={templates}
 						isLoading={isActiveLoading}
-						collections={store.collections}
+						collections={collections}
 						onTrash={store.trashTemplate}
 						onUpdate={store.updateTemplate}
 						onAssignCollection={store.assignCollection}
@@ -78,7 +92,7 @@ const DashboardRoutes = () => {
 				element={
 					<CollectionsPage
 						isLoading={isActiveLoading}
-						collections={store.collections}
+						collections={collections}
 						templates={store.templates}
 						onCreate={store.createCollection}
 						onUpdate={store.updateCollection}
