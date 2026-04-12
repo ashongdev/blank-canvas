@@ -98,35 +98,65 @@ export function useDashboardStore({
 	);
 
 	const assignCollection = useCallback(
-		(templateId: number, collection_id: number | null) => {
+		async (templateId: number, collectionId: number | null) => {
+			if (!templateId) return;
+
+			const previousTemplates = templates;
+			const oldTemplate = templates.find((t) => t.id === templateId);
+
 			setTemplates((prev) =>
 				prev.map((t) =>
-					t.id === templateId ? { ...t, collection_id } : t,
+					t.id === templateId
+						? { ...t, collection_id: collectionId }
+						: t,
 				),
 			);
+
+			try {
+				await api.put(`${BASE_URL}/add-to-collection/`, {
+					templateId,
+					collectionId,
+				});
+				toast.success("Success");
+			} catch (error) {
+				if (oldTemplate) {
+					setTemplates((prev) =>
+						prev.map((t) =>
+							t.id === templateId ? oldTemplate : t,
+						),
+					);
+				}
+				toast.error("Failed to assign collection");
+			}
 		},
-		[],
+		[templates],
 	);
 
 	// Collections
-	const createCollection = useCallback(async (name: string) => {
-		const newCol: Collection = {
-			id: Date.now(),
-			name,
-			created_at: new Date().toISOString(),
-		};
+	const createCollection = useCallback(
+		async (name: string) => {
+			const previousCollections = collections;
+			const newCollection: Collection = {
+				id: Date.now(),
+				name,
+				created_at: new Date().toISOString(),
+			};
 
-		try {
-			const res = await api.put(`${BASE_URL}/create-collection/`, {
-				name: name,
-			});
-			setCollections(res.data.collections);
-			toast.success("Collection created successfully.");
-		} catch (error) {
-			toast.error("Failed to add new collection");
-		}
-		return newCol;
-	}, []);
+			setCollections((prev) => [...prev, newCollection]);
+
+			try {
+				const res = await api.put(`${BASE_URL}/create-collection/`, {
+					name,
+				});
+				setCollections(res.data.collections);
+				toast.success("Collection created successfully.");
+			} catch (error) {
+				setCollections(previousCollections);
+				toast.error("Failed to create collection");
+			}
+		},
+		[collections],
+	);
 
 	const updateCollection = useCallback(
 		async (id: number, name: string) => {
@@ -155,15 +185,31 @@ export function useDashboardStore({
 		[collections],
 	);
 
-	const deleteCollection = useCallback((id: number) => {
-		// Unassign templates but don't trash them
-		setTemplates((prev) =>
-			prev.map((t) =>
-				t.collection_id === id ? { ...t, collection_id: null } : t,
-			),
-		);
-		setCollections((prev) => prev.filter((c) => c.id !== id));
-	}, []);
+	const deleteCollection = useCallback(
+		async (id: number) => {
+			const previousTemplates = templates;
+			const previousCollections = collections;
+
+			setTemplates((prev) =>
+				prev.map((t) =>
+					t.collection_id === id ? { ...t, collection_id: null } : t,
+				),
+			);
+			setCollections((prev) => prev.filter((c) => c.id !== id));
+
+			try {
+				await api.delete(
+					`${BASE_URL}/delete-collection/?collectionId=${id}`,
+				);
+				toast.success("Collection deleted successfully.");
+			} catch (error) {
+				setTemplates(previousTemplates);
+				setCollections(previousCollections);
+				toast.error("Failed to delete collection");
+			}
+		},
+		[templates, collections],
+	);
 
 	return {
 		templates,
