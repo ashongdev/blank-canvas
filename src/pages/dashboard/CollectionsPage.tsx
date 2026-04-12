@@ -66,6 +66,12 @@ const CollectionsPage = ({
 	onAssignCollection,
 	onUploadToCollection,
 }: Props) => {
+	type UploadingTemplate = {
+		id: string;
+		previewUrl: string;
+		name: string;
+	};
+
 	const [creating, setCreating] = useState(false);
 	const [newName, setNewName] = useState("");
 	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
@@ -77,6 +83,9 @@ const CollectionsPage = ({
 	);
 	const [isUploadingToCollection, setIsUploadingToCollection] =
 		useState(false);
+	const [uploadingTemplates, setUploadingTemplates] = useState<
+		UploadingTemplate[]
+	>([]);
 
 	const handleCreate = () => {
 		if (newName.trim()) {
@@ -105,13 +114,37 @@ const CollectionsPage = ({
 		e.currentTarget.value = "";
 		if (!file) return;
 
+		const uploadId = `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+		const previewUrl = URL.createObjectURL(file);
+
+		setUploadingTemplates((prev) => [
+			...prev,
+			{
+				id: uploadId,
+				previewUrl,
+				name: file.name,
+			},
+		]);
+
 		setIsUploadingToCollection(true);
 		try {
 			await onUploadToCollection(openedCollection.id, file);
 		} finally {
+			setUploadingTemplates((prev) =>
+				prev.filter((upload) => upload.id !== uploadId),
+			);
+			URL.revokeObjectURL(previewUrl);
 			setIsUploadingToCollection(false);
 		}
 	};
+
+	useEffect(() => {
+		return () => {
+			uploadingTemplates.forEach((upload) => {
+				URL.revokeObjectURL(upload.previewUrl);
+			});
+		};
+	}, [uploadingTemplates]);
 
 	useEffect(() => {
 		if (!isLoading) return;
@@ -159,6 +192,8 @@ const CollectionsPage = ({
 	// If a collection is opened, show the detail view
 	if (openedCollection) {
 		const colTemplates = templatesInCollection(openedCollection.id);
+		const hasDisplayTemplates =
+			colTemplates.length > 0 || uploadingTemplates.length > 0;
 		return (
 			<div className="space-y-6">
 				<input
@@ -207,14 +242,19 @@ const CollectionsPage = ({
 							}
 							disabled={isUploadingToCollection}
 						>
-							{isUploadingToCollection
-								? "Uploading..."
-								: "Upload Template"}
+							{isUploadingToCollection ? (
+								<>
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									Uploading...
+								</>
+							) : (
+								"Upload Template"
+							)}
 						</Button>
 					</div>
 				</div>
 
-				{colTemplates.length === 0 ? (
+				{!hasDisplayTemplates ? (
 					<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
 						<FolderOpen className="h-12 w-12 mb-3 opacity-40" />
 						<p className="text-lg">
@@ -226,6 +266,34 @@ const CollectionsPage = ({
 					</div>
 				) : (
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+						{uploadingTemplates.map((upload) => (
+							<Card
+								key={upload.id}
+								className="group overflow-hidden border-border opacity-80"
+							>
+								<div className="relative aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+									<img
+										src={upload.previewUrl}
+										alt={upload.name}
+										className="w-full h-full object-cover grayscale"
+									/>
+									<div className="absolute inset-0 bg-background/55 flex items-center justify-center">
+										<div className="flex items-center gap-2 text-sm text-foreground">
+											<Loader2 className="h-4 w-4 animate-spin" />
+											Uploading
+										</div>
+									</div>
+								</div>
+								<CardContent className="p-3">
+									<p className="text-sm font-medium text-foreground truncate">
+										{upload.name}
+									</p>
+									<p className="text-xs text-muted-foreground truncate">
+										Pending upload...
+									</p>
+								</CardContent>
+							</Card>
+						))}
 						{colTemplates.map((t) => (
 							<Card
 								key={t.id}
