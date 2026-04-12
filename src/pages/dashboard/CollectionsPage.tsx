@@ -25,6 +25,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AnimatePresence, motion } from "framer-motion";
 import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
 import {
 	Dialog,
@@ -399,65 +400,80 @@ const CollectionsPage = ({
 					</div>
 				)}
 
-				{selectedTemplate && (
-					<div
-						className="fixed bottom-6 right-6 z-40"
-						data-collection-template-dock
-					>
-						<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="icon"
-										variant="outline"
-										onClick={() =>
-											openTemplateInEditor(
-												navigate,
-												selectedTemplate,
-											)
-										}
-									>
-										<ArrowUpRightFromSquare className="h-4 w-4" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>Open in Editor</TooltipContent>
-							</Tooltip>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="icon"
-										variant="destructive"
-										onClick={() =>
-											onAssignCollection(
-												selectedTemplate.id,
-												null,
-											)
-										}
-									>
-										<X className="h-4 w-4" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>
-									Remove from Collection
-								</TooltipContent>
-							</Tooltip>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="icon"
-										variant="ghost"
-										onClick={() =>
-											setSelectedTemplateId(null)
-										}
-									>
-										<Trash2 className="h-4 w-4" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>Clear Selection</TooltipContent>
-							</Tooltip>
-						</div>
-					</div>
-				)}
+				<AnimatePresence>
+					{selectedTemplate && (
+						<motion.div
+							className="fixed bottom-6 right-6 z-40"
+							data-collection-template-dock
+							initial={{ opacity: 0, y: 24, scale: 0.9 }}
+							animate={{ opacity: 1, y: 0, scale: 1 }}
+							exit={{ opacity: 0, y: 10, scale: 0.97 }}
+							transition={{
+								type: "spring",
+								stiffness: 620,
+								damping: 16,
+								mass: 0.55,
+							}}
+						>
+							<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											size="icon"
+											variant="outline"
+											onClick={() =>
+												openTemplateInEditor(
+													navigate,
+													selectedTemplate,
+												)
+											}
+										>
+											<ArrowUpRightFromSquare className="h-4 w-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>
+										Open in Editor
+									</TooltipContent>
+								</Tooltip>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											size="icon"
+											variant="destructive"
+											onClick={() =>
+												onAssignCollection(
+													selectedTemplate.id,
+													null,
+												)
+											}
+										>
+											<X className="h-4 w-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>
+										Remove from Collection
+									</TooltipContent>
+								</Tooltip>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											size="icon"
+											variant="ghost"
+											onClick={() =>
+												setSelectedTemplateId(null)
+											}
+										>
+											<Trash2 className="h-4 w-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>
+										Clear Selection
+									</TooltipContent>
+								</Tooltip>
+							</div>
+						</motion.div>
+					)}
+				</AnimatePresence>
 
 				<Button
 					variant="outline"
@@ -598,72 +614,93 @@ const CollectionsPage = ({
 				</div>
 			)}
 
-			{selectedCollection && (
-				<div
-					className="fixed bottom-6 right-6 z-40"
-					data-collection-dock
-				>
-					<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="outline"
-									onClick={() =>
-										setOpenedCollection(selectedCollection)
-									}
-								>
-									<ArrowUpRightFromSquare className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Open Collection</TooltipContent>
-						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="outline"
-									onClick={() => {
-										setEditCol(selectedCollection);
-										setEditName(selectedCollection.name);
-									}}
-								>
-									<Pencil className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Rename Collection</TooltipContent>
-						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="destructive"
-									onClick={() =>
-										setDeleteColId(selectedCollection.id)
-									}
-								>
-									<Trash2 className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Delete Collection</TooltipContent>
-						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="ghost"
-									onClick={() =>
-										setSelectedCollectionId(null)
-									}
-								>
-									<X className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Clear Selection</TooltipContent>
-						</Tooltip>
-					</div>
-				</div>
-			)}
+			<AnimatePresence>
+				{selectedCollection && (
+					<motion.div
+						className="fixed bottom-6 right-6 z-40"
+						data-collection-dock
+						initial={{ opacity: 0, y: 24, scale: 0.9 }}
+						animate={{ opacity: 1, y: 0, scale: 1 }}
+						exit={{ opacity: 0, y: 10, scale: 0.97 }}
+						transition={{
+							type: "spring",
+							stiffness: 620,
+							damping: 16,
+							mass: 0.55,
+						}}
+					>
+						<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="outline"
+										onClick={() =>
+											setOpenedCollection(
+												selectedCollection,
+											)
+										}
+									>
+										<ArrowUpRightFromSquare className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Open Collection</TooltipContent>
+							</Tooltip>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="outline"
+										onClick={() => {
+											setEditCol(selectedCollection);
+											setEditName(
+												selectedCollection.name,
+											);
+										}}
+									>
+										<Pencil className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									Rename Collection
+								</TooltipContent>
+							</Tooltip>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="destructive"
+										onClick={() =>
+											setDeleteColId(
+												selectedCollection.id,
+											)
+										}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									Delete Collection
+								</TooltipContent>
+							</Tooltip>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="ghost"
+										onClick={() =>
+											setSelectedCollectionId(null)
+										}
+									>
+										<X className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Clear Selection</TooltipContent>
+							</Tooltip>
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 
 			{/* Rename dialog */}
 			<Dialog

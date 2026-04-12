@@ -45,6 +45,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AnimatePresence, motion } from "framer-motion";
 import { openTemplateInEditor } from "@/lib/editorUtils";
 import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
 import { Label } from "@/components/ui/label";
@@ -422,107 +423,130 @@ const TemplatesPage = ({
 				)}
 			</div>
 
-			{selectedTemplate && (
-				<div className="fixed bottom-6 right-6 z-40" data-template-dock>
-					<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="outline"
-									onClick={() => openEdit(selectedTemplate)}
-								>
-									<Pencil className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Edit</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="outline"
-									onClick={() =>
-										handleUpdateTemplate(selectedTemplate)
-									}
-								>
-									<ArrowUpRightFromSquare className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Open in Editor</TooltipContent>
-						</Tooltip>
-
-						<DropdownMenu>
+			<AnimatePresence>
+				{selectedTemplate && (
+					<motion.div
+						className="fixed bottom-6 right-6 z-40"
+						data-template-dock
+						initial={{ opacity: 0, y: 24, scale: 0.9 }}
+						animate={{ opacity: 1, y: 0, scale: 1 }}
+						exit={{ opacity: 0, y: 10, scale: 0.97 }}
+						transition={{
+							type: "spring",
+							stiffness: 620,
+							damping: 16,
+							mass: 0.55,
+						}}
+					>
+						<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
 							<Tooltip>
 								<TooltipTrigger asChild>
-									<DropdownMenuTrigger asChild>
-										<Button size="icon" variant="outline">
-											<FolderPlus className="h-4 w-4" />
-										</Button>
-									</DropdownMenuTrigger>
-								</TooltipTrigger>
-								<TooltipContent>
-									Add to Collection
-								</TooltipContent>
-							</Tooltip>
-							<DropdownMenuContent align="start">
-								<DropdownMenuItem
-									onClick={() =>
-										onAssignCollection(
-											selectedTemplate.id,
-											null,
-										)
-									}
-								>
-									None
-								</DropdownMenuItem>
-								{collections.map((c) => (
-									<DropdownMenuItem
-										key={c.id}
+									<Button
+										size="icon"
+										variant="outline"
 										onClick={() =>
-											onAssignCollection(
-												selectedTemplate.id,
-												c.id,
+											openEdit(selectedTemplate)
+										}
+									>
+										<Pencil className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Edit</TooltipContent>
+							</Tooltip>
+
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="outline"
+										onClick={() =>
+											handleUpdateTemplate(
+												selectedTemplate,
 											)
 										}
 									>
-										{c.name}
+										<ArrowUpRightFromSquare className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Open in Editor</TooltipContent>
+							</Tooltip>
+
+							<DropdownMenu>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<DropdownMenuTrigger asChild>
+											<Button
+												size="icon"
+												variant="outline"
+											>
+												<FolderPlus className="h-4 w-4" />
+											</Button>
+										</DropdownMenuTrigger>
+									</TooltipTrigger>
+									<TooltipContent>
+										Add to Collection
+									</TooltipContent>
+								</Tooltip>
+								<DropdownMenuContent align="start">
+									<DropdownMenuItem
+										onClick={() =>
+											onAssignCollection(
+												selectedTemplate.id,
+												null,
+											)
+										}
+									>
+										None
 									</DropdownMenuItem>
-								))}
-							</DropdownMenuContent>
-						</DropdownMenu>
+									{collections.map((c) => (
+										<DropdownMenuItem
+											key={c.id}
+											onClick={() =>
+												onAssignCollection(
+													selectedTemplate.id,
+													c.id,
+												)
+											}
+										>
+											{c.name}
+										</DropdownMenuItem>
+									))}
+								</DropdownMenuContent>
+							</DropdownMenu>
 
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="destructive"
-									onClick={() =>
-										setDeleteId(selectedTemplate.id)
-									}
-								>
-									<Trash2 className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Delete</TooltipContent>
-						</Tooltip>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="destructive"
+										onClick={() =>
+											setDeleteId(selectedTemplate.id)
+										}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Delete</TooltipContent>
+							</Tooltip>
 
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="ghost"
-									onClick={() => setSelectedTemplateId(null)}
-								>
-									<X className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Clear Selection</TooltipContent>
-						</Tooltip>
-					</div>
-				</div>
-			)}
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="ghost"
+										onClick={() =>
+											setSelectedTemplateId(null)
+										}
+									>
+										<X className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Clear Selection</TooltipContent>
+							</Tooltip>
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 
 			<Dialog
 				open={!!editTemplate}

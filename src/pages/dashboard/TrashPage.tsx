@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
+import { AnimatePresence, motion } from "framer-motion";
 import {
 	Tooltip,
 	TooltipContent,
@@ -186,52 +187,70 @@ const TrashPage = ({
 				</>
 			)}
 
-			{selectedTemplate && (
-				<div className="fixed bottom-6 right-6 z-40" data-trash-dock>
-					<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="outline"
-									onClick={() =>
-										setRestoreId(selectedTemplate.id)
-									}
-								>
-									<RotateCcw className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Restore</TooltipContent>
-						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="destructive"
-									onClick={() =>
-										setDeleteId(selectedTemplate.id)
-									}
-								>
-									<Trash2 className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Delete Permanently</TooltipContent>
-						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="icon"
-									variant="ghost"
-									onClick={() => setSelectedTemplateId(null)}
-								>
-									<X className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Clear Selection</TooltipContent>
-						</Tooltip>
-					</div>
-				</div>
-			)}
+			<AnimatePresence>
+				{selectedTemplate && (
+					<motion.div
+						className="fixed bottom-6 right-6 z-40"
+						data-trash-dock
+						initial={{ opacity: 0, y: 24, scale: 0.9 }}
+						animate={{ opacity: 1, y: 0, scale: 1 }}
+						exit={{ opacity: 0, y: 10, scale: 0.97 }}
+						transition={{
+							type: "spring",
+							stiffness: 620,
+							damping: 16,
+							mass: 0.55,
+						}}
+					>
+						<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="outline"
+										onClick={() =>
+											setRestoreId(selectedTemplate.id)
+										}
+									>
+										<RotateCcw className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Restore</TooltipContent>
+							</Tooltip>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="destructive"
+										onClick={() =>
+											setDeleteId(selectedTemplate.id)
+										}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									Delete Permanently
+								</TooltipContent>
+							</Tooltip>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="ghost"
+										onClick={() =>
+											setSelectedTemplateId(null)
+										}
+									>
+										<X className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Clear Selection</TooltipContent>
+							</Tooltip>
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 
 			{/* Permanent delete confirmation */}
 			<AlertDialog
