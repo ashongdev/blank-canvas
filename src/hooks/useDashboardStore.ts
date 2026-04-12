@@ -2,6 +2,7 @@ import api from "@/services/axios";
 import { Template } from "@/types/Template";
 import { useState, useCallback, SetStateAction, Dispatch } from "react";
 import { toast } from "sonner";
+import { useAuthContext } from "./useAuthContext";
 
 export interface Collection {
 	id: number;
@@ -20,8 +21,7 @@ export function useDashboardStore({
 	collections: Collection[];
 	setCollections: Dispatch<SetStateAction<Collection[]>>;
 }) {
-	const BASE_URL = import.meta.env.VITE_BASE_URL;
-
+	const { BASE_URL } = useAuthContext();
 	// Templates
 	const activeTemplates = templates.filter((t) => !t.trashed);
 	const trashedTemplates = templates.filter((t) => t.trashed);

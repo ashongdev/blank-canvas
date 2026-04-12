@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Template } from "@/types/Template";
 import api from "@/services/axios";
 import { toast } from "sonner";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 export interface Collection {
 	id: number;
@@ -28,7 +29,7 @@ const DashboardRoutes = () => {
 		collections,
 		setCollections,
 	});
-	const BASE_URL = import.meta.env.VITE_BASE_URL;
+	const { BASE_URL } = useAuthContext();
 	const location = useLocation();
 
 	const fetchMyTemplates = useCallback(

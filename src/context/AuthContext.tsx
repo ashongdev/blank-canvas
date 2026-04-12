@@ -15,6 +15,7 @@ interface AuthContextValue {
 	refreshAuth: () => Promise<void>;
 	setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
 	logout: () => void;
+	BASE_URL: string;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -24,15 +25,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
 	const [loading, setLoading] = useState(true);
 
+	const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 	const refreshAuth = useCallback(async () => {
 		setLoading(true);
 		try {
-			const response = await axios.get(
-				`${import.meta.env.VITE_BASE_URL}/me`,
-				{
-					withCredentials: true,
-				},
-			);
+			const response = await axios.get(`${BASE_URL}/me`, {
+				withCredentials: true,
+			});
 
 			if (response.data) {
 				const serverUser = response.data;
@@ -76,8 +76,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 			refreshAuth,
 			setIsAuthenticated,
 			logout,
+			BASE_URL,
 		}),
-		[userName, isAuthenticated, loading, refreshAuth, logout],
+		[userName, isAuthenticated, loading, refreshAuth, logout, BASE_URL],
 	);
 
 	return (

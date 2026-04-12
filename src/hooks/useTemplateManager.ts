@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { logEvent } from "@/lib/analytics";
 import api from "@/services/axios";
 import { Recipient, TextField } from "@/types/TextField";
+import { useAuthContext } from "./useAuthContext";
 
 interface UseTemplateManagerProps {
 	templateFile: File | null;
@@ -44,7 +45,7 @@ const useTemplateManager = ({
 	setShowShareDialog,
 	setGeneratedLink,
 }: UseTemplateManagerProps) => {
-	const BASE_URL = import.meta.env.VITE_BASE_URL;
+	const { isAuthenticated, BASE_URL } = useAuthContext();
 
 	useEffect(() => {
 		return () => {
@@ -92,7 +93,7 @@ const useTemplateManager = ({
 		toast.success("Template loaded locally");
 
 		// If authenticated, save to db.
-		if (localStorage.getItem("user")) {
+		if (isAuthenticated) {
 			const formData = new FormData();
 			formData.append("template", templateFile);
 

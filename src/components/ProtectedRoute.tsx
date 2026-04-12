@@ -1,3 +1,4 @@
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
@@ -8,16 +9,14 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 	const [loading, setLoading] = useState(true);
 	const [authed, setAuthed] = useState(false);
+	const { BASE_URL } = useAuthContext();
 
 	useEffect(() => {
 		const checkAuth = async () => {
 			try {
-				const response = await fetch(
-					`${import.meta.env.VITE_BASE_URL}/me`,
-					{
-						credentials: "include",
-					},
-				);
+				const response = await fetch(`${BASE_URL}/me`, {
+					credentials: "include",
+				});
 				setAuthed(response.ok);
 			} catch (error) {
 				setAuthed(false);

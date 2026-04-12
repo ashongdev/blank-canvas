@@ -11,10 +11,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 const GoogleCallback = () => {
-	const BASE_URL = import.meta.env.VITE_BASE_URL;
-
+	const { BASE_URL } = useAuthContext();
 	useEffect(() => {
 		const handleGoogleCallback = async () => {
 			const params = new URLSearchParams(window.location.search);

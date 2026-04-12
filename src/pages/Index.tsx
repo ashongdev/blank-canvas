@@ -19,11 +19,11 @@ import { indexPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import useFunctions from "@/hooks/useFunctions";
 import useTemplateManager from "@/hooks/useTemplateManager";
 import { useTour } from "@/hooks/useTour";
+import { createDefaultTextField } from "@/lib/defaultField";
+import { copyLinkToClipboard, restartTour } from "@/lib/editorUtils";
 import { Recipient, TextField } from "@/types/TextField";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
 
 const Index = () => {
 	const navigate = useNavigate();
@@ -43,21 +43,7 @@ const Index = () => {
 	const [showPreview, setShowPreview] = useState(true);
 
 	const [fields, setFields] = useState<TextField[]>(
-		location.state?.fields || [
-			{
-				id: uuidv4(),
-				label: "Participant Name",
-				text: "John Doe",
-				x: 0,
-				y: 0,
-				font: "Bickham Script Pro Regular",
-				fontSize: 100,
-				fontWeight: "300",
-				color: "#000000",
-				anchorMode: "center",
-				required: true,
-			},
-		],
+		location.state?.fields || [createDefaultTextField()],
 	);
 	const [selectedFieldId, setSelectedFieldId] = useState<string>(
 		fields[0].id,
@@ -70,7 +56,6 @@ const Index = () => {
 	const previewRef = useRef<HTMLDivElement>(null);
 
 	const imgRef = useRef<HTMLImageElement>(null);
-	const [displayedSize, setDisplayedSize] = useState({ width: 0, height: 0 });
 	const [showShareDialog, setShowShareDialog] = useState(false);
 	const [generatedLink, setGeneratedLink] = useState("");
 	const [showIdDialog, setShowIdDialog] = useState(false);
@@ -78,13 +63,6 @@ const Index = () => {
 	const [isPublishing, setIsPublishing] = useState(false);
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
-
-	useEffect(() => {
-		if (imgRef.current) {
-			const { width, height } = imgRef.current.getBoundingClientRect();
-			setDisplayedSize({ width, height });
-		}
-	}, [templateUrl]);
 
 	const {
 		addField,
@@ -126,10 +104,7 @@ const Index = () => {
 		<div className="min-h-screen bg-background flex flex-col overflow-hidden">
 			{/* Header */}
 			<Header
-				onTourClick={() => {
-					resetTour();
-					startTour();
-				}}
+				onTourClick={() => restartTour(resetTour, startTour)}
 				onCreateClick={() => fileInputRef.current?.click()}
 			/>
 
@@ -290,8 +265,7 @@ const Index = () => {
 							size="sm"
 							className="px-3"
 							onClick={() => {
-								navigator.clipboard.writeText(generatedLink);
-								toast.success("Copied to clipboard");
+								void copyLinkToClipboard(generatedLink);
 							}}
 						>
 							<span className="sr-only">Copy</span>

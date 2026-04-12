@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { adminPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { useTour } from "@/hooks/useTour";
 import api from "@/services/axios";
 import axios from "axios";
@@ -24,9 +25,8 @@ import { Check, Copy, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
-
 const Admin = () => {
+	const { BASE_URL } = useAuthContext();
 	// const { theme, setTheme } = useTheme(); // Moved to Header
 	const { startTour, resetTour } = useTour({
 		steps: adminPageTourSteps,

@@ -23,6 +23,7 @@ import {
 	participantPageTourSteps,
 	TOUR_STORAGE_KEYS,
 } from "@/config/tourSteps";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import useFunctions from "@/hooks/useFunctions";
 import { useTour } from "@/hooks/useTour";
 import { logEvent } from "@/lib/analytics";
@@ -36,9 +37,8 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
-
 const Participant = () => {
+	const { BASE_URL } = useAuthContext();
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	const { startTour, resetTour } = useTour({
