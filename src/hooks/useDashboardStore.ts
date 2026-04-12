@@ -211,6 +211,51 @@ export function useDashboardStore({
 		[templates, collections],
 	);
 
+	const uploadTemplateToCollection = useCallback(
+		async (collectionId: number, file: File) => {
+			const formData = new FormData();
+			formData.append("template", file);
+
+			try {
+				const uploadRes = await api.post(`${BASE_URL}/auto-upload/`, formData);
+				const uploadedPublicId = uploadRes.data?.public_id;
+
+				const fetchRes = await api.get(`${BASE_URL}/my-templates?state=active`);
+				const fetchedTemplates: Template[] = fetchRes.data.templates;
+				const fetchedCollections: Collection[] = fetchRes.data.collections;
+
+				const uploadedTemplate = fetchedTemplates.find(
+					(t) => t.public_id === uploadedPublicId,
+				);
+
+				if (!uploadedTemplate) {
+					toast.error("Template uploaded, but failed to assign collection.");
+					setTemplates(fetchedTemplates);
+					setCollections(fetchedCollections);
+					return;
+				}
+
+				await api.put(`${BASE_URL}/add-to-collection/`, {
+					templateId: uploadedTemplate.id,
+					collectionId,
+				});
+
+				setTemplates(
+					fetchedTemplates.map((t) =>
+						t.id === uploadedTemplate.id
+							? { ...t, collection_id: collectionId }
+							: t,
+					),
+				);
+				setCollections(fetchedCollections);
+				toast.success("Template uploaded to collection.");
+			} catch (error) {
+				toast.error("Failed to upload template to collection.");
+			}
+		},
+		[BASE_URL],
+	);
+
 	return {
 		templates,
 		activeTemplates,
@@ -221,6 +266,7 @@ export function useDashboardStore({
 		permanentlyDelete,
 		updateTemplate,
 		assignCollection,
+		uploadTemplateToCollection,
 		createCollection,
 		updateCollection,
 		deleteCollection,

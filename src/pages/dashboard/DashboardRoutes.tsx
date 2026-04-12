@@ -99,6 +99,9 @@ const DashboardRoutes = () => {
 						onUpdate={store.updateCollection}
 						onDelete={store.deleteCollection}
 						onAssignCollection={store.assignCollection}
+						onUploadToCollection={
+							store.uploadTemplateToCollection
+						}
 					/>
 				}
 			/>

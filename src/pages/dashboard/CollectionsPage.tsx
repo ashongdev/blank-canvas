@@ -53,6 +53,7 @@ interface Props {
 		templateId: number,
 		collectionId: number | null,
 	) => void;
+	onUploadToCollection: (collectionId: number, file: File) => Promise<void>;
 }
 
 const CollectionsPage = ({
@@ -63,6 +64,7 @@ const CollectionsPage = ({
 	onUpdate,
 	onDelete,
 	onAssignCollection,
+	onUploadToCollection,
 }: Props) => {
 	const [creating, setCreating] = useState(false);
 	const [newName, setNewName] = useState("");
@@ -73,6 +75,8 @@ const CollectionsPage = ({
 	const [openedCollection, setOpenedCollection] = useState<Collection | null>(
 		null,
 	);
+	const [isUploadingToCollection, setIsUploadingToCollection] =
+		useState(false);
 
 	const handleCreate = () => {
 		if (newName.trim()) {
@@ -91,6 +95,23 @@ const CollectionsPage = ({
 
 	const templatesInCollection = (colId: number) =>
 		templates.filter((t) => t.collection_id === colId && !t.trashed);
+
+	const handleUploadToOpenedCollection = async (
+		e: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		if (!openedCollection) return;
+
+		const file = e.target.files?.[0];
+		e.currentTarget.value = "";
+		if (!file) return;
+
+		setIsUploadingToCollection(true);
+		try {
+			await onUploadToCollection(openedCollection.id, file);
+		} finally {
+			setIsUploadingToCollection(false);
+		}
+	};
 
 	useEffect(() => {
 		if (!isLoading) return;
@@ -140,6 +161,13 @@ const CollectionsPage = ({
 		const colTemplates = templatesInCollection(openedCollection.id);
 		return (
 			<div className="space-y-6">
+				<input
+					type="file"
+					id="collection-upload-input"
+					className="hidden"
+					accept="image/*"
+					onChange={handleUploadToOpenedCollection}
+				/>
 				{/* Breadcrumbs */}
 				<div className="flex items-center gap-1 text-sm text-muted-foreground">
 					<button
@@ -165,10 +193,25 @@ const CollectionsPage = ({
 					<h2 className="text-2xl font-semibold text-foreground">
 						{openedCollection.name}
 					</h2>
-					<p className="text-sm text-muted-foreground">
-						{colTemplates.length} template
-						{colTemplates.length !== 1 ? "s" : ""}
-					</p>
+					<div className="flex items-center gap-3">
+						<p className="text-sm text-muted-foreground">
+							{colTemplates.length} template
+							{colTemplates.length !== 1 ? "s" : ""}
+						</p>
+						<Button
+							size="sm"
+							onClick={() =>
+								document
+									.getElementById("collection-upload-input")
+									?.click()
+							}
+							disabled={isUploadingToCollection}
+						>
+							{isUploadingToCollection
+								? "Uploading..."
+								: "Upload Template"}
+						</Button>
+					</div>
 				</div>
 
 				{colTemplates.length === 0 ? (
@@ -178,7 +221,7 @@ const CollectionsPage = ({
 							No templates in this collection
 						</p>
 						<p className="text-sm">
-							Assign templates from the Templates page.
+							Upload one now or assign templates from Templates.
 						</p>
 					</div>
 				) : (
