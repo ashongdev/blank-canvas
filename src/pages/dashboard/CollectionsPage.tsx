@@ -25,6 +25,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
 import {
 	Dialog,
 	DialogContent,
@@ -124,6 +125,21 @@ const CollectionsPage = ({
 		(c) => c.id === selectedCollectionId,
 	);
 	const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+
+	useClearSelectionOnOutside({
+		enabled: openedCollection === null && selectedCollectionId !== null,
+		selectors: ["[data-collection-card]", "[data-collection-dock]"],
+		onClear: () => setSelectedCollectionId(null),
+	});
+
+	useClearSelectionOnOutside({
+		enabled: openedCollection !== null && selectedTemplateId !== null,
+		selectors: [
+			"[data-collection-template-card]",
+			"[data-collection-template-dock]",
+		],
+		onClear: () => setSelectedTemplateId(null),
+	});
 
 	const handleUploadToOpenedCollection = async (
 		e: React.ChangeEvent<HTMLInputElement>,
@@ -233,19 +249,7 @@ const CollectionsPage = ({
 		const hasDisplayTemplates =
 			colTemplates.length > 0 || uploadingTemplates.length > 0;
 		return (
-			<div
-				className="space-y-6"
-				onClick={(e) => {
-					const target = e.target as HTMLElement;
-					if (
-						target.closest("[data-collection-template-card]") ||
-						target.closest("[data-collection-template-dock]")
-					) {
-						return;
-					}
-					setSelectedTemplateId(null);
-				}}
-			>
+			<div className="space-y-6">
 				<input
 					type="file"
 					id="collection-upload-input"
@@ -467,19 +471,7 @@ const CollectionsPage = ({
 	}
 
 	return (
-		<div
-			className="space-y-6"
-			onClick={(e) => {
-				const target = e.target as HTMLElement;
-				if (
-					target.closest("[data-collection-card]") ||
-					target.closest("[data-collection-dock]")
-				) {
-					return;
-				}
-				setSelectedCollectionId(null);
-			}}
-		>
+		<div className="space-y-6">
 			<div className="flex items-center justify-between">
 				<h2 className="text-2xl font-semibold text-foreground">
 					Collections

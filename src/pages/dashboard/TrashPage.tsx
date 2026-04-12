@@ -3,6 +3,7 @@ import { Trash2, RotateCcw, Loader2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
 import {
 	Tooltip,
 	TooltipContent,
@@ -43,6 +44,12 @@ const TrashPage = ({
 	const templateToRestore = templates.find((t) => t.id === restoreId);
 	const templateToDelete = templates.find((t) => t.id === deleteId);
 
+	useClearSelectionOnOutside({
+		enabled: selectedTemplateId !== null,
+		selectors: ["[data-trash-card]", "[data-trash-dock]"],
+		onClear: () => setSelectedTemplateId(null),
+	});
+
 	useEffect(() => {
 		if (!isLoading) return;
 
@@ -66,19 +73,7 @@ const TrashPage = ({
 	}, [selectedTemplateId, templates]);
 
 	return (
-		<div
-			className="space-y-6"
-			onClick={(e) => {
-				const target = e.target as HTMLElement;
-				if (
-					target.closest("[data-trash-card]") ||
-					target.closest("[data-trash-dock]")
-				) {
-					return;
-				}
-				setSelectedTemplateId(null);
-			}}
-		>
+		<div className="space-y-6">
 			{isLoading ? (
 				<>
 					<div className="min-h-[30vh] flex flex-col items-center justify-center gap-3">

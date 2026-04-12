@@ -46,6 +46,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { openTemplateInEditor } from "@/lib/editorUtils";
+import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import type { Collection } from "@/hooks/useDashboardStore";
@@ -96,6 +97,12 @@ const TemplatesPage = ({
 	>([]);
 
 	const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+
+	useClearSelectionOnOutside({
+		enabled: selectedTemplateId !== null,
+		selectors: ["[data-template-card]", "[data-template-dock]"],
+		onClear: () => setSelectedTemplateId(null),
+	});
 
 	useEffect(() => {
 		if (!isLoading) return;
@@ -176,22 +183,7 @@ const TemplatesPage = ({
 
 	return (
 		<div className="space-y-6">
-			<div
-				className="space-y-6"
-				onClick={(e) => {
-					const target = e.target as HTMLElement;
-					if (
-						target.closest("[data-template-card]") ||
-						target.closest("[data-template-dock]")
-					) {
-						return;
-					}
-
-					if (selectedTemplateId !== null) {
-						setSelectedTemplateId(null);
-					}
-				}}
-			>
+			<div className="space-y-6">
 				{isLoading ? (
 					<>
 						<div className="min-h-[30vh] flex flex-col items-center justify-center gap-3">
