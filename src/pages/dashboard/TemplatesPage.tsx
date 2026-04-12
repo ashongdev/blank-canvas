@@ -151,14 +151,20 @@ const TemplatesPage = ({
 				</>
 			) : (
 				<>
-					<div className="flex items-center justify-between">
-						<h2 className="text-2xl font-semibold text-foreground">
-							My Templates
-						</h2>
-						<p className="text-sm text-muted-foreground">
-							{templates.length} template
-							{templates.length !== 1 ? "s" : ""}
-						</p>
+					<div className="flex items-center justify-between gap-4">
+						<div className="flex items-center gap-3">
+							<h2 className="text-2xl font-semibold text-foreground">
+								My Templates
+							</h2>
+							<p className="text-sm text-muted-foreground">
+								{templates.length} template
+								{templates.length !== 1 ? "s" : ""}
+							</p>
+						</div>
+						<Button onClick={() => navigate("/")} className="gap-2">
+							<span>+</span>
+							Add Template
+						</Button>
 					</div>
 
 					{templates.length === 0 ? (
