@@ -24,7 +24,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import axios from "axios";
 
 const Index = () => {
 	const navigate = useNavigate();
@@ -123,44 +122,6 @@ const Index = () => {
 		setGeneratedLink,
 	});
 
-	const [userName, setUserName] = useState("");
-	const [isAuthenticated, setIsAuthenticated] = useState(false);
-	const [loading, setLoading] = useState(true);
-	useEffect(() => {
-		const checkAuth = async () => {
-			try {
-				const response = await axios.get(
-					`${import.meta.env.VITE_BASE_URL}/me`,
-					{
-						withCredentials: true,
-					},
-				);
-
-				if (response.data) {
-					const serverUser = response.data;
-					const resolvedName =
-						serverUser.first_name ||
-						serverUser.username ||
-						serverUser.email ||
-						"User";
-
-					setUserName(resolvedName);
-					setIsAuthenticated(true);
-				} else {
-					setIsAuthenticated(false);
-					setUserName("");
-				}
-			} catch (error) {
-				setIsAuthenticated(false);
-				setUserName("");
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		checkAuth();
-	}, []);
-
 	return (
 		<div className="min-h-screen bg-background flex flex-col overflow-hidden">
 			{/* Header */}
@@ -169,9 +130,6 @@ const Index = () => {
 					resetTour();
 					startTour();
 				}}
-				userName={userName}
-				isAuthenticated={isAuthenticated}
-				setIsAuthenticated={setIsAuthenticated}
 				onCreateClick={() => fileInputRef.current?.click()}
 			/>
 
@@ -380,11 +338,7 @@ const Index = () => {
 				</DialogContent>
 			</Dialog>
 
-			<EditorAuthFooter
-				isAuthenticated={isAuthenticated}
-				loading={loading}
-				setIsAuthenticated={setIsAuthenticated}
-			/>
+			<EditorAuthFooter />
 		</div>
 	);
 };

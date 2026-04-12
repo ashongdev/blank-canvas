@@ -3,15 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, LogIn } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
-const EditorAuthFooter = ({ setIsAuthenticated, isAuthenticated, loading }) => {
+const EditorAuthFooter = () => {
 	const navigate = useNavigate();
+	const { isAuthenticated, loading, logout } = useAuthContext();
 
 	const handleLogout = () => {
-		localStorage.removeItem("auth");
-		localStorage.removeItem("user");
-		setIsAuthenticated(false);
+		logout();
 		toast.success("Logged out successfully");
 		navigate("/login");
 	};

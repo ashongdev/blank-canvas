@@ -12,6 +12,7 @@ import Participant from "./pages/Participant";
 import Signup from "./pages/Signup";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import GoogleCallback from "./pages/GoogleCallback";
@@ -23,29 +24,31 @@ const App = () => (
 			<Toaster />
 			<Sonner />
 			<BrowserRouter>
-				<AnalyticsTracker />
-				<Routes>
-					<Route path="/" element={<Index />} />
-					<Route path="/advanced" element={<Advanced />} />
-					<Route path="/admin" element={<Admin />} />
-					<Route path="/participant" element={<Participant />} />
-					<Route
-						path="/auth/google/callback"
-						element={<GoogleCallback />}
-					/>
-					<Route path="/login" element={<Login />} />
-					<Route path="/signup" element={<Signup />} />
-					<Route
-						path="/dashboard/*"
-						element={
-							<ProtectedRoute>
-								<DashboardLayout />
-							</ProtectedRoute>
-						}
-					/>
-					{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-					<Route path="*" element={<NotFound />} />
-				</Routes>
+				<AuthProvider>
+					<AnalyticsTracker />
+					<Routes>
+						<Route path="/" element={<Index />} />
+						<Route path="/advanced" element={<Advanced />} />
+						<Route path="/admin" element={<Admin />} />
+						<Route path="/participant" element={<Participant />} />
+						<Route
+							path="/auth/google/callback"
+							element={<GoogleCallback />}
+						/>
+						<Route path="/login" element={<Login />} />
+						<Route path="/signup" element={<Signup />} />
+						<Route
+							path="/dashboard/*"
+							element={
+								<ProtectedRoute>
+									<DashboardLayout />
+								</ProtectedRoute>
+							}
+						/>
+						{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+						<Route path="*" element={<NotFound />} />
+					</Routes>
+				</AuthProvider>
 			</BrowserRouter>
 		</TooltipProvider>
 	</QueryClientProvider>

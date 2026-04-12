@@ -5,26 +5,18 @@ import { motion } from "framer-motion";
 import { Laptop, Moon, Sun, Upload, LayoutDashboard } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 interface HeaderProps {
 	onTourClick: () => void;
 	onCreateClick?: () => void;
-	userName: string;
-	setIsAuthenticated: Dispatch<SetStateAction<boolean>>;
-	isAuthenticated: boolean;
 }
 
-const Header = ({
-	onTourClick,
-	onCreateClick,
-	userName,
-	setIsAuthenticated,
-	isAuthenticated,
-}: HeaderProps) => {
+const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
 	const { theme, setTheme } = useTheme();
 	const navigate = useNavigate();
+	const { userName, isAuthenticated } = useAuthContext();
 	const selectedTheme = theme ?? "system";
 	const themeOptions = ["system", "light", "dark"] as const;
 	const selectedThemeIndex = Math.max(
@@ -33,12 +25,6 @@ const Header = ({
 	);
 
 	const location = useLocation();
-
-	useEffect(() => {
-		const auth = localStorage.getItem("auth");
-		const user = localStorage.getItem("user");
-		setIsAuthenticated(!!(auth && user));
-	}, []);
 
 	const handleCreateClick = () => {
 		if (location.pathname !== "/" && onCreateClick) {
@@ -67,7 +53,7 @@ const Header = ({
 							genC
 						</Link>
 					</h1>
-					<nav className="flex items-center gap-4 hidden md:flex">
+					<nav className="items-center gap-4 hidden md:flex">
 						<Link
 							to="/"
 							className={`text-sm transition-smooth ${
@@ -157,20 +143,22 @@ const Header = ({
 						</ToggleGroupItem>
 					</ToggleGroup>
 
-					<div
-						className="flex items-center gap-2 ml-10 cursor-pointer"
-						title={userName}
-					>
-						<Avatar className="h-12 w-12">
-							<AvatarFallback>
-								{userName
-									.split(" ")
-									.map((n) => n[0])
-									.join("")
-									.toUpperCase()}
-							</AvatarFallback>
-						</Avatar>
-					</div>
+					{isAuthenticated && (
+						<div
+							className="flex items-center gap-2 ml-10"
+							title={userName}
+						>
+							<Avatar className="h-12 w-12">
+								<AvatarFallback>
+									{userName
+										.split(" ")
+										.map((n) => n[0])
+										.join("")
+										.toUpperCase()}
+								</AvatarFallback>
+							</Avatar>
+						</div>
+					)}
 				</div>
 			</div>
 		</motion.header>
