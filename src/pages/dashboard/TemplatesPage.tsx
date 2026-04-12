@@ -7,6 +7,7 @@ import {
 	RefreshCw,
 	Loader2,
 	X,
+	ArrowUpRightFromSquare,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { openTemplateInEditor } from "@/lib/editorUtils";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import type { Collection } from "@/hooks/useDashboardStore";
@@ -138,28 +140,7 @@ const TemplatesPage = ({
 	};
 
 	const handleUpdateTemplate = (t: Template) => {
-		const simulatedFields = [
-			{
-				id: "field-1",
-				label: "Participant Name",
-				text: "John Doe",
-				x: 0,
-				y: 0,
-				font: "Bickham Script Pro Regular",
-				fontSize: 100,
-				fontWeight: "300",
-				color: "#000000",
-				anchorMode: "center",
-				required: true,
-			},
-		];
-		navigate("/", {
-			state: {
-				templateUrl: t.url,
-				fields: simulatedFields,
-				templateFile: null,
-			},
-		});
+		openTemplateInEditor(navigate, t);
 	};
 
 	const handleTemplateUpload = async (
@@ -474,7 +455,7 @@ const TemplatesPage = ({
 										handleUpdateTemplate(selectedTemplate)
 									}
 								>
-									<RefreshCw className="h-4 w-4" />
+									<ArrowUpRightFromSquare className="h-4 w-4" />
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>Open in Editor</TooltipContent>

@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
-import { Trash2, RotateCcw, Loader2 } from "lucide-react";
+import { Trash2, RotateCcw, Loader2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -30,7 +35,11 @@ const TrashPage = ({
 }: Props) => {
 	const [restoreId, setRestoreId] = useState<number | null>(null);
 	const [deleteId, setDeleteId] = useState<number | null>(null);
+	const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
+		null,
+	);
 	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
+	const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 	const templateToRestore = templates.find((t) => t.id === restoreId);
 	const templateToDelete = templates.find((t) => t.id === deleteId);
 
@@ -47,8 +56,29 @@ const TrashPage = ({
 		};
 	}, [isLoading]);
 
+	useEffect(() => {
+		if (
+			selectedTemplateId !== null &&
+			!templates.some((t) => t.id === selectedTemplateId)
+		) {
+			setSelectedTemplateId(null);
+		}
+	}, [selectedTemplateId, templates]);
+
 	return (
-		<div className="space-y-6">
+		<div
+			className="space-y-6"
+			onClick={(e) => {
+				const target = e.target as HTMLElement;
+				if (
+					target.closest("[data-trash-card]") ||
+					target.closest("[data-trash-dock]")
+				) {
+					return;
+				}
+				setSelectedTemplateId(null);
+			}}
+		>
 			{isLoading ? (
 				<>
 					<div className="min-h-[30vh] flex flex-col items-center justify-center gap-3">
@@ -102,7 +132,14 @@ const TrashPage = ({
 							{templates.map((t) => (
 								<Card
 									key={t.id}
-									className="border-border opacity-75 hover:opacity-100 transition-opacity"
+									data-trash-card
+									className={`opacity-75 hover:opacity-100 transition-opacity cursor-pointer ${
+										selectedTemplateId === t.id
+											? "border-primary ring-2 ring-primary/30 shadow-md"
+											: "border-border"
+									}`}
+									onClick={() => setSelectedTemplateId(t.id)}
+									onDoubleClick={() => setRestoreId(t.id)}
 								>
 									<div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
 										<img
@@ -125,9 +162,10 @@ const TrashPage = ({
 												variant="outline"
 												size="sm"
 												className="flex-1"
-												onClick={() =>
-													setRestoreId(t.id)
-												}
+												onClick={(e) => {
+													e.stopPropagation();
+													setRestoreId(t.id);
+												}}
 											>
 												<RotateCcw className="mr-1 h-3 w-3" />{" "}
 												Restore
@@ -136,9 +174,10 @@ const TrashPage = ({
 												variant="destructive"
 												size="sm"
 												className="flex-1"
-												onClick={() =>
-													setDeleteId(t.id)
-												}
+												onClick={(e) => {
+													e.stopPropagation();
+													setDeleteId(t.id);
+												}}
 											>
 												<Trash2 className="mr-1 h-3 w-3" />{" "}
 												Delete
@@ -150,6 +189,53 @@ const TrashPage = ({
 						</div>
 					)}
 				</>
+			)}
+
+			{selectedTemplate && (
+				<div className="fixed bottom-6 right-6 z-40" data-trash-dock>
+					<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="outline"
+									onClick={() =>
+										setRestoreId(selectedTemplate.id)
+									}
+								>
+									<RotateCcw className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Restore</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="destructive"
+									onClick={() =>
+										setDeleteId(selectedTemplate.id)
+									}
+								>
+									<Trash2 className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Delete Permanently</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="ghost"
+									onClick={() => setSelectedTemplateId(null)}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Clear Selection</TooltipContent>
+						</Tooltip>
+					</div>
+				</div>
 			)}
 
 			{/* Permanent delete confirmation */}

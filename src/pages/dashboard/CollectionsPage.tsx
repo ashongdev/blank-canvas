@@ -8,6 +8,7 @@ import {
 	X,
 	ChevronRight,
 	Loader2,
+	ArrowUpRightFromSquare,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,11 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
 	Dialog,
 	DialogContent,
@@ -39,6 +45,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+import { openTemplateInEditor } from "@/lib/editorUtils";
 import type { Collection } from "@/hooks/useDashboardStore";
 import { Template } from "@/types/Template";
 
@@ -72,6 +80,7 @@ const CollectionsPage = ({
 		name: string;
 	};
 
+	const navigate = useNavigate();
 	const [creating, setCreating] = useState(false);
 	const [newName, setNewName] = useState("");
 	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
@@ -79,6 +88,12 @@ const CollectionsPage = ({
 	const [editName, setEditName] = useState("");
 	const [deleteColId, setDeleteColId] = useState<number | null>(null);
 	const [openedCollection, setOpenedCollection] = useState<Collection | null>(
+		null,
+	);
+	const [selectedCollectionId, setSelectedCollectionId] = useState<
+		number | null
+	>(null);
+	const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
 		null,
 	);
 	const [isUploadingToCollection, setIsUploadingToCollection] =
@@ -104,6 +119,11 @@ const CollectionsPage = ({
 
 	const templatesInCollection = (colId: number) =>
 		templates.filter((t) => t.collection_id === colId && !t.trashed);
+
+	const selectedCollection = collections.find(
+		(c) => c.id === selectedCollectionId,
+	);
+	const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 
 	const handleUploadToOpenedCollection = async (
 		e: React.ChangeEvent<HTMLInputElement>,
@@ -145,6 +165,24 @@ const CollectionsPage = ({
 			});
 		};
 	}, [uploadingTemplates]);
+
+	useEffect(() => {
+		if (
+			selectedCollectionId !== null &&
+			!collections.some((c) => c.id === selectedCollectionId)
+		) {
+			setSelectedCollectionId(null);
+		}
+	}, [collections, selectedCollectionId]);
+
+	useEffect(() => {
+		if (
+			selectedTemplateId !== null &&
+			!templates.some((t) => t.id === selectedTemplateId)
+		) {
+			setSelectedTemplateId(null);
+		}
+	}, [templates, selectedTemplateId]);
 
 	useEffect(() => {
 		if (!isLoading) return;
@@ -195,7 +233,19 @@ const CollectionsPage = ({
 		const hasDisplayTemplates =
 			colTemplates.length > 0 || uploadingTemplates.length > 0;
 		return (
-			<div className="space-y-6">
+			<div
+				className="space-y-6"
+				onClick={(e) => {
+					const target = e.target as HTMLElement;
+					if (
+						target.closest("[data-collection-template-card]") ||
+						target.closest("[data-collection-template-dock]")
+					) {
+						return;
+					}
+					setSelectedTemplateId(null);
+				}}
+			>
 				<input
 					type="file"
 					id="collection-upload-input"
@@ -253,6 +303,10 @@ const CollectionsPage = ({
 						</Button>
 					</div>
 				</div>
+				<p className="text-xs text-muted-foreground -mt-2">
+					Tip: Click a template card to select. Double-click to open
+					it in the editor.
+				</p>
 
 				{!hasDisplayTemplates ? (
 					<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
@@ -297,7 +351,16 @@ const CollectionsPage = ({
 						{colTemplates.map((t) => (
 							<Card
 								key={t.id}
-								className="group overflow-hidden border-border hover:shadow-md transition-shadow"
+								data-collection-template-card
+								className={`group overflow-hidden transition-shadow cursor-pointer ${
+									selectedTemplateId === t.id
+										? "border-primary ring-2 ring-primary/30 shadow-md"
+										: "border-border hover:shadow-md"
+								}`}
+								onClick={() => setSelectedTemplateId(t.id)}
+								onDoubleClick={() =>
+									openTemplateInEditor(navigate, t)
+								}
 							>
 								<div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
 									<img
@@ -319,15 +382,76 @@ const CollectionsPage = ({
 										variant="ghost"
 										size="sm"
 										className="text-xs text-muted-foreground hover:text-destructive shrink-0"
-										onClick={() =>
-											onAssignCollection(t.id, null)
-										}
+										onClick={(event) => {
+											event.stopPropagation();
+											onAssignCollection(t.id, null);
+										}}
 									>
 										Remove
 									</Button>
 								</CardContent>
 							</Card>
 						))}
+					</div>
+				)}
+
+				{selectedTemplate && (
+					<div
+						className="fixed bottom-6 right-6 z-40"
+						data-collection-template-dock
+					>
+						<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="outline"
+										onClick={() =>
+											openTemplateInEditor(
+												navigate,
+												selectedTemplate,
+											)
+										}
+									>
+										<ArrowUpRightFromSquare className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Open in Editor</TooltipContent>
+							</Tooltip>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="destructive"
+										onClick={() =>
+											onAssignCollection(
+												selectedTemplate.id,
+												null,
+											)
+										}
+									>
+										<X className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									Remove from Collection
+								</TooltipContent>
+							</Tooltip>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										size="icon"
+										variant="ghost"
+										onClick={() =>
+											setSelectedTemplateId(null)
+										}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Clear Selection</TooltipContent>
+							</Tooltip>
+						</div>
 					</div>
 				)}
 
@@ -343,7 +467,19 @@ const CollectionsPage = ({
 	}
 
 	return (
-		<div className="space-y-6">
+		<div
+			className="space-y-6"
+			onClick={(e) => {
+				const target = e.target as HTMLElement;
+				if (
+					target.closest("[data-collection-card]") ||
+					target.closest("[data-collection-dock]")
+				) {
+					return;
+				}
+				setSelectedCollectionId(null);
+			}}
+		>
 			<div className="flex items-center justify-between">
 				<h2 className="text-2xl font-semibold text-foreground">
 					Collections
@@ -396,8 +532,14 @@ const CollectionsPage = ({
 						return (
 							<Card
 								key={col.id}
-								className="border-border hover:shadow-md transition-shadow cursor-pointer"
-								onClick={() => setOpenedCollection(col)}
+								data-collection-card
+								className={`transition-shadow cursor-pointer ${
+									selectedCollectionId === col.id
+										? "border-primary ring-2 ring-primary/30 shadow-md"
+										: "border-border hover:shadow-md"
+								}`}
+								onClick={() => setSelectedCollectionId(col.id)}
+								onDoubleClick={() => setOpenedCollection(col)}
 							>
 								<CardContent className="p-4 space-y-3">
 									<div className="flex items-center justify-between">
@@ -461,6 +603,73 @@ const CollectionsPage = ({
 							</Card>
 						);
 					})}
+				</div>
+			)}
+
+			{selectedCollection && (
+				<div
+					className="fixed bottom-6 right-6 z-40"
+					data-collection-dock
+				>
+					<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="outline"
+									onClick={() =>
+										setOpenedCollection(selectedCollection)
+									}
+								>
+									<ArrowUpRightFromSquare className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Open Collection</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="outline"
+									onClick={() => {
+										setEditCol(selectedCollection);
+										setEditName(selectedCollection.name);
+									}}
+								>
+									<Pencil className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Rename Collection</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="destructive"
+									onClick={() =>
+										setDeleteColId(selectedCollection.id)
+									}
+								>
+									<Trash2 className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Delete Collection</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="ghost"
+									onClick={() =>
+										setSelectedCollectionId(null)
+									}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Clear Selection</TooltipContent>
+						</Tooltip>
+					</div>
 				</div>
 			)}
 
