@@ -212,7 +212,7 @@ export function useDashboardStore({
 	);
 
 	const uploadTemplateToCollection = useCallback(
-		async (collectionId: number, file: File) => {
+		async (collectionId: number | null, file: File) => {
 			const formData = new FormData();
 			formData.append("template", file);
 
@@ -236,29 +236,41 @@ export function useDashboardStore({
 
 				if (!uploadedTemplate) {
 					toast.error(
-						"Template uploaded, but failed to assign collection.",
+						collectionId === null
+							? "Template uploaded, but failed to refresh list."
+							: "Template uploaded, but failed to assign collection.",
 					);
 					setTemplates(fetchedTemplates);
 					setCollections(fetchedCollections);
 					return;
 				}
 
-				await api.put(`${BASE_URL}/add-to-collection/`, {
-					templateId: uploadedTemplate.id,
-					collectionId,
-				});
+				if (collectionId !== null) {
+					await api.put(`${BASE_URL}/add-to-collection/`, {
+						templateId: uploadedTemplate.id,
+						collectionId,
+					});
+				}
 
 				setTemplates(
 					fetchedTemplates.map((t) =>
-						t.id === uploadedTemplate.id
+						t.id === uploadedTemplate.id && collectionId !== null
 							? { ...t, collection_id: collectionId }
 							: t,
 					),
 				);
 				setCollections(fetchedCollections);
-				toast.success("Template uploaded to collection.");
+				toast.success(
+					collectionId === null
+						? "Template uploaded successfully."
+						: "Template uploaded to collection.",
+				);
 			} catch (error) {
-				toast.error("Failed to upload template to collection.");
+				toast.error(
+					collectionId === null
+						? "Failed to upload template."
+						: "Failed to upload template to collection.",
+				);
 			}
 		},
 		[BASE_URL],

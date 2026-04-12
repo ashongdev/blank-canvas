@@ -53,6 +53,10 @@ interface Props {
 		templateId: number,
 		collectionId: number | null,
 	) => void;
+	onUploadTemplate: (
+		collectionId: number | null,
+		file: File,
+	) => Promise<void>;
 }
 
 const TemplatesPage = ({
@@ -62,12 +66,23 @@ const TemplatesPage = ({
 	onTrash,
 	onUpdate,
 	onAssignCollection,
+	onUploadTemplate,
 }: Props) => {
+	type UploadingTemplate = {
+		id: string;
+		previewUrl: string;
+		name: string;
+	};
+
 	const navigate = useNavigate();
 	const [editTemplate, setEditTemplate] = useState<Template | null>(null);
 	const [editName, setEditName] = useState("");
 	const [deleteId, setDeleteId] = useState<number | null>(null);
 	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
+	const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
+	const [uploadingTemplates, setUploadingTemplates] = useState<
+		UploadingTemplate[]
+	>([]);
 
 	useEffect(() => {
 		if (!isLoading) return;
@@ -120,6 +135,45 @@ const TemplatesPage = ({
 		});
 	};
 
+	const handleTemplateUpload = async (
+		e: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const file = e.target.files?.[0];
+		e.currentTarget.value = "";
+		if (!file) return;
+
+		const uploadId = `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+		const previewUrl = URL.createObjectURL(file);
+
+		setUploadingTemplates((prev) => [
+			...prev,
+			{
+				id: uploadId,
+				previewUrl,
+				name: file.name,
+			},
+		]);
+
+		setIsUploadingTemplate(true);
+		try {
+			await onUploadTemplate(null, file);
+		} finally {
+			setUploadingTemplates((prev) =>
+				prev.filter((upload) => upload.id !== uploadId),
+			);
+			URL.revokeObjectURL(previewUrl);
+			setIsUploadingTemplate(false);
+		}
+	};
+
+	useEffect(() => {
+		return () => {
+			uploadingTemplates.forEach((upload) => {
+				URL.revokeObjectURL(upload.previewUrl);
+			});
+		};
+	}, [uploadingTemplates]);
+
 	return (
 		<div className="space-y-6">
 			{isLoading ? (
@@ -151,23 +205,57 @@ const TemplatesPage = ({
 				</>
 			) : (
 				<>
+					<input
+						type="file"
+						id="templates-upload-input"
+						className="hidden"
+						accept="image/*"
+						onChange={handleTemplateUpload}
+					/>
 					<div className="flex items-center justify-between gap-4">
 						<div className="flex items-center gap-3">
 							<h2 className="text-2xl font-semibold text-foreground">
 								My Templates
 							</h2>
 							<p className="text-sm text-muted-foreground">
-								{templates.length} template
-								{templates.length !== 1 ? "s" : ""}
+								{templates.length + uploadingTemplates.length}{" "}
+								template
+								{templates.length +
+									uploadingTemplates.length !==
+								1
+									? "s"
+									: ""}
 							</p>
 						</div>
-						<Button onClick={() => navigate("/")} className="gap-2">
-							<span>+</span>
-							Add Template
+						<Button
+							onClick={() =>
+								document
+									.getElementById("templates-upload-input")
+									?.click()
+							}
+							disabled={isUploadingTemplate}
+							className="gap-2"
+						>
+							{isUploadingTemplate ? (
+								<>
+									<Loader2 className="h-4 w-4 animate-spin" />
+									Uploading...
+								</>
+							) : (
+								<>
+									<span>+</span>
+									Add Template
+								</>
+							)}
 						</Button>
 					</div>
+					<p className="text-xs text-muted-foreground -mt-2">
+						Tip: Double-click a template card to open it in the
+						editor.
+					</p>
 
-					{templates.length === 0 ? (
+					{templates.length === 0 &&
+					uploadingTemplates.length === 0 ? (
 						<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
 							<p className="text-lg">No templates yet</p>
 							<p className="text-sm">
@@ -176,12 +264,43 @@ const TemplatesPage = ({
 						</div>
 					) : (
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+							{uploadingTemplates.map((upload) => (
+								<Card
+									key={upload.id}
+									className="group overflow-hidden border-border opacity-80"
+								>
+									<div className="relative aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+										<img
+											src={upload.previewUrl}
+											alt={upload.name}
+											className="w-full h-full object-cover grayscale"
+										/>
+										<div className="absolute inset-0 bg-background/55 flex items-center justify-center">
+											<div className="flex items-center gap-2 text-sm text-foreground">
+												<Loader2 className="h-4 w-4 animate-spin" />
+												Uploading
+											</div>
+										</div>
+									</div>
+									<CardContent className="p-3">
+										<p className="text-sm font-medium text-foreground truncate">
+											{upload.name}
+										</p>
+										<p className="text-xs text-muted-foreground truncate">
+											Pending upload...
+										</p>
+									</CardContent>
+								</Card>
+							))}
 							{templates &&
 								templates.length > 0 &&
 								templates.map((t) => (
 									<Card
 										key={t.id}
 										className="group overflow-hidden border-border hover:shadow-md transition-shadow"
+										onDoubleClick={() =>
+											handleUpdateTemplate(t)
+										}
 									>
 										<div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
 											<img

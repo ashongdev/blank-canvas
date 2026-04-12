@@ -85,6 +85,7 @@ const DashboardRoutes = () => {
 						onTrash={store.trashTemplate}
 						onUpdate={store.updateTemplate}
 						onAssignCollection={store.assignCollection}
+						onUploadTemplate={store.uploadTemplateToCollection}
 					/>
 				}
 			/>
