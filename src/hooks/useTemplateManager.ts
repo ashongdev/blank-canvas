@@ -68,9 +68,13 @@ const useTemplateManager = ({
 		formData.append("inEditor", "true");
 
 		try {
-			const response = await api.post(`${BASE_URL}/generate/`, formData, {
-				responseType: "blob",
-			});
+			const response = await axios.post(
+				`${BASE_URL}/generate/`,
+				formData,
+				{
+					responseType: "blob",
+				},
+			);
 
 			const url = URL.createObjectURL(response.data);
 			const link = document.createElement("a");
