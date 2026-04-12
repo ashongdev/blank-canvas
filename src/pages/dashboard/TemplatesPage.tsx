@@ -6,6 +6,7 @@ import {
 	FolderPlus,
 	RefreshCw,
 	Loader2,
+	X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,11 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import type { Collection } from "@/hooks/useDashboardStore";
@@ -59,6 +65,12 @@ interface Props {
 	) => Promise<void>;
 }
 
+type UploadingTemplate = {
+	id: string;
+	previewUrl: string;
+	name: string;
+};
+
 const TemplatesPage = ({
 	templates,
 	isLoading,
@@ -68,21 +80,20 @@ const TemplatesPage = ({
 	onAssignCollection,
 	onUploadTemplate,
 }: Props) => {
-	type UploadingTemplate = {
-		id: string;
-		previewUrl: string;
-		name: string;
-	};
-
 	const navigate = useNavigate();
 	const [editTemplate, setEditTemplate] = useState<Template | null>(null);
 	const [editName, setEditName] = useState("");
 	const [deleteId, setDeleteId] = useState<number | null>(null);
+	const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
+		null,
+	);
 	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
 	const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
 	const [uploadingTemplates, setUploadingTemplates] = useState<
 		UploadingTemplate[]
 	>([]);
+
+	const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 
 	useEffect(() => {
 		if (!isLoading) return;
@@ -97,6 +108,23 @@ const TemplatesPage = ({
 		};
 	}, [isLoading]);
 
+	useEffect(() => {
+		if (
+			selectedTemplateId !== null &&
+			!templates.some((t) => t.id === selectedTemplateId)
+		) {
+			setSelectedTemplateId(null);
+		}
+	}, [selectedTemplateId, templates]);
+
+	useEffect(() => {
+		return () => {
+			uploadingTemplates.forEach((upload) => {
+				URL.revokeObjectURL(upload.previewUrl);
+			});
+		};
+	}, [uploadingTemplates]);
+
 	const openEdit = (t: Template) => {
 		setEditTemplate(t);
 		setEditName(t.name);
@@ -110,7 +138,6 @@ const TemplatesPage = ({
 	};
 
 	const handleUpdateTemplate = (t: Template) => {
-		// Simulate loading template data + presets, then navigate to editor
 		const simulatedFields = [
 			{
 				id: "field-1",
@@ -166,138 +193,155 @@ const TemplatesPage = ({
 		}
 	};
 
-	useEffect(() => {
-		return () => {
-			uploadingTemplates.forEach((upload) => {
-				URL.revokeObjectURL(upload.previewUrl);
-			});
-		};
-	}, [uploadingTemplates]);
-
 	return (
 		<div className="space-y-6">
-			{isLoading ? (
-				<>
-					<div className="min-h-[30vh] flex flex-col items-center justify-center gap-3">
-						<div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-							<Loader2 className="h-6 w-6 animate-spin text-primary" />
-						</div>
-						<p className="text-sm text-muted-foreground">
-							Loading templates...
-						</p>
-					</div>
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-						{Array.from({ length: visibleSkeletons }).map(
-							(_, index) => (
-								<Card
-									key={`template-skeleton-${index}`}
-									className="border-border"
-								>
-									<Skeleton className="aspect-[4/3] w-full rounded-b-none rounded-t-lg" />
-									<CardContent className="p-3 space-y-3">
-										<Skeleton className="h-4 w-2/3" />
-										<Skeleton className="h-3 w-1/2" />
-									</CardContent>
-								</Card>
-							),
-						)}
-					</div>
-				</>
-			) : (
-				<>
-					<input
-						type="file"
-						id="templates-upload-input"
-						className="hidden"
-						accept="image/*"
-						onChange={handleTemplateUpload}
-					/>
-					<div className="flex items-center justify-between gap-4">
-						<div className="flex items-center gap-3">
-							<h2 className="text-2xl font-semibold text-foreground">
-								My Templates
-							</h2>
-							<p className="text-sm text-muted-foreground">
-								{templates.length + uploadingTemplates.length}{" "}
-								template
-								{templates.length +
-									uploadingTemplates.length !==
-								1
-									? "s"
-									: ""}
-							</p>
-						</div>
-						<Button
-							onClick={() =>
-								document
-									.getElementById("templates-upload-input")
-									?.click()
-							}
-							disabled={isUploadingTemplate}
-							className="gap-2"
-						>
-							{isUploadingTemplate ? (
-								<>
-									<Loader2 className="h-4 w-4 animate-spin" />
-									Uploading...
-								</>
-							) : (
-								<>
-									<span>+</span>
-									Add Template
-								</>
-							)}
-						</Button>
-					</div>
-					<p className="text-xs text-muted-foreground -mt-2">
-						Tip: Double-click a template card to open it in the
-						editor.
-					</p>
+			<div
+				className="space-y-6"
+				onClick={(e) => {
+					const target = e.target as HTMLElement;
+					if (
+						target.closest("[data-template-card]") ||
+						target.closest("[data-template-dock]")
+					) {
+						return;
+					}
 
-					{templates.length === 0 &&
-					uploadingTemplates.length === 0 ? (
-						<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-							<p className="text-lg">No templates yet</p>
-							<p className="text-sm">
-								Upload a template to get started.
+					if (selectedTemplateId !== null) {
+						setSelectedTemplateId(null);
+					}
+				}}
+			>
+				{isLoading ? (
+					<>
+						<div className="min-h-[30vh] flex flex-col items-center justify-center gap-3">
+							<div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+								<Loader2 className="h-6 w-6 animate-spin text-primary" />
+							</div>
+							<p className="text-sm text-muted-foreground">
+								Loading templates...
 							</p>
 						</div>
-					) : (
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-							{uploadingTemplates.map((upload) => (
-								<Card
-									key={upload.id}
-									className="group overflow-hidden border-border opacity-80"
-								>
-									<div className="relative aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-										<img
-											src={upload.previewUrl}
-											alt={upload.name}
-											className="w-full h-full object-cover grayscale"
-										/>
-										<div className="absolute inset-0 bg-background/55 flex items-center justify-center">
-											<div className="flex items-center gap-2 text-sm text-foreground">
-												<Loader2 className="h-4 w-4 animate-spin" />
-												Uploading
+							{Array.from({ length: visibleSkeletons }).map(
+								(_, index) => (
+									<Card
+										key={`template-skeleton-${index}`}
+										className="border-border"
+									>
+										<Skeleton className="aspect-[4/3] w-full rounded-b-none rounded-t-lg" />
+										<CardContent className="p-3 space-y-3">
+											<Skeleton className="h-4 w-2/3" />
+											<Skeleton className="h-3 w-1/2" />
+										</CardContent>
+									</Card>
+								),
+							)}
+						</div>
+					</>
+				) : (
+					<>
+						<input
+							type="file"
+							id="templates-upload-input"
+							className="hidden"
+							accept="image/*"
+							onChange={handleTemplateUpload}
+						/>
+						<div className="flex items-center justify-between gap-4">
+							<div className="flex items-center gap-3">
+								<h2 className="text-2xl font-semibold text-foreground">
+									My Templates
+								</h2>
+								<p className="text-sm text-muted-foreground">
+									{templates.length +
+										uploadingTemplates.length}{" "}
+									template
+									{templates.length +
+										uploadingTemplates.length !==
+									1
+										? "s"
+										: ""}
+								</p>
+							</div>
+							<Button
+								onClick={() =>
+									document
+										.getElementById(
+											"templates-upload-input",
+										)
+										?.click()
+								}
+								disabled={isUploadingTemplate}
+								className="gap-2"
+							>
+								{isUploadingTemplate ? (
+									<>
+										<Loader2 className="h-4 w-4 animate-spin" />
+										Uploading...
+									</>
+								) : (
+									<>
+										<span>+</span>
+										Add Template
+									</>
+								)}
+							</Button>
+						</div>
+						<p className="text-xs text-muted-foreground -mt-2">
+							Tip: Click a card to select. Double-click to open it
+							in the editor.
+						</p>
+
+						{templates.length === 0 &&
+						uploadingTemplates.length === 0 ? (
+							<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+								<p className="text-lg">No templates yet</p>
+								<p className="text-sm">
+									Upload a template to get started.
+								</p>
+							</div>
+						) : (
+							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+								{uploadingTemplates.map((upload) => (
+									<Card
+										key={upload.id}
+										className="group overflow-hidden border-border opacity-80"
+									>
+										<div className="relative aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+											<img
+												src={upload.previewUrl}
+												alt={upload.name}
+												className="w-full h-full object-cover grayscale"
+											/>
+											<div className="absolute inset-0 bg-background/55 flex items-center justify-center">
+												<div className="flex items-center gap-2 text-sm text-foreground">
+													<Loader2 className="h-4 w-4 animate-spin" />
+													Uploading
+												</div>
 											</div>
 										</div>
-									</div>
-									<CardContent className="p-3">
-										<p className="text-sm font-medium text-foreground truncate">
-											{upload.name}
-										</p>
-										<p className="text-xs text-muted-foreground truncate">
-											Pending upload...
-										</p>
-									</CardContent>
-								</Card>
-							))}
-							{templates &&
-								templates.length > 0 &&
-								templates.map((t) => (
+										<CardContent className="p-3">
+											<p className="text-sm font-medium text-foreground truncate">
+												{upload.name}
+											</p>
+											<p className="text-xs text-muted-foreground truncate">
+												Pending upload...
+											</p>
+										</CardContent>
+									</Card>
+								))}
+								{templates.map((t) => (
 									<Card
 										key={t.id}
-										className="group overflow-hidden border-border hover:shadow-md transition-shadow"
+										data-template-card
+										className={`group overflow-hidden transition-shadow cursor-pointer ${
+											selectedTemplateId === t.id
+												? "border-primary ring-2 ring-primary/30 shadow-md"
+												: "border-border hover:shadow-md"
+										}`}
+										onClick={() =>
+											setSelectedTemplateId(t.id)
+										}
 										onDoubleClick={() =>
 											handleUpdateTemplate(t)
 										}
@@ -324,6 +368,9 @@ const TemplatesPage = ({
 														variant="ghost"
 														size="icon"
 														className="shrink-0 h-8 w-8"
+														onClick={(e) =>
+															e.stopPropagation()
+														}
 													>
 														<MoreVertical className="h-4 w-4" />
 													</Button>
@@ -344,12 +391,12 @@ const TemplatesPage = ({
 															)
 														}
 													>
-														<RefreshCw className="mr-2 h-4 w-4" />{" "}
+														<RefreshCw className="mr-2 h-4 w-4" />
 														Update Template
 													</DropdownMenuItem>
 													<DropdownMenuSub>
 														<DropdownMenuSubTrigger>
-															<FolderPlus className="mr-2 h-4 w-4" />{" "}
+															<FolderPlus className="mr-2 h-4 w-4" />
 															Add to Collection
 														</DropdownMenuSubTrigger>
 														<DropdownMenuSubContent>
@@ -396,12 +443,114 @@ const TemplatesPage = ({
 										</CardContent>
 									</Card>
 								))}
-						</div>
-					)}
-				</>
+							</div>
+						)}
+					</>
+				)}
+			</div>
+
+			{selectedTemplate && (
+				<div className="fixed bottom-6 right-6 z-40" data-template-dock>
+					<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="outline"
+									onClick={() => openEdit(selectedTemplate)}
+								>
+									<Pencil className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Edit</TooltipContent>
+						</Tooltip>
+
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="outline"
+									onClick={() =>
+										handleUpdateTemplate(selectedTemplate)
+									}
+								>
+									<RefreshCw className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Open in Editor</TooltipContent>
+						</Tooltip>
+
+						<DropdownMenu>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<DropdownMenuTrigger asChild>
+										<Button size="icon" variant="outline">
+											<FolderPlus className="h-4 w-4" />
+										</Button>
+									</DropdownMenuTrigger>
+								</TooltipTrigger>
+								<TooltipContent>
+									Add to Collection
+								</TooltipContent>
+							</Tooltip>
+							<DropdownMenuContent align="start">
+								<DropdownMenuItem
+									onClick={() =>
+										onAssignCollection(
+											selectedTemplate.id,
+											null,
+										)
+									}
+								>
+									None
+								</DropdownMenuItem>
+								{collections.map((c) => (
+									<DropdownMenuItem
+										key={c.id}
+										onClick={() =>
+											onAssignCollection(
+												selectedTemplate.id,
+												c.id,
+											)
+										}
+									>
+										{c.name}
+									</DropdownMenuItem>
+								))}
+							</DropdownMenuContent>
+						</DropdownMenu>
+
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="destructive"
+									onClick={() =>
+										setDeleteId(selectedTemplate.id)
+									}
+								>
+									<Trash2 className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Delete</TooltipContent>
+						</Tooltip>
+
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="ghost"
+									onClick={() => setSelectedTemplateId(null)}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Clear Selection</TooltipContent>
+						</Tooltip>
+					</div>
+				</div>
 			)}
 
-			{/* Edit name dialog */}
 			<Dialog
 				open={!!editTemplate}
 				onOpenChange={(o) => !o && setEditTemplate(null)}
@@ -433,7 +582,6 @@ const TemplatesPage = ({
 				</DialogContent>
 			</Dialog>
 
-			{/* Delete confirmation */}
 			<AlertDialog
 				open={!!deleteId}
 				onOpenChange={(o) => !o && setDeleteId(null)}
