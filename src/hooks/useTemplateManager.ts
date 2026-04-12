@@ -91,6 +91,11 @@ const useTemplateManager = ({
 	};
 
 	const handleTemplateUpload = async (file: File) => {
+		if (!file) {
+			toast.warning("Please select a file");
+			return;
+		}
+
 		setTemplateFile(file);
 		const url = URL.createObjectURL(file);
 		setTemplateUrl(url);
@@ -99,7 +104,8 @@ const useTemplateManager = ({
 		// If authenticated, save to db.
 		if (isAuthenticated) {
 			const formData = new FormData();
-			formData.append("template", templateFile);
+			formData.append("template", file);
+			console.log([...formData.entries()]);
 
 			const result = await api.post(
 				`${BASE_URL}/auto-upload/`,

@@ -1,4 +1,5 @@
 import { useAuthContext } from "@/hooks/useAuthContext";
+import api from "@/services/axios";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
@@ -14,10 +15,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 	useEffect(() => {
 		const checkAuth = async () => {
 			try {
-				const response = await fetch(`${BASE_URL}/me`, {
-					credentials: "include",
-				});
-				setAuthed(response.ok);
+				const response = await api.get(`${BASE_URL}/me`);
+				setAuthed(response.data);
 			} catch (error) {
 				setAuthed(false);
 			} finally {
