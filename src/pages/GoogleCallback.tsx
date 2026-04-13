@@ -23,7 +23,11 @@ const GoogleCallback = () => {
 			try {
 				const response = await api.post(
 					`${BASE_URL}/auth/google/`,
-					{ code: code },
+					{
+						code: code,
+						redirect_uri:
+							window.location.origin + "/auth/google/callback",
+					},
 					{
 						headers: { "Content-Type": "application/json" },
 					},
