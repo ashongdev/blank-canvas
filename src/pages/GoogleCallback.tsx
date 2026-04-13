@@ -1,8 +1,5 @@
-import api from "@/services/axios";
-import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -11,48 +8,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { useAuthContext } from "@/hooks/useAuthContext";
 
 const GoogleCallback = () => {
-	const { BASE_URL } = useAuthContext();
-	useEffect(() => {
-		const handleGoogleCallback = async () => {
-			const params = new URLSearchParams(window.location.search);
-			const code = params.get("code");
-
-			try {
-				const response = await api.post(
-					`${BASE_URL}/auth/google/`,
-					{
-						code: code,
-						redirect_uri:
-							window.location.origin + "/auth/google/callback",
-					},
-					{
-						headers: { "Content-Type": "application/json" },
-					},
-				);
-
-				localStorage.setItem(
-					"user",
-					JSON.stringify(response.data.user),
-				);
-				toast.success("Login Successful!");
-				setTimeout(() => {
-					window.location.href = "/dashboard";
-				}, 1500);
-			} catch (error) {
-				const id = toast.error("Failed to log in. Please try again.");
-				setTimeout(() => {
-					toast.dismiss(id);
-					window.location.href = "/login";
-				}, 1000);
-			}
-		};
-
-		handleGoogleCallback();
-	}, [BASE_URL]);
-
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-background px-4">
 			<div className="w-full max-w-[400px] space-y-6">
