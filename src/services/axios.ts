@@ -1,31 +1,52 @@
 import axios from "axios";
 
+function getCookie(name) {
+	let cookieValue = null;
+	if (document.cookie && document.cookie !== "") {
+		const cookies = document.cookie.split(";");
+		for (let cookie of cookies) {
+			cookie = cookie.trim();
+			if (cookie.startsWith(name + "=")) {
+				cookieValue = decodeURIComponent(
+					cookie.substring(name.length + 1),
+				);
+				break;
+			}
+		}
+	}
+	return cookieValue;
+}
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+const csrftoken = getCookie("csrftoken");
+
 const api = axios.create({
-	baseURL: import.meta.env.VITE_BASE_URL,
-	withCredentials: true,
+	baseURL: BASE_URL,
+	withCredentials: true, // Required for cookies
+	headers: {
+		"Content-Type": "application/json",
+		"X-CSRFToken": csrftoken,
+	},
 });
 
-const refreshAccessToken = async () => {
-	return api.post("/token/refresh/");
-};
-
+// Response interceptor for token refresh
 api.interceptors.response.use(
-	(res) => res,
+	(response) => response,
 	async (error) => {
 		const originalRequest = error.config;
 
-		if (
-			(error.response?.status === 401 ||
-				error.response?.status === 403) &&
-			!originalRequest._retry
-		) {
+		if (error.response?.status === 401 && !originalRequest._retry) {
 			originalRequest._retry = true;
 
 			try {
-				await refreshAccessToken();
+				// Attempt to refresh token
+				await api.post(`${BASE_URL}/auth/token/refresh/`);
+				// Retry original request
 				return api(originalRequest);
-			} catch (err) {
-				return Promise.reject(err);
+			} catch (refreshError) {
+				// Refresh failed, redirect to login
+				window.location.href = "/login";
+				return Promise.reject(refreshError);
 			}
 		}
 

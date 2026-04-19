@@ -3,6 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 import Admin from "./pages/Admin";
 import Advanced from "./pages/Advanced";
 import Index from "./pages/Index";
@@ -11,8 +13,6 @@ import NotFound from "./pages/NotFound";
 import Participant from "./pages/Participant";
 import Signup from "./pages/Signup";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
-import { AuthProvider } from "./context/AuthContext";
 
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import GoogleCallback from "./pages/GoogleCallback";
@@ -28,7 +28,14 @@ const App = () => (
 					<AnalyticsTracker />
 					<Routes>
 						<Route path="/" element={<Index />} />
-						<Route path="/advanced" element={<Advanced />} />
+						<Route
+							path="/advanced"
+							element={
+								<ProtectedRoute>
+									<Advanced />
+								</ProtectedRoute>
+							}
+						/>
 						<Route path="/admin" element={<Admin />} />
 						<Route path="/participant" element={<Participant />} />
 						<Route

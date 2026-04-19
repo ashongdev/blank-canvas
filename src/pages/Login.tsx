@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import AuthButton from "@/components/AuthButton";
 import { Button } from "@/components/ui/button";
+import GitHubSvg from "@/components/ui/GitHubSvg";
+import GoogleSvg from "@/components/ui/GoogleSvg";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff } from "lucide-react";
-import GoogleSvg from "@/components/ui/GoogleSvg";
-import AuthButton from "@/components/AuthButton";
-import GitHubSvg from "@/components/ui/GitHubSvg";
 import useAuth from "@/hooks/useAuth";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Login = () => {
 	const [email, setEmail] = useState("");

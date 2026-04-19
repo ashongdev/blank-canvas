@@ -1,5 +1,3 @@
-import { Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -8,8 +6,34 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import api from "@/services/axios";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
 
 const GoogleCallback = () => {
+	const { BASE_URL } = useAuthContext();
+	async function handleGoogleCallback() {
+		const params = new URLSearchParams(window.location.search);
+		const code = params.get("code");
+
+		const response = await api.post(
+			`${BASE_URL}/auth/google/`,
+			{ code },
+			{
+				headers: { "Content-Type": "application/json" },
+			},
+		);
+
+		if (response.status === 200) {
+			window.location.href = "/dashboard";
+		}
+	}
+
+	useEffect(() => {
+		handleGoogleCallback();
+	}, []);
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-background px-4">
 			<div className="w-full max-w-[400px] space-y-6">
