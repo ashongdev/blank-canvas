@@ -1,4 +1,5 @@
 import api from "@/services/axios";
+import { PAGE_SIZE } from "@/services/dashboardApi";
 import { Template } from "@/types/Template";
 import { useState, useCallback, SetStateAction, Dispatch } from "react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ export interface Collection {
 	id: number;
 	name: string;
 	created_at: string;
+	template_count?: number;
 }
 
 export function useDashboardStore({
@@ -23,9 +25,6 @@ export function useDashboardStore({
 }) {
 	const { BASE_URL } = useAuthContext();
 	// Templates
-	const activeTemplates = templates.filter((t) => !t.trashed);
-	const trashedTemplates = templates.filter((t) => t.trashed);
-
 	const trashTemplate = useCallback(async (id: number) => {
 		let previousTemplates: Template[] = [];
 
@@ -148,7 +147,11 @@ export function useDashboardStore({
 				const res = await api.put(`${BASE_URL}/create-collection/`, {
 					name,
 				});
-				setCollections(res.data.collections);
+				const createdCollection = res.data.collection as Collection;
+				setCollections((prev) => [
+					createdCollection,
+					...prev.filter((c) => c.id !== createdCollection.id),
+				]);
 				toast.success("Collection created successfully.");
 			} catch (error) {
 				setCollections(previousCollections);
@@ -221,56 +224,46 @@ export function useDashboardStore({
 					`${BASE_URL}/auto-upload/`,
 					formData,
 				);
-				const uploadedPublicId = uploadRes.data?.public_id;
+				const uploadedPublicId = uploadRes.data?.public_id as
+					| string
+					| undefined;
 
-				const fetchRes = await api.get(
-					`${BASE_URL}/my-templates?state=active`,
-				);
-				const fetchedTemplates: Template[] = fetchRes.data.templates;
-				const fetchedCollections: Collection[] =
-					fetchRes.data.collections;
-
-				const uploadedTemplate = fetchedTemplates.find(
-					(t) => t.public_id === uploadedPublicId,
-				);
-
-				if (!uploadedTemplate) {
-					toast.error(
-						collectionId === null
-							? "Template uploaded, but failed to refresh list."
-							: "Template uploaded, but failed to assign collection.",
-					);
-					setTemplates(fetchedTemplates);
-					setCollections(fetchedCollections);
-					return;
+				if (!uploadedPublicId) {
+					toast.error("Template uploaded, but failed to refresh list.");
+					return null;
 				}
 
 				if (collectionId !== null) {
-					await api.put(`${BASE_URL}/add-to-collection/`, {
-						templateId: uploadedTemplate.id,
-						collectionId,
-					});
+					const fetchRes = await api.get(
+						`${BASE_URL}/my-templates/?state=active&page=1&page_size=${PAGE_SIZE}`,
+					);
+					const fetchedTemplates: Template[] =
+						fetchRes.data.templates ?? [];
+					const uploadedTemplate = fetchedTemplates.find(
+						(t) => t.public_id === uploadedPublicId,
+					);
+
+					if (uploadedTemplate) {
+						await api.put(`${BASE_URL}/add-to-collection/`, {
+							templateId: uploadedTemplate.id,
+							collectionId,
+						});
+					}
 				}
 
-				setTemplates(
-					fetchedTemplates.map((t) =>
-						t.id === uploadedTemplate.id && collectionId !== null
-							? { ...t, collection_id: collectionId }
-							: t,
-					),
-				);
-				setCollections(fetchedCollections);
 				toast.success(
 					collectionId === null
 						? "Template uploaded successfully."
 						: "Template uploaded to collection.",
 				);
+				return uploadedPublicId;
 			} catch (error) {
 				toast.error(
 					collectionId === null
 						? "Failed to upload template."
 						: "Failed to upload template to collection.",
 				);
+				return null;
 			}
 		},
 		[BASE_URL],
@@ -278,8 +271,6 @@ export function useDashboardStore({
 
 	return {
 		templates,
-		activeTemplates,
-		trashedTemplates,
 		collections,
 		trashTemplate,
 		restoreTemplate,

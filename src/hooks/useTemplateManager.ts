@@ -1,9 +1,13 @@
-import { useEffect } from "react";
-import axios from "axios";
-import { toast } from "sonner";
 import { logEvent } from "@/lib/analytics";
+import {
+	hasTemplateSource,
+	resolveTemplateFile,
+} from "@/lib/templateFileUtils";
 import api from "@/services/axios";
 import { Recipient, TextField } from "@/types/TextField";
+import axios from "axios";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { useAuthContext } from "./useAuthContext";
 
 interface UseTemplateManagerProps {
@@ -55,14 +59,38 @@ const useTemplateManager = ({
 		};
 	}, [templateUrl]);
 
+	useEffect(() => {
+		if (templateFile || !templateUrl) return;
+
+		let cancelled = false;
+		void resolveTemplateFile(null, templateUrl).then((file) => {
+			if (!cancelled && file) {
+				setTemplateFile(file);
+			}
+		});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [templateFile, templateUrl, setTemplateFile]);
+
 	const handleDownload = async () => {
-		if (!templateFile) {
+		if (!hasTemplateSource(templateFile, templateUrl)) {
 			toast.error("Please upload a template first");
 			return;
 		}
 
+		const resolvedFile = await resolveTemplateFile(
+			templateFile,
+			templateUrl,
+		);
+		if (!resolvedFile) {
+			toast.error("Failed to load the selected template");
+			return;
+		}
+
 		const formData = new FormData();
-		formData.append("template", templateFile);
+		formData.append("template", resolvedFile);
 		formData.append("recipients", JSON.stringify(recipients));
 		formData.append("fields", JSON.stringify(fields));
 		formData.append("inEditor", "true");
@@ -105,7 +133,6 @@ const useTemplateManager = ({
 		if (isAuthenticated) {
 			const formData = new FormData();
 			formData.append("template", file);
-			console.log([...formData.entries()]);
 
 			const result = await api.post(
 				`${BASE_URL}/auto-upload/`,
@@ -128,7 +155,7 @@ const useTemplateManager = ({
 	};
 
 	const handleShareClick = () => {
-		if (!templateFile) {
+		if (!hasTemplateSource(templateFile, templateUrl)) {
 			toast.error("Please upload a template first");
 			return;
 		}
@@ -146,7 +173,10 @@ const useTemplateManager = ({
 	};
 
 	const handlePublish = async () => {
-		if (!templateFile || isPublishing) {
+		if (!hasTemplateSource(templateFile, templateUrl) || isPublishing) {
+			if (!hasTemplateSource(templateFile, templateUrl)) {
+				toast.error("Please upload a template first");
+			}
 			return;
 		}
 
@@ -154,6 +184,16 @@ const useTemplateManager = ({
 		const toastId = toast.loading("Uploading and saving configuration...");
 
 		try {
+			const resolvedFile = await resolveTemplateFile(
+				templateFile,
+				templateUrl,
+			);
+			if (!resolvedFile) {
+				toast.dismiss(toastId);
+				toast.error("Failed to load the selected template");
+				return;
+			}
+
 			let finalPublicId = customPublicId.trim();
 
 			if (finalPublicId) {
@@ -166,7 +206,7 @@ const useTemplateManager = ({
 			}
 
 			const formData = new FormData();
-			formData.append("template", templateFile);
+			formData.append("template", resolvedFile);
 			if (finalPublicId) {
 				formData.append("public_id", finalPublicId);
 			}

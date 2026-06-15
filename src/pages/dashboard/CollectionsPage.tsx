@@ -1,40 +1,3 @@
-import { useEffect, useState } from "react";
-import {
-	FolderOpen,
-	MoreVertical,
-	Pencil,
-	Trash2,
-	Plus,
-	X,
-	ChevronRight,
-	Loader2,
-	ArrowUpRightFromSquare,
-} from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { AnimatePresence, motion } from "framer-motion";
-import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-	DialogDescription,
-} from "@/components/ui/dialog";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -45,31 +8,77 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
-import { openTemplateInEditor } from "@/lib/editorUtils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
+import ListPagination from "@/components/dashboard/ListPagination";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import type { Collection } from "@/hooks/useDashboardStore";
+import { openTemplateInEditor } from "@/lib/editorUtils";
+import { fetchTemplates, PAGE_SIZE } from "@/services/dashboardApi";
 import { Template } from "@/types/Template";
+import type { PaginationMeta } from "@/types/Pagination";
+import { DEFAULT_PAGINATION, clampPageAfterDelete } from "@/types/Pagination";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+	ArrowUpRightFromSquare,
+	ChevronRight,
+	FolderOpen,
+	LayoutGrid,
+	Loader2,
+	MoreVertical,
+	Pencil,
+	Plus,
+	Rows3,
+	Trash2,
+	X,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
 	isLoading: boolean;
 	collections: Collection[];
-	templates: Template[];
+	pagination: PaginationMeta;
+	onPageChange: (page: number) => void;
 	onCreate: (name: string) => void;
 	onUpdate: (id: number, name: string) => void;
 	onDelete: (id: number) => void;
 	onAssignCollection: (
 		templateId: number,
 		collectionId: number | null,
-	) => void;
+	) => Promise<void>;
 	onUploadToCollection: (collectionId: number, file: File) => Promise<void>;
 }
 
 const CollectionsPage = ({
 	isLoading,
 	collections,
-	templates,
+	pagination,
+	onPageChange,
 	onCreate,
 	onUpdate,
 	onDelete,
@@ -83,6 +92,7 @@ const CollectionsPage = ({
 	};
 
 	const navigate = useNavigate();
+	const { BASE_URL } = useAuthContext();
 	const [creating, setCreating] = useState(false);
 	const [newName, setNewName] = useState("");
 	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
@@ -98,11 +108,18 @@ const CollectionsPage = ({
 	const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
 		null,
 	);
+	const [layoutMode, setLayoutMode] = useState<"grid" | "list">("grid");
 	const [isUploadingToCollection, setIsUploadingToCollection] =
 		useState(false);
 	const [uploadingTemplates, setUploadingTemplates] = useState<
 		UploadingTemplate[]
 	>([]);
+	const [detailTemplates, setDetailTemplates] = useState<Template[]>([]);
+	const [detailPagination, setDetailPagination] =
+		useState<PaginationMeta>(DEFAULT_PAGINATION);
+	const [detailPage, setDetailPage] = useState(1);
+	const [isDetailLoading, setIsDetailLoading] = useState(false);
+	const isListLayout = layoutMode === "list";
 
 	const handleCreate = () => {
 		if (newName.trim()) {
@@ -119,13 +136,44 @@ const CollectionsPage = ({
 		}
 	};
 
-	const templatesInCollection = (colId: number) =>
-		templates.filter((t) => t.collection_id === colId && !t.trashed);
-
 	const selectedCollection = collections.find(
 		(c) => c.id === selectedCollectionId,
 	);
-	const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+	const selectedTemplate = detailTemplates.find(
+		(t) => t.id === selectedTemplateId,
+	);
+
+	const loadCollectionTemplates = useCallback(
+		async (collectionId: number, page: number) => {
+			setIsDetailLoading(true);
+			try {
+				const response = await fetchTemplates(BASE_URL, {
+					state: "active",
+					page,
+					pageSize: PAGE_SIZE,
+					collectionId,
+				});
+				setDetailTemplates(response.templates);
+				setDetailPagination(response.pagination);
+				setDetailPage(response.pagination.page);
+			} finally {
+				setIsDetailLoading(false);
+			}
+		},
+		[BASE_URL],
+	);
+
+	useEffect(() => {
+		if (!openedCollection) return;
+		void loadCollectionTemplates(openedCollection.id, detailPage);
+	}, [openedCollection, detailPage, loadCollectionTemplates]);
+
+	useEffect(() => {
+		if (openedCollection) {
+			setDetailPage(1);
+			setSelectedTemplateId(null);
+		}
+	}, [openedCollection?.id]);
 
 	useClearSelectionOnOutside({
 		enabled: openedCollection === null && selectedCollectionId !== null,
@@ -166,6 +214,8 @@ const CollectionsPage = ({
 		setIsUploadingToCollection(true);
 		try {
 			await onUploadToCollection(openedCollection.id, file);
+			setDetailPage(1);
+			await loadCollectionTemplates(openedCollection.id, 1);
 		} finally {
 			setUploadingTemplates((prev) =>
 				prev.filter((upload) => upload.id !== uploadId),
@@ -195,11 +245,11 @@ const CollectionsPage = ({
 	useEffect(() => {
 		if (
 			selectedTemplateId !== null &&
-			!templates.some((t) => t.id === selectedTemplateId)
+			!detailTemplates.some((t) => t.id === selectedTemplateId)
 		) {
 			setSelectedTemplateId(null);
 		}
-	}, [templates, selectedTemplateId]);
+	}, [detailTemplates, selectedTemplateId]);
 
 	useEffect(() => {
 		if (!isLoading) return;
@@ -225,7 +275,13 @@ const CollectionsPage = ({
 						Loading collections...
 					</p>
 				</div>
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+				<div
+					className={
+						isListLayout
+							? "space-y-3"
+							: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+					}
+				>
 					{Array.from({ length: visibleSkeletons }).map(
 						(_, index) => (
 							<Card
@@ -246,7 +302,7 @@ const CollectionsPage = ({
 
 	// If a collection is opened, show the detail view
 	if (openedCollection) {
-		const colTemplates = templatesInCollection(openedCollection.id);
+		const colTemplates = detailTemplates;
 		const hasDisplayTemplates =
 			colTemplates.length > 0 || uploadingTemplates.length > 0;
 		return (
@@ -280,13 +336,41 @@ const CollectionsPage = ({
 				</div>
 
 				<div className="flex items-center justify-between">
-					<h2 className="text-2xl font-semibold text-foreground">
-						{openedCollection.name}
-					</h2>
+					<div className="flex items-center gap-3">
+						<div className="flex items-center rounded-md border border-border p-1">
+							<Button
+								size="icon"
+								variant={
+									layoutMode === "grid"
+										? "secondary"
+										: "ghost"
+								}
+								className="h-8 w-8"
+								onClick={() => setLayoutMode("grid")}
+							>
+								<LayoutGrid className="h-4 w-4" />
+							</Button>
+							<Button
+								size="icon"
+								variant={
+									layoutMode === "list"
+										? "secondary"
+										: "ghost"
+								}
+								className="h-8 w-8"
+								onClick={() => setLayoutMode("list")}
+							>
+								<Rows3 className="h-4 w-4" />
+							</Button>
+						</div>
+						<h2 className="text-2xl font-semibold text-foreground">
+							{openedCollection.name}
+						</h2>
+					</div>
 					<div className="flex items-center gap-3">
 						<p className="text-sm text-muted-foreground">
-							{colTemplates.length} template
-							{colTemplates.length !== 1 ? "s" : ""}
+							{detailPagination.total_count} template
+							{detailPagination.total_count !== 1 ? "s" : ""}
 						</p>
 						<Button
 							size="sm"
@@ -313,7 +397,11 @@ const CollectionsPage = ({
 					it in the editor.
 				</p>
 
-				{!hasDisplayTemplates ? (
+				{isDetailLoading ? (
+					<div className="min-h-[20vh] flex items-center justify-center">
+						<Loader2 className="h-6 w-6 animate-spin text-primary" />
+					</div>
+				) : !hasDisplayTemplates ? (
 					<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
 						<FolderOpen className="h-12 w-12 mb-3 opacity-40" />
 						<p className="text-lg">
@@ -324,13 +412,30 @@ const CollectionsPage = ({
 						</p>
 					</div>
 				) : (
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+					<>
+					<div
+						className={
+							isListLayout
+								? "space-y-0"
+								: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+						}
+					>
 						{uploadingTemplates.map((upload) => (
 							<Card
 								key={upload.id}
-								className="group overflow-hidden border-border opacity-80"
+								className={`group overflow-hidden border-border opacity-80 ${
+									isListLayout
+										? "flex items-center min-h-14 rounded-none border-x-0 border-t-0 shadow-none transition-colors hover:bg-muted/30"
+										: ""
+								}`}
 							>
-								<div className="relative aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+								<div
+									className={`relative bg-muted flex items-center justify-center overflow-hidden ${
+										isListLayout
+											? "h-14 w-20 sm:w-24 shrink-0"
+											: "aspect-[4/3]"
+									}`}
+								>
 									<img
 										src={upload.previewUrl}
 										alt={upload.name}
@@ -343,13 +448,19 @@ const CollectionsPage = ({
 										</div>
 									</div>
 								</div>
-								<CardContent className="p-3">
-									<p className="text-sm font-medium text-foreground truncate">
-										{upload.name}
-									</p>
-									<p className="text-xs text-muted-foreground truncate">
-										Pending upload...
-									</p>
+								<CardContent
+									className={`flex-1 min-w-0 ${isListLayout ? "p-2" : "p-3"}`}
+								>
+									<div className="flex items-center justify-between gap-3">
+										<p className="text-sm text-foreground truncate">
+											<span className="font-medium">
+												{upload.name}
+											</span>
+										</p>
+										<p className="text-xs text-muted-foreground shrink-0">
+											Pending upload...
+										</p>
+									</div>
 								</CardContent>
 							</Card>
 						))}
@@ -357,39 +468,86 @@ const CollectionsPage = ({
 							<Card
 								key={t.id}
 								data-collection-template-card
-								className={`group overflow-hidden transition-shadow cursor-pointer ${
+								className={`group overflow-hidden cursor-pointer ${
+									isListLayout
+										? "flex items-center min-h-14 rounded-none border-x-0 border-t-0 shadow-none"
+										: "transition-shadow"
+								} ${
 									selectedTemplateId === t.id
-										? "border-primary ring-2 ring-primary/30 shadow-md"
-										: "border-border hover:shadow-md"
+										? isListLayout
+											? "border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+											: "border-primary ring-2 ring-primary/30 shadow-md"
+										: isListLayout
+											? "border-border hover:bg-muted/40 transition-colors"
+											: "border-border hover:shadow-md"
 								}`}
 								onClick={() => setSelectedTemplateId(t.id)}
 								onDoubleClick={() =>
 									openTemplateInEditor(navigate, t)
 								}
 							>
-								<div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+								<div
+									className={`bg-muted flex items-center justify-center overflow-hidden ${
+										isListLayout
+											? "h-14 w-20 sm:w-24 shrink-0"
+											: "aspect-[4/3]"
+									}`}
+								>
 									<img
 										src={t.url}
 										alt={t.name}
 										className="w-full h-full object-cover"
 									/>
 								</div>
-								<CardContent className="p-3 flex items-center justify-between">
+								<CardContent
+									className={`flex-1 min-w-0 flex items-center justify-between gap-3 ${isListLayout ? "p-2" : "p-3"}`}
+								>
 									<div className="min-w-0">
-										<p className="text-sm font-medium text-foreground truncate">
-											{t.name}
-										</p>
-										<p className="text-xs text-muted-foreground truncate">
-											{t.public_id}
-										</p>
+										{isListLayout ? (
+											<p className="text-sm text-foreground truncate">
+												<span className="font-medium">
+													{t.name}
+												</span>
+												<span className="text-xs text-muted-foreground">
+													{" "}
+													· {t.public_id}
+												</span>
+											</p>
+										) : (
+											<>
+												<p className="text-sm font-medium text-foreground truncate">
+													{t.name}
+												</p>
+												<p className="text-xs text-muted-foreground truncate">
+													{t.public_id}
+												</p>
+											</>
+										)}
 									</div>
 									<Button
 										variant="ghost"
 										size="sm"
-										className="text-xs text-muted-foreground hover:text-destructive shrink-0"
+										className={`text-xs text-muted-foreground hover:text-destructive shrink-0 ${isListLayout ? "h-7 px-2" : ""}`}
 										onClick={(event) => {
 											event.stopPropagation();
-											onAssignCollection(t.id, null);
+											void (async () => {
+												await onAssignCollection(
+													t.id,
+													null,
+												);
+												const nextPage =
+													clampPageAfterDelete(
+														detailPagination,
+													);
+												if (nextPage !== detailPage) {
+													setDetailPage(nextPage);
+												} else {
+													await loadCollectionTemplates(
+														openedCollection.id,
+														detailPage,
+													);
+												}
+											})();
 										}}
 									>
 										Remove
@@ -398,6 +556,13 @@ const CollectionsPage = ({
 							</Card>
 						))}
 					</div>
+					<ListPagination
+						pagination={detailPagination}
+						onPageChange={setDetailPage}
+						isLoading={isDetailLoading}
+						className="pt-2"
+					/>
+					</>
 				)}
 
 				<AnimatePresence>
@@ -440,12 +605,26 @@ const CollectionsPage = ({
 										<Button
 											size="icon"
 											variant="destructive"
-											onClick={() =>
-												onAssignCollection(
+										onClick={() =>
+											void (async () => {
+												await onAssignCollection(
 													selectedTemplate.id,
 													null,
-												)
-											}
+												);
+												const nextPage =
+													clampPageAfterDelete(
+														detailPagination,
+													);
+												if (nextPage !== detailPage) {
+													setDetailPage(nextPage);
+												} else {
+													await loadCollectionTemplates(
+														openedCollection.id,
+														detailPage,
+													);
+												}
+											})()
+										}
 										>
 											<X className="h-4 w-4" />
 										</Button>
@@ -489,9 +668,33 @@ const CollectionsPage = ({
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
-				<h2 className="text-2xl font-semibold text-foreground">
-					Collections
-				</h2>
+				<div className="flex items-center gap-3">
+					<div className="flex items-center rounded-md border border-border p-1">
+						<Button
+							size="icon"
+							variant={
+								layoutMode === "grid" ? "secondary" : "ghost"
+							}
+							className="h-8 w-8"
+							onClick={() => setLayoutMode("grid")}
+						>
+							<LayoutGrid className="h-4 w-4" />
+						</Button>
+						<Button
+							size="icon"
+							variant={
+								layoutMode === "list" ? "secondary" : "ghost"
+							}
+							className="h-8 w-8"
+							onClick={() => setLayoutMode("list")}
+						>
+							<Rows3 className="h-4 w-4" />
+						</Button>
+					</div>
+					<h2 className="text-2xl font-semibold text-foreground">
+						Collections
+					</h2>
+				</div>
 				{!creating ? (
 					<Button size="sm" onClick={() => setCreating(true)}>
 						<Plus className="mr-2 h-4 w-4" /> New Collection
@@ -534,34 +737,71 @@ const CollectionsPage = ({
 					</p>
 				</div>
 			) : (
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+				<>
+				<div
+					className={
+						isListLayout
+							? "space-y-0"
+							: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+					}
+				>
 					{collections.map((col) => {
-						const colTemplates = templatesInCollection(col.id);
+						const templateCount = col.template_count ?? 0;
 						return (
 							<Card
 								key={col.id}
 								data-collection-card
-								className={`transition-shadow cursor-pointer ${
+								className={`cursor-pointer ${
+									isListLayout
+										? "min-h-14 rounded-none border-x-0 border-t-0 shadow-none"
+										: "transition-shadow"
+								} ${
 									selectedCollectionId === col.id
-										? "border-primary ring-2 ring-primary/30 shadow-md"
-										: "border-border hover:shadow-md"
+										? isListLayout
+											? "border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+											: "border-primary ring-2 ring-primary/30 shadow-md"
+										: isListLayout
+											? "border-border hover:bg-muted/40 transition-colors"
+											: "border-border hover:shadow-md"
 								}`}
 								onClick={() => setSelectedCollectionId(col.id)}
 								onDoubleClick={() => setOpenedCollection(col)}
 							>
-								<CardContent className="p-4 space-y-3">
+								<CardContent
+									className={
+										isListLayout ? "p-2" : "p-4 space-y-3"
+									}
+								>
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2 min-w-0">
 											<FolderOpen className="h-5 w-5 text-primary shrink-0" />
-											<span className="font-medium text-foreground truncate">
-												{col.name}
-											</span>
-											<Badge
-												variant="secondary"
-												className="text-xs"
-											>
-												{colTemplates.length}
-											</Badge>
+											{isListLayout ? (
+												<p className="text-sm text-foreground truncate">
+													<span className="font-medium">
+														{col.name}
+													</span>
+													<span className="text-xs text-muted-foreground">
+														{" "}
+														· {templateCount}{" "}
+														template
+														{templateCount !== 1
+															? "s"
+															: ""}
+													</span>
+												</p>
+											) : (
+												<>
+													<span className="font-medium text-foreground truncate">
+														{col.name}
+													</span>
+													<Badge
+														variant="secondary"
+														className="text-xs"
+													>
+														{templateCount}
+													</Badge>
+												</>
+											)}
 										</div>
 										<DropdownMenu>
 											<DropdownMenuTrigger
@@ -602,16 +842,25 @@ const CollectionsPage = ({
 											</DropdownMenuContent>
 										</DropdownMenu>
 									</div>
-									<p className="text-xs text-muted-foreground">
-										{colTemplates.length} template
-										{colTemplates.length !== 1 ? "s" : ""} ·
-										Click to view
-									</p>
+									{!isListLayout && (
+										<p className="text-xs text-muted-foreground">
+											{templateCount} template
+											{templateCount !== 1 ? "s" : ""}{" "}
+											· Click to view
+										</p>
+									)}
 								</CardContent>
 							</Card>
 						);
 					})}
 				</div>
+				<ListPagination
+					pagination={pagination}
+					onPageChange={onPageChange}
+					isLoading={isLoading}
+					className="pt-2"
+				/>
+				</>
 			)}
 
 			<AnimatePresence>

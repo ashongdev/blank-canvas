@@ -22,9 +22,9 @@ const csrftoken = getCookie("csrftoken");
 
 const api = axios.create({
 	baseURL: BASE_URL,
-	withCredentials: true, // Required for cookies
+	withCredentials: true,
 	headers: {
-		"Content-Type": "application/json",
+		// "Content-Type": "application/json",
 		"X-CSRFToken": csrftoken,
 	},
 });

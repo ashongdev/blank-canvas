@@ -7,22 +7,46 @@ import SettingsPage from "./SettingsPage";
 import DashboardIndex from "./DashboardIndex";
 import { useCallback, useEffect, useState } from "react";
 import { Template } from "@/types/Template";
-import api from "@/services/axios";
 import { toast } from "sonner";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import {
+	fetchCollections,
+	fetchTemplates,
+	PAGE_SIZE,
+} from "@/services/dashboardApi";
+import {
+	clampPageAfterDelete,
+	DEFAULT_PAGINATION,
+	type PaginationMeta,
+} from "@/types/Pagination";
 
 export interface Collection {
 	id: number;
 	name: string;
 	created_at: string;
+	template_count?: number;
 }
 
 const DashboardRoutes = () => {
 	const [templates, setTemplates] = useState<Template[]>([]);
 	const [collections, setCollections] = useState<Collection[]>([]);
+	const [allCollections, setAllCollections] = useState<Collection[]>([]);
+
+	const [templatesPagination, setTemplatesPagination] =
+		useState<PaginationMeta>(DEFAULT_PAGINATION);
+	const [collectionsPagination, setCollectionsPagination] =
+		useState<PaginationMeta>(DEFAULT_PAGINATION);
+	const [trashPagination, setTrashPagination] =
+		useState<PaginationMeta>(DEFAULT_PAGINATION);
+
+	const [templatesPage, setTemplatesPage] = useState(1);
+	const [collectionsPage, setCollectionsPage] = useState(1);
+	const [trashPage, setTrashPage] = useState(1);
 
 	const [isActiveLoading, setIsActiveLoading] = useState(false);
 	const [isDeletedLoading, setIsDeletedLoading] = useState(false);
+	const [isCollectionsLoading, setIsCollectionsLoading] = useState(false);
+
 	const store = useDashboardStore({
 		templates,
 		setTemplates,
@@ -32,45 +56,221 @@ const DashboardRoutes = () => {
 	const { BASE_URL } = useAuthContext();
 	const location = useLocation();
 
-	const fetchMyTemplates = useCallback(
-		async (state: "active" | "deleted") => {
-			if (state === "active") {
-				setIsActiveLoading(true);
-			} else {
-				setIsDeletedLoading(true);
-			}
-
+	const loadActiveTemplates = useCallback(
+		async (page: number) => {
+			setIsActiveLoading(true);
 			try {
-				const response = await api.get(
-					`${BASE_URL}/my-templates?state=${state}`,
-				);
-				setTemplates(response.data.templates);
-				setCollections(response.data.collections);
-			} catch (error) {
+				const response = await fetchTemplates(BASE_URL, {
+					state: "active",
+					page,
+					pageSize: PAGE_SIZE,
+				});
+				setTemplates(response.templates);
+				setTemplatesPagination(response.pagination);
+				setTemplatesPage(response.pagination.page);
+			} catch {
 				toast.error("Error fetching templates.");
 			} finally {
-				if (state === "active") {
-					setIsActiveLoading(false);
-				} else {
-					setIsDeletedLoading(false);
-				}
+				setIsActiveLoading(false);
 			}
 		},
 		[BASE_URL],
 	);
 
-	useEffect(() => {
-		if (
-			location.pathname === "/dashboard/templates" ||
-			location.pathname === "/dashboard/collections"
-		) {
-			void fetchMyTemplates("active");
-		}
+	const loadTrashTemplates = useCallback(
+		async (page: number) => {
+			setIsDeletedLoading(true);
+			try {
+				const response = await fetchTemplates(BASE_URL, {
+					state: "deleted",
+					page,
+					pageSize: PAGE_SIZE,
+				});
+				setTemplates(response.templates);
+				setTrashPagination(response.pagination);
+				setTrashPage(response.pagination.page);
+			} catch {
+				toast.error("Error fetching trash.");
+			} finally {
+				setIsDeletedLoading(false);
+			}
+		},
+		[BASE_URL],
+	);
 
-		if (location.pathname === "/dashboard/trash") {
-			void fetchMyTemplates("deleted");
+	const loadCollections = useCallback(
+		async (page: number) => {
+			setIsCollectionsLoading(true);
+			try {
+				const response = await fetchCollections(BASE_URL, {
+					page,
+					pageSize: PAGE_SIZE,
+				});
+				setCollections(response.collections);
+				setCollectionsPagination(response.pagination);
+				setCollectionsPage(response.pagination.page);
+			} catch {
+				toast.error("Error fetching collections.");
+			} finally {
+				setIsCollectionsLoading(false);
+			}
+		},
+		[BASE_URL],
+	);
+
+	const loadAllCollections = useCallback(async () => {
+		try {
+			const response = await fetchCollections(BASE_URL, { all: true });
+			setAllCollections(response.collections);
+		} catch {
+			toast.error("Error fetching collections.");
 		}
-	}, [fetchMyTemplates, location.pathname]);
+	}, [BASE_URL]);
+
+	useEffect(() => {
+		setTemplatesPage(1);
+		setCollectionsPage(1);
+		setTrashPage(1);
+	}, [location.pathname]);
+
+	useEffect(() => {
+		if (location.pathname === "/dashboard/templates") {
+			void loadActiveTemplates(templatesPage);
+			void loadAllCollections();
+		}
+	}, [
+		location.pathname,
+		templatesPage,
+		loadActiveTemplates,
+		loadAllCollections,
+	]);
+
+	useEffect(() => {
+		if (location.pathname === "/dashboard/collections") {
+			void loadCollections(collectionsPage);
+			void loadAllCollections();
+		}
+	}, [
+		location.pathname,
+		collectionsPage,
+		loadCollections,
+		loadAllCollections,
+	]);
+
+	useEffect(() => {
+		if (location.pathname === "/dashboard/trash") {
+			void loadTrashTemplates(trashPage);
+		}
+	}, [location.pathname, trashPage, loadTrashTemplates]);
+
+	const handleTrashTemplate = useCallback(
+		async (id: number) => {
+			await store.trashTemplate(id);
+			const nextPage = clampPageAfterDelete(templatesPagination);
+			if (nextPage !== templatesPage) {
+				setTemplatesPage(nextPage);
+			} else {
+				await loadActiveTemplates(templatesPage);
+			}
+		},
+		[
+			store,
+			templatesPagination,
+			templatesPage,
+			loadActiveTemplates,
+		],
+	);
+
+	const handleRestoreTemplate = useCallback(
+		async (id: number) => {
+			await store.restoreTemplate(id);
+			const nextPage = clampPageAfterDelete(trashPagination);
+			if (nextPage !== trashPage) {
+				setTrashPage(nextPage);
+			} else {
+				await loadTrashTemplates(trashPage);
+			}
+		},
+		[store, trashPagination, trashPage, loadTrashTemplates],
+	);
+
+	const handlePermanentDelete = useCallback(
+		async (id: number) => {
+			store.permanentlyDelete(id);
+			const nextPage = clampPageAfterDelete(trashPagination);
+			if (nextPage !== trashPage) {
+				setTrashPage(nextPage);
+			} else {
+				await loadTrashTemplates(trashPage);
+			}
+		},
+		[store, trashPagination, trashPage, loadTrashTemplates],
+	);
+
+	const handleUploadTemplate = useCallback(
+		async (collectionId: number | null, file: File) => {
+			const result = await store.uploadTemplateToCollection(
+				collectionId,
+				file,
+			);
+			if (result) {
+				setTemplatesPage(1);
+				await loadActiveTemplates(1);
+				await loadAllCollections();
+			}
+		},
+		[store, loadActiveTemplates, loadAllCollections],
+	);
+
+	const handleCreateCollection = useCallback(
+		async (name: string) => {
+			await store.createCollection(name);
+			setCollectionsPage(1);
+			await loadCollections(1);
+			await loadAllCollections();
+		},
+		[store, loadCollections, loadAllCollections],
+	);
+
+	const handleDeleteCollection = useCallback(
+		async (id: number) => {
+			await store.deleteCollection(id);
+			const nextPage = clampPageAfterDelete(collectionsPagination);
+			if (nextPage !== collectionsPage) {
+				setCollectionsPage(nextPage);
+			} else {
+				await loadCollections(collectionsPage);
+			}
+			await loadAllCollections();
+		},
+		[
+			store,
+			collectionsPagination,
+			collectionsPage,
+			loadCollections,
+			loadAllCollections,
+		],
+	);
+
+	const handleAssignCollection = useCallback(
+		async (templateId: number, collectionId: number | null) => {
+			await store.assignCollection(templateId, collectionId);
+			await loadActiveTemplates(templatesPage);
+			await loadAllCollections();
+			if (location.pathname === "/dashboard/collections") {
+				await loadCollections(collectionsPage);
+			}
+		},
+		[
+			store,
+			templatesPage,
+			collectionsPage,
+			loadActiveTemplates,
+			loadAllCollections,
+			loadCollections,
+			location.pathname,
+		],
+	);
 
 	return (
 		<Routes>
@@ -81,11 +281,13 @@ const DashboardRoutes = () => {
 					<TemplatesPage
 						templates={templates}
 						isLoading={isActiveLoading}
-						collections={collections}
-						onTrash={store.trashTemplate}
+						pagination={templatesPagination}
+						onPageChange={setTemplatesPage}
+						collections={allCollections}
+						onTrash={handleTrashTemplate}
 						onUpdate={store.updateTemplate}
-						onAssignCollection={store.assignCollection}
-						onUploadTemplate={store.uploadTemplateToCollection}
+						onAssignCollection={handleAssignCollection}
+						onUploadTemplate={handleUploadTemplate}
 					/>
 				}
 			/>
@@ -93,14 +295,15 @@ const DashboardRoutes = () => {
 				path="collections"
 				element={
 					<CollectionsPage
-						isLoading={isActiveLoading}
+						isLoading={isCollectionsLoading}
 						collections={collections}
-						templates={store.templates}
-						onCreate={store.createCollection}
+						pagination={collectionsPagination}
+						onPageChange={setCollectionsPage}
+						onCreate={handleCreateCollection}
 						onUpdate={store.updateCollection}
-						onDelete={store.deleteCollection}
-						onAssignCollection={store.assignCollection}
-						onUploadToCollection={store.uploadTemplateToCollection}
+						onDelete={handleDeleteCollection}
+						onAssignCollection={handleAssignCollection}
+						onUploadToCollection={handleUploadTemplate}
 					/>
 				}
 			/>
@@ -108,10 +311,12 @@ const DashboardRoutes = () => {
 				path="trash"
 				element={
 					<TrashPage
-						templates={store.trashedTemplates}
+						templates={templates}
 						isLoading={isDeletedLoading}
-						onRestore={store.restoreTemplate}
-						onPermanentlyDelete={store.permanentlyDelete}
+						pagination={trashPagination}
+						onPageChange={setTrashPage}
+						onRestore={handleRestoreTemplate}
+						onPermanentlyDelete={handlePermanentDelete}
 					/>
 				}
 			/>

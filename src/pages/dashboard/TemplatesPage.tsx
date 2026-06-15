@@ -1,35 +1,3 @@
-import { useEffect, useState } from "react";
-import {
-	MoreVertical,
-	Pencil,
-	Trash2,
-	FolderPlus,
-	RefreshCw,
-	Loader2,
-	X,
-	ArrowUpRightFromSquare,
-} from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-	DialogDescription,
-} from "@/components/ui/dialog";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -40,29 +8,67 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { AnimatePresence, motion } from "framer-motion";
-import { openTemplateInEditor } from "@/lib/editorUtils";
 import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
-import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
+import ListPagination from "@/components/dashboard/ListPagination";
 import type { Collection } from "@/hooks/useDashboardStore";
+import { openTemplateInEditor } from "@/lib/editorUtils";
 import { Template } from "@/types/Template";
+import type { PaginationMeta } from "@/types/Pagination";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+	ArrowUpRightFromSquare,
+	FolderPlus,
+	LayoutGrid,
+	Loader2,
+	MoreVertical,
+	Pencil,
+	RefreshCw,
+	Rows3,
+	Trash2,
+	X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
 	templates: Template[];
 	isLoading: boolean;
+	pagination: PaginationMeta;
+	onPageChange: (page: number) => void;
 	collections: Collection[];
 	onTrash: (id: number) => void;
 	onUpdate: (id: number, updates: Partial<Template>) => void;
 	onAssignCollection: (
 		templateId: number,
 		collectionId: number | null,
-	) => void;
+	) => Promise<void>;
 	onUploadTemplate: (
 		collectionId: number | null,
 		file: File,
@@ -78,6 +84,8 @@ type UploadingTemplate = {
 const TemplatesPage = ({
 	templates,
 	isLoading,
+	pagination,
+	onPageChange,
 	collections,
 	onTrash,
 	onUpdate,
@@ -93,9 +101,11 @@ const TemplatesPage = ({
 	);
 	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
 	const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
+	const [layoutMode, setLayoutMode] = useState<"grid" | "list">("grid");
 	const [uploadingTemplates, setUploadingTemplates] = useState<
 		UploadingTemplate[]
 	>([]);
+	const isListLayout = layoutMode === "list";
 
 	const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 
@@ -195,15 +205,27 @@ const TemplatesPage = ({
 								Loading templates...
 							</p>
 						</div>
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+						<div
+							className={
+								isListLayout
+									? "space-y-3"
+									: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+							}
+						>
 							{Array.from({ length: visibleSkeletons }).map(
 								(_, index) => (
 									<Card
 										key={`template-skeleton-${index}`}
-										className="border-border"
+										className={`border-border ${isListLayout ? "flex" : ""}`}
 									>
-										<Skeleton className="aspect-[4/3] w-full rounded-b-none rounded-t-lg" />
-										<CardContent className="p-3 space-y-3">
+										<Skeleton
+											className={
+												isListLayout
+													? "w-40 sm:w-48 rounded-r-none rounded-l-lg"
+													: "aspect-[4/3] w-full rounded-b-none rounded-t-lg"
+											}
+										/>
+										<CardContent className="p-3 space-y-3 flex-1">
 											<Skeleton className="h-4 w-2/3" />
 											<Skeleton className="h-3 w-1/2" />
 										</CardContent>
@@ -223,14 +245,40 @@ const TemplatesPage = ({
 						/>
 						<div className="flex items-center justify-between gap-4">
 							<div className="flex items-center gap-3">
+								<div className="flex items-center rounded-md border border-border p-1">
+									<Button
+										size="icon"
+										variant={
+											layoutMode === "grid"
+												? "secondary"
+												: "ghost"
+										}
+										className="h-8 w-8"
+										onClick={() => setLayoutMode("grid")}
+									>
+										<LayoutGrid className="h-4 w-4" />
+									</Button>
+									<Button
+										size="icon"
+										variant={
+											layoutMode === "list"
+												? "secondary"
+												: "ghost"
+										}
+										className="h-8 w-8"
+										onClick={() => setLayoutMode("list")}
+									>
+										<Rows3 className="h-4 w-4" />
+									</Button>
+								</div>
 								<h2 className="text-2xl font-semibold text-foreground">
 									My Templates
 								</h2>
 								<p className="text-sm text-muted-foreground">
-									{templates.length +
+									{pagination.total_count +
 										uploadingTemplates.length}{" "}
 									template
-									{templates.length +
+									{pagination.total_count +
 										uploadingTemplates.length !==
 									1
 										? "s"
@@ -275,13 +323,30 @@ const TemplatesPage = ({
 								</p>
 							</div>
 						) : (
-							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+							<>
+							<div
+								className={
+									isListLayout
+										? "space-y-0"
+										: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+								}
+							>
 								{uploadingTemplates.map((upload) => (
 									<Card
 										key={upload.id}
-										className="group overflow-hidden border-border opacity-80"
+										className={`group overflow-hidden border-border opacity-80 ${
+											isListLayout
+												? "flex items-center min-h-14 rounded-none border-x-0 border-t-0 shadow-none transition-colors hover:bg-muted/30"
+												: ""
+										}`}
 									>
-										<div className="relative aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+										<div
+											className={`relative bg-muted flex items-center justify-center overflow-hidden ${
+												isListLayout
+													? "h-14 w-20 sm:w-24 shrink-0"
+													: "aspect-[4/3]"
+											}`}
+										>
 											<img
 												src={upload.previewUrl}
 												alt={upload.name}
@@ -294,13 +359,19 @@ const TemplatesPage = ({
 												</div>
 											</div>
 										</div>
-										<CardContent className="p-3">
-											<p className="text-sm font-medium text-foreground truncate">
-												{upload.name}
-											</p>
-											<p className="text-xs text-muted-foreground truncate">
-												Pending upload...
-											</p>
+										<CardContent
+											className={`flex-1 min-w-0 ${isListLayout ? "p-2" : "p-3"}`}
+										>
+											<div className="flex items-center justify-between gap-3">
+												<p className="text-sm text-foreground truncate">
+													<span className="font-medium">
+														{upload.name}
+													</span>
+												</p>
+												<p className="text-xs text-muted-foreground shrink-0">
+													Pending upload...
+												</p>
+											</div>
 										</CardContent>
 									</Card>
 								))}
@@ -308,10 +379,18 @@ const TemplatesPage = ({
 									<Card
 										key={t.id}
 										data-template-card
-										className={`group overflow-hidden transition-shadow cursor-pointer ${
+										className={`group overflow-hidden cursor-pointer ${
+											isListLayout
+												? "flex items-center min-h-14 rounded-none border-x-0 border-t-0 shadow-none"
+												: "transition-shadow"
+										} ${
 											selectedTemplateId === t.id
-												? "border-primary ring-2 ring-primary/30 shadow-md"
-												: "border-border hover:shadow-md"
+												? isListLayout
+													? "border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+													: "border-primary ring-2 ring-primary/30 shadow-md"
+												: isListLayout
+													? "border-border hover:bg-muted/40 transition-colors"
+													: "border-border hover:shadow-md"
 										}`}
 										onClick={() =>
 											setSelectedTemplateId(t.id)
@@ -320,21 +399,43 @@ const TemplatesPage = ({
 											handleUpdateTemplate(t)
 										}
 									>
-										<div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+										<div
+											className={`bg-muted flex items-center justify-center overflow-hidden ${
+												isListLayout
+													? "h-14 w-20 sm:w-24 shrink-0"
+													: "aspect-[4/3]"
+											}`}
+										>
 											<img
 												src={t.url}
 												alt={t.name}
 												className="w-full h-full object-cover"
 											/>
 										</div>
-										<CardContent className="p-3 flex items-center justify-between">
+										<CardContent
+											className={`flex-1 min-w-0 flex items-center justify-between gap-3 ${isListLayout ? "p-2" : "p-3"}`}
+										>
 											<div className="min-w-0">
-												<p className="text-sm font-medium text-foreground truncate">
-													{t.name}
-												</p>
-												<p className="text-xs text-muted-foreground truncate">
-													{t.public_id}
-												</p>
+												{isListLayout ? (
+													<p className="text-sm text-foreground truncate">
+														<span className="font-medium">
+															{t.name}
+														</span>
+														<span className="text-xs text-muted-foreground">
+															{" "}
+															· {t.public_id}
+														</span>
+													</p>
+												) : (
+													<>
+														<p className="text-sm font-medium text-foreground truncate">
+															{t.name}
+														</p>
+														<p className="text-xs text-muted-foreground truncate">
+															{t.public_id}
+														</p>
+													</>
+												)}
 											</div>
 											<DropdownMenu>
 												<DropdownMenuTrigger asChild>
@@ -418,6 +519,13 @@ const TemplatesPage = ({
 									</Card>
 								))}
 							</div>
+							<ListPagination
+								pagination={pagination}
+								onPageChange={onPageChange}
+								isLoading={isLoading}
+								className="pt-2"
+							/>
+							</>
 						)}
 					</>
 				)}

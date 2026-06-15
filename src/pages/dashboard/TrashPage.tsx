@@ -1,15 +1,3 @@
-import { useEffect, useState } from "react";
-import { Trash2, RotateCcw, Loader2, X } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -20,11 +8,27 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
+import ListPagination from "@/components/dashboard/ListPagination";
 import { Template } from "@/types/Template";
+import type { PaginationMeta } from "@/types/Pagination";
+import { AnimatePresence, motion } from "framer-motion";
+import { LayoutGrid, Loader2, RotateCcw, Rows3, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Props {
 	templates: Template[];
 	isLoading: boolean;
+	pagination: PaginationMeta;
+	onPageChange: (page: number) => void;
 	onRestore: (id: number) => void;
 	onPermanentlyDelete: (id: number) => void;
 }
@@ -32,6 +36,8 @@ interface Props {
 const TrashPage = ({
 	templates,
 	isLoading,
+	pagination,
+	onPageChange,
 	onRestore,
 	onPermanentlyDelete,
 }: Props) => {
@@ -41,6 +47,8 @@ const TrashPage = ({
 		null,
 	);
 	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
+	const [layoutMode, setLayoutMode] = useState<"grid" | "list">("grid");
+	const isListLayout = layoutMode === "list";
 	const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 	const templateToRestore = templates.find((t) => t.id === restoreId);
 	const templateToDelete = templates.find((t) => t.id === deleteId);
@@ -85,18 +93,41 @@ const TrashPage = ({
 							Loading trash...
 						</p>
 					</div>
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+					<div
+						className={
+							isListLayout
+								? "space-y-0"
+								: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+						}
+					>
 						{Array.from({ length: visibleSkeletons }).map(
 							(_, index) => (
 								<Card
 									key={`trash-skeleton-${index}`}
-									className="border-border"
+									className={`border-border ${isListLayout ? "flex rounded-none border-x-0 border-t-0 shadow-none" : ""}`}
 								>
-									<Skeleton className="aspect-[4/3] w-full rounded-b-none rounded-t-lg" />
-									<CardContent className="p-3 space-y-3">
-										<Skeleton className="h-4 w-2/3" />
-										<Skeleton className="h-3 w-1/2" />
-										<Skeleton className="h-8 w-full" />
+									<Skeleton
+										className={
+											isListLayout
+												? "h-12 w-16 sm:w-20 rounded-none"
+												: "aspect-[4/3] w-full rounded-b-none rounded-t-lg"
+										}
+									/>
+									<CardContent
+										className={`flex-1 ${isListLayout ? "p-2" : "p-3 space-y-3"}`}
+									>
+										{isListLayout ? (
+											<div className="flex items-center justify-between gap-3">
+												<Skeleton className="h-4 w-2/3" />
+												<Skeleton className="h-7 w-28" />
+											</div>
+										) : (
+											<>
+												<Skeleton className="h-4 w-2/3" />
+												<Skeleton className="h-3 w-1/2" />
+												<Skeleton className="h-8 w-full" />
+											</>
+										)}
 									</CardContent>
 								</Card>
 							),
@@ -106,12 +137,40 @@ const TrashPage = ({
 			) : (
 				<>
 					<div className="flex items-center justify-between">
-						<h2 className="text-2xl font-semibold text-foreground">
-							Trash
-						</h2>
+						<div className="flex items-center gap-3">
+							<div className="flex items-center rounded-md border border-border p-1">
+								<Button
+									size="icon"
+									variant={
+										layoutMode === "grid"
+											? "secondary"
+											: "ghost"
+									}
+									className="h-8 w-8"
+									onClick={() => setLayoutMode("grid")}
+								>
+									<LayoutGrid className="h-4 w-4" />
+								</Button>
+								<Button
+									size="icon"
+									variant={
+										layoutMode === "list"
+											? "secondary"
+											: "ghost"
+									}
+									className="h-8 w-8"
+									onClick={() => setLayoutMode("list")}
+								>
+									<Rows3 className="h-4 w-4" />
+								</Button>
+							</div>
+							<h2 className="text-2xl font-semibold text-foreground">
+								Trash
+							</h2>
+						</div>
 						<p className="text-sm text-muted-foreground">
-							{templates.length} item
-							{templates.length !== 1 ? "s" : ""}
+							{pagination.total_count} item
+							{pagination.total_count !== 1 ? "s" : ""}
 						</p>
 					</div>
 
@@ -124,65 +183,135 @@ const TrashPage = ({
 							</p>
 						</div>
 					) : (
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+						<>
+						<div
+							className={
+								isListLayout
+									? "space-y-0"
+									: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+							}
+						>
 							{templates.map((t) => (
 								<Card
 									key={t.id}
 									data-trash-card
-									className={`opacity-75 hover:opacity-100 transition-opacity cursor-pointer ${
+									className={`cursor-pointer ${
+										isListLayout
+											? "flex items-center min-h-12 rounded-none border-x-0 border-t-0 shadow-none transition-colors hover:bg-muted/40"
+											: "opacity-75 hover:opacity-100 transition-opacity"
+									} ${
 										selectedTemplateId === t.id
-											? "border-primary ring-2 ring-primary/30 shadow-md"
+											? isListLayout
+												? "border-primary bg-primary/5 hover:bg-primary/10"
+												: "border-primary ring-2 ring-primary/30 shadow-md"
 											: "border-border"
 									}`}
 									onClick={() => setSelectedTemplateId(t.id)}
 									onDoubleClick={() => setRestoreId(t.id)}
 								>
-									<div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+									<div
+										className={`bg-muted flex items-center justify-center overflow-hidden ${
+											isListLayout
+												? "h-12 w-16 sm:w-20 shrink-0"
+												: "aspect-[4/3]"
+										}`}
+									>
 										<img
 											src={t.url}
 											alt={t.name}
 											className="w-full h-full object-cover"
 										/>
 									</div>
-									<CardContent className="p-3 space-y-2">
-										<div>
-											<p className="text-sm font-medium text-foreground truncate">
-												{t.name}
-											</p>
-											<p className="text-xs text-muted-foreground truncate">
-												{t.public_id}
-											</p>
-										</div>
-										<div className="flex gap-2">
-											<Button
-												variant="outline"
-												size="sm"
-												className="flex-1"
-												onClick={(e) => {
-													e.stopPropagation();
-													setRestoreId(t.id);
-												}}
-											>
-												<RotateCcw className="mr-1 h-3 w-3" />{" "}
-												Restore
-											</Button>
-											<Button
-												variant="destructive"
-												size="sm"
-												className="flex-1"
-												onClick={(e) => {
-													e.stopPropagation();
-													setDeleteId(t.id);
-												}}
-											>
-												<Trash2 className="mr-1 h-3 w-3" />{" "}
-												Delete
-											</Button>
-										</div>
+									<CardContent
+										className={`flex-1 ${isListLayout ? "p-2" : "p-3 space-y-2"}`}
+									>
+										{isListLayout ? (
+											<div className="flex items-center justify-between gap-3">
+												<p className="text-sm text-foreground truncate">
+													<span className="font-medium">
+														{t.name}
+													</span>
+													<span className="text-xs text-muted-foreground">
+														{" "}
+														· {t.public_id}
+													</span>
+												</p>
+												<div className="flex items-center gap-1 shrink-0">
+													<Button
+														variant="outline"
+														size="sm"
+														className="h-7 px-2"
+														onClick={(e) => {
+															e.stopPropagation();
+															setRestoreId(t.id);
+														}}
+													>
+														<RotateCcw className="mr-1 h-3 w-3" />
+														Restore
+													</Button>
+													<Button
+														variant="destructive"
+														size="sm"
+														className="h-7 px-2"
+														onClick={(e) => {
+															e.stopPropagation();
+															setDeleteId(t.id);
+														}}
+													>
+														<Trash2 className="mr-1 h-3 w-3" />
+														Delete
+													</Button>
+												</div>
+											</div>
+										) : (
+											<>
+												<div>
+													<p className="text-sm font-medium text-foreground truncate">
+														{t.name}
+													</p>
+													<p className="text-xs text-muted-foreground truncate">
+														{t.public_id}
+													</p>
+												</div>
+												<div className="flex gap-2">
+													<Button
+														variant="outline"
+														size="sm"
+														className="flex-1"
+														onClick={(e) => {
+															e.stopPropagation();
+															setRestoreId(t.id);
+														}}
+													>
+														<RotateCcw className="mr-1 h-3 w-3" />{" "}
+														Restore
+													</Button>
+													<Button
+														variant="destructive"
+														size="sm"
+														className="flex-1"
+														onClick={(e) => {
+															e.stopPropagation();
+															setDeleteId(t.id);
+														}}
+													>
+														<Trash2 className="mr-1 h-3 w-3" />{" "}
+														Delete
+													</Button>
+												</div>
+											</>
+										)}
 									</CardContent>
 								</Card>
 							))}
 						</div>
+						<ListPagination
+							pagination={pagination}
+							onPageChange={onPageChange}
+							isLoading={isLoading}
+							className="pt-2"
+						/>
+						</>
 					)}
 				</>
 			)}

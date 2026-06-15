@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import Participant from "./pages/Participant";
 import Signup from "./pages/Signup";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
+import Marketplace from "./pages/Marketplace";
 
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import GoogleCallback from "./pages/GoogleCallback";
@@ -28,6 +29,7 @@ const App = () => (
 					<AnalyticsTracker />
 					<Routes>
 						<Route path="/" element={<Index />} />
+						<Route path="/marketplace" element={<Marketplace />} />
 						<Route
 							path="/advanced"
 							element={

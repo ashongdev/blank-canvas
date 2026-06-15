@@ -22,6 +22,8 @@ import { useTour } from "@/hooks/useTour";
 import { createDefaultTextField } from "@/lib/defaultField";
 import { copyLinkToClipboard, restartTour } from "@/lib/editorUtils";
 import { Recipient, TextField } from "@/types/TextField";
+import { FlaskConical } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -52,7 +54,9 @@ const Index = () => {
 	const activeField =
 		fields.find((f) => f.id === selectedFieldId) || fields[0];
 
-	const [recipients, setRecipients] = useState<Recipient[]>([]);
+	const [recipients, setRecipients] = useState<Recipient[]>(
+		location.state?.recipients || [],
+	);
 	const previewRef = useRef<HTMLDivElement>(null);
 
 	const imgRef = useRef<HTMLImageElement>(null);
@@ -100,6 +104,11 @@ const Index = () => {
 		setGeneratedLink,
 	});
 
+	const templateUseMode = location.state?.templateUseMode as
+		| "testing"
+		| "actual"
+		| undefined;
+
 	return (
 		<div className="min-h-screen bg-background flex flex-col overflow-hidden">
 			{/* Header */}
@@ -107,6 +116,18 @@ const Index = () => {
 				onTourClick={() => restartTour(resetTour, startTour)}
 				onCreateClick={() => fileInputRef.current?.click()}
 			/>
+
+			{templateUseMode === "testing" && (
+				<Alert className="rounded-none border-x-0 border-t-0 bg-muted/50">
+					<FlaskConical className="h-4 w-4" />
+					<AlertDescription>
+						You&apos;re using a marketplace template in{" "}
+						<strong>testing mode</strong> with sample data. Switch
+						to the Recipients tab to see sample entries, or edit
+						fields for your real certificate.
+					</AlertDescription>
+				</Alert>
+			)}
 
 			<input
 				type="file"

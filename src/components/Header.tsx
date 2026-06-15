@@ -2,7 +2,7 @@ import TourButton from "@/components/TourButton"; // Adjust path if needed
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { motion } from "framer-motion";
-import { Laptop, Moon, Sun, Upload, LayoutDashboard } from "lucide-react";
+import { Laptop, Moon, Sun, LayoutDashboard, Store } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -63,6 +63,16 @@ const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
 							}`}
 						>
 							Editor
+						</Link>
+						<Link
+							to="/marketplace"
+							className={`text-sm transition-smooth ${
+								location.pathname === "/marketplace"
+									? "font-medium text-primary"
+									: "text-muted-foreground hover:text-foreground"
+							}`}
+						>
+							Marketplace
 						</Link>
 						<Link
 							to="/admin"

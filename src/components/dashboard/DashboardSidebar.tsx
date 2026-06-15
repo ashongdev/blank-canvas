@@ -4,6 +4,7 @@ import {
   Trash2,
   Settings,
   LogOut,
+  Store,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -25,6 +26,7 @@ import { Separator } from "@/components/ui/separator";
 const navItems = [
   { title: "Templates", url: "/dashboard/templates", icon: LayoutGrid },
   { title: "Collections", url: "/dashboard/collections", icon: FolderOpen },
+  { title: "Marketplace", url: "/marketplace", icon: Store },
   { title: "Trash", url: "/dashboard/trash", icon: Trash2 },
   { title: "Settings", url: "/dashboard/settings", icon: Settings },
 ];
