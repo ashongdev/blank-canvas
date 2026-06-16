@@ -1,34 +1,25 @@
 import { useAuthContext } from "@/hooks/useAuthContext";
-import api from "@/services/axios";
-import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
 interface ProtectedRouteProps {
 	children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-	const [loading, setLoading] = useState(true);
-	const [authed, setAuthed] = useState(false);
-	const { BASE_URL } = useAuthContext();
+	const { isAuthenticated, loading } = useAuthContext();
+	const location = useLocation();
 
-	useEffect(() => {
-		const checkAuth = async () => {
-			try {
-				const response = await api.get(`${BASE_URL}/me`);
-				setAuthed(response.data);
-			} catch (error) {
-				setAuthed(false);
-			} finally {
-				setLoading(false);
-			}
-		};
+	if (loading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-background">
+				<div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+			</div>
+		);
+	}
 
-		checkAuth();
-	}, []);
-
-	if (loading) return null;
-	if (!authed) return <Navigate to="/" />;
+	if (!isAuthenticated) {
+		return <Navigate to="/login" state={{ from: location }} replace />;
+	}
 
 	return <>{children}</>;
 };

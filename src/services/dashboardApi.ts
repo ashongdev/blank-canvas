@@ -1,8 +1,7 @@
 import api from "@/services/axios";
-import type { PaginationMeta } from "@/types/Pagination";
-import { DEFAULT_PAGINATION } from "@/types/Pagination";
+import type { Collection } from "@/types/Collection";
+import { DEFAULT_PAGINATION, type PaginationMeta } from "@/types/Pagination";
 import type { Template } from "@/types/Template";
-import type { Collection } from "@/hooks/useDashboardStore";
 
 export const PAGE_SIZE = 10;
 
@@ -36,7 +35,7 @@ export const fetchTemplates = async (
 	}
 
 	const response = await api.get(
-		`${baseUrl}/my-templates/?${searchParams.toString()}`,
+		`${baseUrl}/templates/?${searchParams.toString()}`,
 	);
 
 	return {
@@ -63,7 +62,7 @@ export const fetchCollections = async (
 	}
 
 	const response = await api.get(
-		`${baseUrl}/my-collections/?${searchParams.toString()}`,
+		`${baseUrl}/collections/?${searchParams.toString()}`,
 	);
 
 	return {

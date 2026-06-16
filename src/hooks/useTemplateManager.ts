@@ -4,7 +4,7 @@ import {
 	resolveTemplateFile,
 } from "@/lib/templateFileUtils";
 import api from "@/services/axios";
-import { Recipient, TextField } from "@/types/TextField";
+import type { Recipient, TextField } from "@/types/TextField";
 import axios from "axios";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ interface CheckIdResponse {
 
 interface UploadResponse {
 	public_id?: string;
+	secure_url?: string;
 }
 
 const useTemplateManager = ({
@@ -51,6 +52,7 @@ const useTemplateManager = ({
 }: UseTemplateManagerProps) => {
 	const { isAuthenticated, BASE_URL } = useAuthContext();
 
+	// Revoke local blob URLs to avoid memory leaks
 	useEffect(() => {
 		return () => {
 			if (templateUrl?.startsWith("blob:")) {
@@ -59,16 +61,13 @@ const useTemplateManager = ({
 		};
 	}, [templateUrl]);
 
+	// When we have a remote URL but no file, prefetch it so generate works offline
 	useEffect(() => {
 		if (templateFile || !templateUrl) return;
-
 		let cancelled = false;
 		void resolveTemplateFile(null, templateUrl).then((file) => {
-			if (!cancelled && file) {
-				setTemplateFile(file);
-			}
+			if (!cancelled && file) setTemplateFile(file);
 		});
-
 		return () => {
 			cancelled = true;
 		};
@@ -80,10 +79,7 @@ const useTemplateManager = ({
 			return;
 		}
 
-		const resolvedFile = await resolveTemplateFile(
-			templateFile,
-			templateUrl,
-		);
+		const resolvedFile = await resolveTemplateFile(templateFile, templateUrl);
 		if (!resolvedFile) {
 			toast.error("Failed to load the selected template");
 			return;
@@ -91,7 +87,6 @@ const useTemplateManager = ({
 
 		const formData = new FormData();
 		formData.append("template", resolvedFile);
-		formData.append("recipients", JSON.stringify(recipients));
 		formData.append("fields", JSON.stringify(fields));
 		formData.append("inEditor", "true");
 
@@ -99,12 +94,10 @@ const useTemplateManager = ({
 			const response = await axios.post(
 				`${BASE_URL}/generate/`,
 				formData,
-				{
-					responseType: "blob",
-				},
+				{ responseType: "blob" },
 			);
 
-			const url = URL.createObjectURL(response.data);
+			const url = URL.createObjectURL(response.data as Blob);
 			const link = document.createElement("a");
 			link.href = url;
 			link.download = "Certificate.png";
@@ -112,9 +105,58 @@ const useTemplateManager = ({
 			URL.revokeObjectURL(url);
 
 			logEvent("Certificate", "Generate", "Editor Generation");
-			toast.success("Download Complete.");
+			toast.success("Download complete");
 		} catch {
-			toast.error("Failed to generate certificates");
+			toast.error("Failed to generate certificate");
+		}
+	};
+
+	const handleBatchDownload = async () => {
+		if (!hasTemplateSource(templateFile, templateUrl)) {
+			toast.error("Please upload a template first");
+			return;
+		}
+		if (recipients.length === 0) {
+			toast.error("Please add at least one recipient");
+			return;
+		}
+
+		const resolvedFile = await resolveTemplateFile(templateFile, templateUrl);
+		if (!resolvedFile) {
+			toast.error("Failed to load the selected template");
+			return;
+		}
+
+		const toastId = toast.loading(`Generating ${recipients.length} certificate(s)...`);
+		const formData = new FormData();
+		formData.append("template", resolvedFile);
+		formData.append("fields", JSON.stringify(fields));
+		formData.append("recipients", JSON.stringify(recipients));
+		formData.append("inEditor", "true");
+
+		try {
+			const response = await api.post(`${BASE_URL}/generate-batch/`, formData, {
+				responseType: "blob",
+			});
+
+			const url = URL.createObjectURL(response.data as Blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = "certificates.zip";
+			link.click();
+			URL.revokeObjectURL(url);
+
+			logEvent("Certificate", "BatchGenerate", `${recipients.length} recipients`);
+			toast.dismiss(toastId);
+			toast.success(`${recipients.length} certificate(s) downloaded as ZIP`);
+
+			const batchErrors = response.headers["x-batch-errors"];
+			if (batchErrors) {
+				toast.warning(`Some certificates had errors: ${batchErrors}`);
+			}
+		} catch {
+			toast.dismiss(toastId);
+			toast.error("Batch generation failed");
 		}
 	};
 
@@ -127,31 +169,23 @@ const useTemplateManager = ({
 		setTemplateFile(file);
 		const url = URL.createObjectURL(file);
 		setTemplateUrl(url);
-		toast.success("Template loaded locally");
+		toast.success("Template loaded");
 
-		// If authenticated, save to db.
 		if (isAuthenticated) {
 			const formData = new FormData();
 			formData.append("template", file);
-
-			const result = await api.post(
-				`${BASE_URL}/auto-upload/`,
-				formData,
-				{
-					responseType: "blob",
-				},
-			);
-			if (result.data) {
-				console.log("Uploaded");
+			try {
+				// Returns JSON { public_id, secure_url } — NOT a blob
+				await api.post(`${BASE_URL}/upload/`, formData);
+			} catch {
+				// Non-fatal: the local template is still usable
 			}
 		}
 	};
 
 	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
-		if (file) {
-			handleTemplateUpload(file);
-		}
+		if (file) void handleTemplateUpload(file);
 	};
 
 	const handleShareClick = () => {
@@ -164,10 +198,8 @@ const useTemplateManager = ({
 
 	const checkId = async (publicId: string): Promise<boolean> => {
 		const res = await api.post<CheckIdResponse>(
-			`${BASE_URL}/check_public_id/`,
-			{
-				public_id: publicId,
-			},
+			`${BASE_URL}/check-public-id/`,
+			{ public_id: publicId },
 		);
 		return res.data.exists;
 	};
@@ -181,16 +213,13 @@ const useTemplateManager = ({
 		}
 
 		setIsPublishing(true);
-		const toastId = toast.loading("Uploading and saving configuration...");
+		const toastId = toast.loading("Uploading template...");
 
 		try {
-			const resolvedFile = await resolveTemplateFile(
-				templateFile,
-				templateUrl,
-			);
+			const resolvedFile = await resolveTemplateFile(templateFile, templateUrl);
 			if (!resolvedFile) {
 				toast.dismiss(toastId);
-				toast.error("Failed to load the selected template");
+				toast.error("Failed to load template");
 				return;
 			}
 
@@ -201,28 +230,22 @@ const useTemplateManager = ({
 				if (exists) {
 					finalPublicId = `${finalPublicId}_${Date.now()}`;
 					setCustomPublicId(finalPublicId);
-					toast.info(`ID exists. Using ${finalPublicId} instead.`);
+					toast.info(`ID already taken. Using "${finalPublicId}" instead.`);
 				}
 			}
 
 			const formData = new FormData();
 			formData.append("template", resolvedFile);
-			if (finalPublicId) {
-				formData.append("public_id", finalPublicId);
-			}
+			if (finalPublicId) formData.append("public_id", finalPublicId);
 
-			const encodedFields = btoa(JSON.stringify(fields));
-			const res = await api.post<UploadResponse>(
-				`${BASE_URL}/upload/`,
-				formData,
-			);
+			const res = await api.post<UploadResponse>(`${BASE_URL}/upload/`, formData);
 
 			if (res.data.public_id) {
+				const encodedFields = btoa(JSON.stringify(fields));
 				const params = new URLSearchParams({
 					id: res.data.public_id,
 					data: encodedFields,
 				});
-
 				const link = `${window.location.origin}/participant?${params.toString()}`;
 
 				setGeneratedLink(link);
@@ -230,14 +253,12 @@ const useTemplateManager = ({
 				setShowShareDialog(true);
 
 				logEvent("Certificate", "Publish", "New Template Published");
-
 				toast.dismiss(toastId);
 				toast.success("Published successfully!");
 			}
-		} catch (error) {
-			console.error(error);
+		} catch {
 			toast.dismiss(toastId);
-			toast.error("Failed to publish.");
+			toast.error("Failed to publish template");
 		} finally {
 			setIsPublishing(false);
 		}
@@ -245,6 +266,7 @@ const useTemplateManager = ({
 
 	return {
 		handleDownload,
+		handleBatchDownload,
 		handleTemplateUpload,
 		handleFileSelect,
 		handleShareClick,

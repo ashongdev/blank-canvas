@@ -1,16 +1,12 @@
 import api from "@/services/axios";
 import { PAGE_SIZE } from "@/services/dashboardApi";
-import { Template } from "@/types/Template";
-import { useState, useCallback, SetStateAction, Dispatch } from "react";
+import type { Collection } from "@/types/Collection";
+import type { Template } from "@/types/Template";
+import { useCallback } from "react";
 import { toast } from "sonner";
 import { useAuthContext } from "./useAuthContext";
 
-export interface Collection {
-	id: number;
-	name: string;
-	created_at: string;
-	template_count?: number;
-}
+export type { Collection };
 
 export function useDashboardStore({
 	templates,
@@ -19,250 +15,197 @@ export function useDashboardStore({
 	setCollections,
 }: {
 	templates: Template[];
-	setTemplates: Dispatch<SetStateAction<Template[]>>;
+	setTemplates: React.Dispatch<React.SetStateAction<Template[]>>;
 	collections: Collection[];
-	setCollections: Dispatch<SetStateAction<Collection[]>>;
+	setCollections: React.Dispatch<React.SetStateAction<Collection[]>>;
 }) {
 	const { BASE_URL } = useAuthContext();
-	// Templates
-	const trashTemplate = useCallback(async (id: number) => {
-		let previousTemplates: Template[] = [];
 
-		setTemplates((prev) => {
-			previousTemplates = prev;
-			return prev.filter((t) => t.id !== id); // remove from UI immediately
-		});
+	// ─── Templates ──────────────────────────────────────────────────────────
 
-		try {
-			await api.put(`${BASE_URL}/delete-template/?state=delete`, {
-				templateId: id,
-			});
-		} catch (error) {
-			setTemplates(previousTemplates); // rollback if server fails
-			toast.error("Failed to delete template");
-		}
-	}, []);
+	const trashTemplate = useCallback(
+		async (id: number) => {
+			const snapshot = templates;
+			setTemplates((prev) => prev.filter((t) => t.id !== id));
+			try {
+				await api.put(`${BASE_URL}/templates/state/?state=delete`, {
+					templateId: id,
+				});
+			} catch {
+				setTemplates(snapshot);
+				toast.error("Failed to delete template");
+			}
+		},
+		[templates, setTemplates, BASE_URL],
+	);
 
-	const restoreTemplate = useCallback(async (id: number) => {
-		let previousTemplates: Template[] = [];
-
-		setTemplates((prev) => {
-			previousTemplates = prev;
-
-			return prev.map((t) =>
-				t.id === id ? { ...t, trashed: false } : t,
+	const restoreTemplate = useCallback(
+		async (id: number) => {
+			const snapshot = templates;
+			setTemplates((prev) =>
+				prev.map((t) => (t.id === id ? { ...t, trashed: false, state: "active" } : t)),
 			);
-		});
+			try {
+				await api.put(`${BASE_URL}/templates/state/?state=restore`, {
+					templateId: id,
+				});
+			} catch {
+				setTemplates(snapshot);
+				toast.error("Failed to restore template");
+			}
+		},
+		[templates, setTemplates, BASE_URL],
+	);
 
-		try {
-			await api.put(`${BASE_URL}/delete-template/?state=restore`, {
-				templateId: id,
-			});
-		} catch (error) {
-			setTemplates(previousTemplates); // rollback if server fails
-			toast.error("Failed to delete template");
-		}
-	}, []);
-
-	const permanentlyDelete = useCallback((id: number) => {
-		setTemplates((prev) => prev.filter((t) => t.id !== id));
-	}, []);
+	const permanentlyDelete = useCallback(
+		(id: number) => {
+			setTemplates((prev) => prev.filter((t) => t.id !== id));
+		},
+		[setTemplates],
+	);
 
 	const updateTemplate = useCallback(
 		async (id: number, updates: Partial<Template>) => {
-			// save the old template in case we need to rollback
-			const oldTemplate = templates.find((t) => t.id === id);
-
+			const snapshot = templates;
 			setTemplates((prev) =>
 				prev.map((t) => (t.id === id ? { ...t, ...updates } : t)),
 			);
-
 			try {
-				await api.put(`${BASE_URL}/update-template/`, {
+				await api.put(`${BASE_URL}/templates/rename/`, {
 					templateId: id,
-					...updates,
-					isTemplate: false,
+					name: updates.name,
 				});
-			} catch (error) {
-				// rollback if server fails
-				if (oldTemplate) {
-					setTemplates((prev) =>
-						prev.map((t) => (t.id === id ? oldTemplate : t)),
-					);
-				}
+			} catch {
+				setTemplates(snapshot);
 				toast.error("Failed to update template");
 			}
 		},
-		[templates],
+		[templates, setTemplates, BASE_URL],
 	);
 
 	const assignCollection = useCallback(
 		async (templateId: number, collectionId: number | null) => {
 			if (!templateId) return;
-
-			const previousTemplates = templates;
-			const oldTemplate = templates.find((t) => t.id === templateId);
-
+			const snapshot = templates;
 			setTemplates((prev) =>
 				prev.map((t) =>
-					t.id === templateId
-						? { ...t, collection_id: collectionId }
-						: t,
+					t.id === templateId ? { ...t, collection_id: collectionId } : t,
 				),
 			);
-
 			try {
-				await api.put(`${BASE_URL}/add-to-collection/`, {
+				await api.put(`${BASE_URL}/templates/assign-collection/`, {
 					templateId,
 					collectionId,
 				});
-				toast.success("Success");
-			} catch (error) {
-				if (oldTemplate) {
-					setTemplates((prev) =>
-						prev.map((t) =>
-							t.id === templateId ? oldTemplate : t,
-						),
-					);
-				}
+				toast.success("Collection updated");
+			} catch {
+				setTemplates(snapshot);
 				toast.error("Failed to assign collection");
 			}
 		},
-		[templates],
+		[templates, setTemplates, BASE_URL],
 	);
 
-	// Collections
+	// ─── Collections ────────────────────────────────────────────────────────
+
 	const createCollection = useCallback(
 		async (name: string) => {
-			const previousCollections = collections;
-			const newCollection: Collection = {
+			const snapshot = collections;
+			const optimistic: Collection = {
 				id: Date.now(),
 				name,
 				created_at: new Date().toISOString(),
 			};
-
-			setCollections((prev) => [...prev, newCollection]);
-
+			setCollections((prev) => [...prev, optimistic]);
 			try {
-				const res = await api.put(`${BASE_URL}/create-collection/`, {
-					name,
-				});
-				const createdCollection = res.data.collection as Collection;
+				const res = await api.post(`${BASE_URL}/collections/create/`, { name });
+				const created = res.data.collection as Collection;
 				setCollections((prev) => [
-					createdCollection,
-					...prev.filter((c) => c.id !== createdCollection.id),
+					created,
+					...prev.filter((c) => c.id !== optimistic.id),
 				]);
-				toast.success("Collection created successfully.");
-			} catch (error) {
-				setCollections(previousCollections);
+				toast.success("Collection created");
+			} catch {
+				setCollections(snapshot);
 				toast.error("Failed to create collection");
 			}
 		},
-		[collections],
+		[collections, setCollections, BASE_URL],
 	);
 
 	const updateCollection = useCallback(
 		async (id: number, name: string) => {
-			const oldCollection = collections.find((t) => t.id === id);
-
+			const snapshot = collections;
 			setCollections((prev) =>
 				prev.map((c) => (c.id === id ? { ...c, name } : c)),
 			);
-
 			try {
-				await api.put(`${BASE_URL}/update-template/`, {
+				await api.put(`${BASE_URL}/collections/rename/`, {
 					collectionId: id,
-					isTemplate: true,
 					name,
 				});
-			} catch (error) {
-				// rollback if server fails
-				if (oldCollection) {
-					setCollections((prev) =>
-						prev.map((t) => (t.id === id ? oldCollection : t)),
-					);
-				}
-				toast.error("Failed to update template");
+			} catch {
+				setCollections(snapshot);
+				toast.error("Failed to rename collection");
 			}
 		},
-		[collections],
+		[collections, setCollections, BASE_URL],
 	);
 
 	const deleteCollection = useCallback(
 		async (id: number) => {
-			const previousTemplates = templates;
-			const previousCollections = collections;
-
+			const templateSnapshot = templates;
+			const collectionSnapshot = collections;
 			setTemplates((prev) =>
 				prev.map((t) =>
 					t.collection_id === id ? { ...t, collection_id: null } : t,
 				),
 			);
 			setCollections((prev) => prev.filter((c) => c.id !== id));
-
 			try {
-				await api.delete(
-					`${BASE_URL}/delete-collection/?collectionId=${id}`,
-				);
-				toast.success("Collection deleted successfully.");
-			} catch (error) {
-				setTemplates(previousTemplates);
-				setCollections(previousCollections);
+				await api.delete(`${BASE_URL}/collections/delete/?collectionId=${id}`);
+				toast.success("Collection deleted");
+			} catch {
+				setTemplates(templateSnapshot);
+				setCollections(collectionSnapshot);
 				toast.error("Failed to delete collection");
 			}
 		},
-		[templates, collections],
+		[templates, collections, setTemplates, setCollections, BASE_URL],
 	);
 
 	const uploadTemplateToCollection = useCallback(
-		async (collectionId: number | null, file: File) => {
+		async (collectionId: number | null, file: File): Promise<string | null> => {
 			const formData = new FormData();
 			formData.append("template", file);
-
 			try {
-				const uploadRes = await api.post(
-					`${BASE_URL}/auto-upload/`,
-					formData,
-				);
-				const uploadedPublicId = uploadRes.data?.public_id as
-					| string
-					| undefined;
-
+				const uploadRes = await api.post(`${BASE_URL}/upload/`, formData);
+				const uploadedPublicId = uploadRes.data?.public_id as string | undefined;
 				if (!uploadedPublicId) {
-					toast.error("Template uploaded, but failed to refresh list.");
+					toast.error("Template uploaded but public_id was not returned.");
 					return null;
 				}
-
 				if (collectionId !== null) {
 					const fetchRes = await api.get(
-						`${BASE_URL}/my-templates/?state=active&page=1&page_size=${PAGE_SIZE}`,
+						`${BASE_URL}/templates/?state=active&page=1&page_size=${PAGE_SIZE}`,
 					);
-					const fetchedTemplates: Template[] =
-						fetchRes.data.templates ?? [];
-					const uploadedTemplate = fetchedTemplates.find(
-						(t) => t.public_id === uploadedPublicId,
-					);
-
-					if (uploadedTemplate) {
-						await api.put(`${BASE_URL}/add-to-collection/`, {
-							templateId: uploadedTemplate.id,
+					const fetched: Template[] = fetchRes.data.templates ?? [];
+					const uploaded = fetched.find((t) => t.public_id === uploadedPublicId);
+					if (uploaded) {
+						await api.put(`${BASE_URL}/templates/assign-collection/`, {
+							templateId: uploaded.id,
 							collectionId,
 						});
 					}
 				}
-
 				toast.success(
 					collectionId === null
-						? "Template uploaded successfully."
-						: "Template uploaded to collection.",
+						? "Template uploaded"
+						: "Template uploaded to collection",
 				);
 				return uploadedPublicId;
-			} catch (error) {
-				toast.error(
-					collectionId === null
-						? "Failed to upload template."
-						: "Failed to upload template to collection.",
-				);
+			} catch {
+				toast.error("Failed to upload template");
 				return null;
 			}
 		},

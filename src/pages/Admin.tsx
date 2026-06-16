@@ -19,15 +19,13 @@ import { adminPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useTour } from "@/hooks/useTour";
 import api from "@/services/axios";
-import axios from "axios";
 import { motion } from "framer-motion";
 import { Check, Copy, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 const Admin = () => {
-	const { BASE_URL } = useAuthContext();
-	// const { theme, setTheme } = useTheme(); // Moved to Header
+	const { BASE_URL, isAuthenticated } = useAuthContext();
 	const { startTour, resetTour } = useTour({
 		steps: adminPageTourSteps,
 		storageKey: TOUR_STORAGE_KEYS.admin,
@@ -39,88 +37,57 @@ const Admin = () => {
 	const [copied, setCopied] = useState(false);
 	const [publicId, setPublicId] = useState("");
 
-	const checkId = async (publicId: string) => {
-		const res = await api.post(`${BASE_URL}/check_public_id/`, {
-			public_id: publicId,
-		});
-
-		return res.data.exists;
-	};
-
-	const generateRandomPublicId = () => {
-		return Date.now().toString();
-	};
-
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
+		e.currentTarget.value = "";
 		if (!file) return;
 
-		const formData = new FormData();
-		formData.append("template", file);
+		if (!isAuthenticated) {
+			toast.error("You must be signed in to upload templates.");
+			return;
+		}
 
 		setIsUploading(true);
-
 		try {
-			let finalPublicId = publicId;
-
-			const exists = await checkId(publicId);
-
-			if (exists) {
-				const randomSuffix = Date.now().toString();
-				finalPublicId = `${publicId}_${randomSuffix}`;
-
-				toast.error("Public ID already exists. Generated a new one.");
-				setPublicId(finalPublicId);
+			const formData = new FormData();
+			formData.append("template", file);
+			if (publicId.trim()) {
+				formData.append("public_id", publicId.trim());
 			}
 
-			const CLOUD_NAME = "demtelhcc";
-			const UPLOAD_PRESET = "certificate_upload";
-
-			const cloudinaryForm = new FormData();
-			cloudinaryForm.append("file", file);
-			cloudinaryForm.append("upload_preset", UPLOAD_PRESET);
-			cloudinaryForm.append("public_id", finalPublicId);
-
-			const res = await api.post(
-				`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-				cloudinaryForm,
+			const res = await api.post<{ public_id: string }>(
+				`${BASE_URL}/upload/`,
+				formData,
 			);
 
-			setGeneratedId(res.data.public_id);
-			setShowSuccessModal(true);
-			toast.success("Template uploaded successfully");
-		} catch (error) {
-			toast.error("Failed to upload template");
+			if (res.data.public_id) {
+				setGeneratedId(res.data.public_id);
+				setShowSuccessModal(true);
+				toast.success("Template uploaded successfully");
+			}
+		} catch {
+			toast.error("Failed to upload template. Please try again.");
 		} finally {
 			setIsUploading(false);
 		}
 	};
 
 	const handleCopyId = async () => {
-		try {
-			await navigator.clipboard.writeText(generatedId);
-			setCopied(true);
-			toast.success("ID copied to clipboard!");
-			setTimeout(() => setCopied(false), 2000);
-		} catch (error) {
-			toast.error("Failed to copy ID");
-		}
+		await navigator.clipboard.writeText(generatedId);
+		setCopied(true);
+		toast.success("ID copied to clipboard!");
+		setTimeout(() => setCopied(false), 2000);
 	};
 
 	const shareUrl = `${window.location.origin}/participant?id=${generatedId}`;
 
 	const handleCopyUrl = async () => {
-		try {
-			await navigator.clipboard.writeText(shareUrl);
-			toast.success("Share URL copied to clipboard!");
-		} catch (error) {
-			toast.error("Failed to copy URL");
-		}
+		await navigator.clipboard.writeText(shareUrl);
+		toast.success("Share URL copied to clipboard!");
 	};
 
 	return (
 		<div className="min-h-screen bg-background flex flex-col">
-			{/* Header */}
 			<Header
 				onTourClick={() => {
 					resetTour();
@@ -128,7 +95,6 @@ const Admin = () => {
 				}}
 			/>
 
-			{/* Main Content */}
 			<main className="flex-1 flex items-center justify-center p-6">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
@@ -142,49 +108,42 @@ const Admin = () => {
 								Upload Certificate Template
 							</CardTitle>
 							<CardDescription>
-								Upload your certificate template and share the
-								unique ID with participants
+								Upload your certificate template and share the unique
+								ID with participants
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-6">
-							{/* Public ID Input */}
 							<div className="space-y-2" data-tour="public-id">
 								<label
 									htmlFor="public-id"
 									className="text-sm font-medium"
 								>
-									Public ID
+									Public ID (optional)
 								</label>
 								<Input
 									id="public-id"
-									placeholder="Enter the public id for the certificate template"
+									placeholder="Leave blank for auto-generated ID"
 									value={publicId}
-									onChange={(e) =>
-										setPublicId(e.target.value)
-									}
+									onChange={(e) => setPublicId(e.target.value)}
 									disabled={isUploading}
 									className="font-mono text-sm"
 								/>
 								<p className="text-xs text-muted-foreground">
-									This ID will be used to retrieve the
-									template from Cloudinary
+									Custom ID for your template (e.g. hackathon-2025)
 								</p>
 							</div>
 
 							<div data-tour="admin-upload">
-								<label
-									htmlFor="admin-template-upload"
-									className="block"
-								>
+								<label htmlFor="admin-template-upload" className="block">
 									<input
 										id="admin-template-upload"
 										type="file"
-										accept="image/*"
+										accept="image/jpeg,image/png,image/webp"
 										onChange={handleFileUpload}
 										className="hidden"
 										disabled={isUploading}
 									/>
-									<div className="border-2 border-dashed border-border rounded-lg p-12 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-smooth">
+									<div className="border-2 border-dashed border-border rounded-lg p-12 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
 										{isUploading ? (
 											<div className="flex flex-col items-center gap-4">
 												<div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -202,8 +161,7 @@ const Admin = () => {
 														Click to upload template
 													</p>
 													<p className="text-xs text-muted-foreground">
-														PNG, JPG, or PDF up to
-														10MB
+														PNG, JPG, or WEBP — max 10 MB
 													</p>
 												</div>
 											</div>
@@ -212,19 +170,16 @@ const Admin = () => {
 								</label>
 							</div>
 
-							<div
-								className="text-center text-sm text-muted-foreground"
-								data-tour="admin-submit"
-							>
-								After uploading, you'll receive a unique ID to
-								share with participants
-							</div>
+							{!isAuthenticated && (
+								<p className="text-xs text-destructive text-center">
+									You must be signed in to upload templates.
+								</p>
+							)}
 						</CardContent>
 					</Card>
 				</motion.div>
 			</main>
 
-			{/* Success Modal */}
 			<Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
@@ -232,16 +187,14 @@ const Admin = () => {
 							<div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
 								<Check className="w-5 h-5 text-green-600 dark:text-green-400" />
 							</div>
-							Template Uploaded Successfully!
+							Template Uploaded!
 						</DialogTitle>
 						<DialogDescription>
-							Share the ID or URL below with your participants so
-							they can download their personalized certificates.
+							Share the ID or URL below with your participants.
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="space-y-4 mt-4">
-						{/* Certificate ID */}
 						<div className="space-y-2">
 							<label className="text-sm font-medium">
 								Certificate ID
@@ -256,7 +209,6 @@ const Admin = () => {
 									variant="outline"
 									size="icon"
 									onClick={handleCopyId}
-									className="flex-shrink-0"
 								>
 									{copied ? (
 										<Check className="w-4 h-4 text-green-600" />
@@ -267,7 +219,6 @@ const Admin = () => {
 							</div>
 						</div>
 
-						{/* Share URL */}
 						<div className="space-y-2">
 							<label className="text-sm font-medium">
 								Share URL
@@ -282,7 +233,6 @@ const Admin = () => {
 									variant="outline"
 									size="icon"
 									onClick={handleCopyUrl}
-									className="flex-shrink-0"
 								>
 									<Copy className="w-4 h-4" />
 								</Button>

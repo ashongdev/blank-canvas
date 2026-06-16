@@ -1,24 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Recipient } from "@/types/TextField";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Download, Plus, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-
-interface Recipient {
-	name: string;
-	email: string;
-}
 
 interface RecipientManagerProps {
 	recipients: Recipient[];
 	onRecipientsChange: (recipients: Recipient[]) => void;
+	onGenerateAll?: () => void;
 }
 
 const RecipientManager = ({
 	recipients,
 	onRecipientsChange,
+	onGenerateAll,
 }: RecipientManagerProps) => {
 	const [newName, setNewName] = useState("");
 	const [newEmail, setNewEmail] = useState("");
@@ -201,6 +199,17 @@ const RecipientManager = ({
 								</div>
 							))}
 						</div>
+
+						{onGenerateAll && (
+							<Button
+								onClick={onGenerateAll}
+								className="w-full gap-2 mt-2"
+								size="lg"
+							>
+								<Download className="w-4 h-4" />
+								Generate All ({recipients.length}) — Download ZIP
+							</Button>
+						)}
 					</div>
 				)}
 			</div>

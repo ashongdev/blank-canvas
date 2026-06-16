@@ -164,7 +164,7 @@ const Participant = () => {
 		}
 	}, [searchParams]);
 
-	const CLOUD_NAME = "demtelhcc";
+	const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string;
 
 	const handlePublish = async () => {
 		if (!selectedFile) return;
@@ -182,7 +182,7 @@ const Participant = () => {
 			formData.append("y", textPosition.y.toString());
 			formData.append("anchorMode", anchorMode);
 
-			const res = await axios.post(`${BASE_URL}/upload/`, formData);
+			const res = await api.post(`${BASE_URL}/upload/`, formData);
 
 			if (res.data.public_id) {
 				const newId = res.data.public_id;
@@ -240,25 +240,23 @@ const Participant = () => {
 
 		const url = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${idToUse}.png`;
 		try {
-			const res = await axios.get(url);
-			if (!res.data) throw new Error("Template not found");
+			const res = await axios.head(url);
+			if (res.status !== 200) throw new Error("Template not found");
 			setTemplateUrl(url);
 			setTemplateLoaded(true);
 
-			// Show name input dialog for shared link flow
 			if (isFromSharedLink) {
 				setShowNameInputDialog(true);
 			} else {
 				toast.success("Template loaded successfully!");
 			}
 		} catch {
-			toast.dismiss();
 			toast.error("Template not found. Check the ID.");
 			setError("Template not found. Check the ID.");
+			setTemplateLoaded(false);
+		} finally {
+			setIsLoading(false);
 		}
-
-		setTemplateLoaded(true);
-		setIsLoading(false);
 	};
 
 	const handlePositionChange = (axis: "x" | "y", direction: number) => {
