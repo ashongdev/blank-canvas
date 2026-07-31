@@ -1,9 +1,24 @@
 import TourButton from "@/components/TourButton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Laptop, LayoutDashboard, Moon, Sun } from "lucide-react";
+import {
+	ChevronDown,
+	Laptop,
+	LayoutDashboard,
+	LogOut,
+	Moon,
+	Settings,
+	Sun,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -15,10 +30,8 @@ interface HeaderProps {
 }
 
 const navItems = [
-	{ no: "01", title: "Editor", url: "/" },
+	{ no: "01", title: "Editor", url: "/editor" },
 	{ no: "02", title: "Marketplace", url: "/marketplace" },
-	{ no: "03", title: "Admin", url: "/admin" },
-	{ no: "04", title: "Get Certificate", url: "/participant" },
 ];
 
 const today = new Date().toLocaleDateString(undefined, {
@@ -31,7 +44,7 @@ const today = new Date().toLocaleDateString(undefined, {
 const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
 	const { theme, setTheme } = useTheme();
 	const navigate = useNavigate();
-	const { userName, isAuthenticated } = useAuthContext();
+	const { user, userName, isAuthenticated, logout } = useAuthContext();
 	const [collapsed, setCollapsed] = useState(
 		() => localStorage.getItem("header-collapsed") === "true",
 	);
@@ -52,13 +65,19 @@ const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
 	const location = useLocation();
 
 	const handleCreateClick = () => {
-		if (location.pathname !== "/" && onCreateClick) {
-			navigate("/");
+		if (location.pathname !== "/editor" && onCreateClick) {
+			navigate("/editor");
 		} else if (onCreateClick) {
 			onCreateClick();
 		} else {
-			navigate("/");
+			navigate("/editor");
 		}
+	};
+
+	const handleLogout = () => {
+		localStorage.removeItem("auth_token");
+		logout();
+		navigate("/login");
 	};
 
 	const controls = (
@@ -119,15 +138,44 @@ const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
 			</ToggleGroup>
 
 			{isAuthenticated && (
-				<Avatar className="h-9 w-9 border-2 border-foreground" title={userName}>
-					<AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
-						{userName
-							.split(" ")
-							.map((n) => n[0])
-							.join("")
-							.toUpperCase()}
-					</AvatarFallback>
-				</Avatar>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<button className="rounded-full transition-opacity hover:opacity-80">
+							<Avatar className="h-9 w-9 border-2 border-foreground">
+								<AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
+									{userName
+										.split(" ")
+										.map((n) => n[0])
+										.join("")
+										.toUpperCase()}
+								</AvatarFallback>
+							</Avatar>
+						</button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-56">
+						<div className="px-2 py-1.5">
+							<p className="truncate text-sm font-medium text-foreground">
+								{userName || "Account"}
+							</p>
+							<p className="truncate text-xs text-muted-foreground">
+								{user?.email ?? ""}
+							</p>
+						</div>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
+							<Settings className="mr-2 h-4 w-4" />
+							Settings
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
+							className="text-destructive focus:text-destructive"
+							onClick={handleLogout}
+						>
+							<LogOut className="mr-2 h-4 w-4" />
+							Log out
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
 			)}
 		</>
 	);

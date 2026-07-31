@@ -34,7 +34,7 @@ export const openTemplateInEditor = (
 		},
 	];
 
-	navigate("/", {
+	navigate("/editor", {
 		state: {
 			templateUrl: template.url,
 			fields: simulatedFields,
@@ -75,7 +75,7 @@ export const openMarketplaceTemplateInEditor = (
 ) => {
 	const fields = buildMarketplaceFields(template, mode);
 
-	navigate("/", {
+	navigate("/editor", {
 		state: {
 			templateUrl: template.imageUrl,
 			fields,

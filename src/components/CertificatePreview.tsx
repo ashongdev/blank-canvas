@@ -13,6 +13,8 @@ interface CertificatePreviewProps {
 	isParticipant?: boolean;
 	/** When provided (and not isParticipant), fields can be dragged directly on the canvas. */
 	onFieldMove?: (id: string, x: number, y: number) => void;
+	/** Briefly pulses the selected field to hint that it can be dragged. */
+	showDragHint?: boolean;
 }
 
 const CertificatePreview = ({
@@ -25,6 +27,7 @@ const CertificatePreview = ({
 	imgRef,
 	isParticipant = false,
 	onFieldMove,
+	showDragHint = false,
 }: CertificatePreviewProps) => {
 	const [imageScale, setImageScale] = useState({
 		scale: 1,
@@ -145,9 +148,29 @@ const CertificatePreview = ({
 						fields?.map((field) => {
 							const isSelected =
 								!isParticipant && field.id === selectedFieldId;
+							const pulseDragHint =
+								isDraggable && isSelected && showDragHint;
 							return (
 								<motion.span
 									key={field.id}
+									animate={
+										pulseDragHint
+											? {
+													boxShadow: [
+														"0 0 0 0px hsl(var(--primary) / 0.35)",
+														"0 0 0 10px hsl(var(--primary) / 0)",
+														"0 0 0 0px hsl(var(--primary) / 0.35)",
+														"0 0 0 10px hsl(var(--primary) / 0)",
+														"0 0 0 0px hsl(var(--primary) / 0)",
+													],
+												}
+											: undefined
+									}
+									transition={
+										pulseDragHint
+											? { duration: 1.8, ease: "easeInOut" }
+											: undefined
+									}
 									onPointerDown={(e) => handlePointerDown(e, field.id)}
 									onPointerMove={(e) => handlePointerMove(e, field.id)}
 									onPointerUp={handlePointerUp}

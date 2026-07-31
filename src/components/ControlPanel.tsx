@@ -48,7 +48,7 @@ const ControlPanel = ({
 	if (!activeField) return null;
 
 	return (
-		<ScrollArea className="h-[calc(100vh-120px)] pr-3 overflow-x-hidden">
+		<ScrollArea className="h-full pr-3 overflow-x-hidden">
 			<motion.div
 				initial={{ opacity: 0, x: 20 }}
 				animate={{ opacity: 1, x: 0 }}

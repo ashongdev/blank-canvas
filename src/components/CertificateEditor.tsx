@@ -28,12 +28,15 @@ import { createDefaultTextField } from "@/lib/defaultField";
 import { copyLinkToClipboard, restartTour } from "@/lib/editorUtils";
 import { cn } from "@/lib/utils";
 import type { Recipient, TextField } from "@/types/TextField";
+import axios from "axios";
 import type { DriveStep } from "driver.js";
 import {
+	AlertCircle,
 	Download,
 	FlaskConical,
 	Loader2,
 	Plus,
+	Search,
 	Share2,
 	Upload,
 	Users,
@@ -41,6 +44,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface CertificateEditorProps {
 	mode: "simple" | "advanced";
@@ -81,6 +85,7 @@ const CertificateEditor = ({
 	const [recipients, setRecipients] = useState<Recipient[]>(initialRecipients);
 	const [showRecipients, setShowRecipients] = useState(false);
 	const [isGenerating, setIsGenerating] = useState(false);
+	const [showDragHint, setShowDragHint] = useState(false);
 
 	const previewRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
@@ -91,6 +96,12 @@ const CertificateEditor = ({
 	const [showIdDialog, setShowIdDialog] = useState(false);
 	const [customPublicId, setCustomPublicId] = useState("");
 	const [isPublishing, setIsPublishing] = useState(false);
+
+	const [showLoadDialog, setShowLoadDialog] = useState(false);
+	const [loadId, setLoadId] = useState("");
+	const [isLoadingById, setIsLoadingById] = useState(false);
+	const [loadError, setLoadError] = useState<string | null>(null);
+	const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string;
 
 	const { addField, removeField, updateField } = useFunctions({
 		fields,
@@ -136,10 +147,68 @@ const CertificateEditor = ({
 		}
 	};
 
+	const handleLoadById = async () => {
+		const id = loadId.trim();
+		if (!id) {
+			setLoadError("Please enter a certificate ID");
+			return;
+		}
+
+		setIsLoadingById(true);
+		setLoadError(null);
+
+		const url = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${id}.png`;
+		try {
+			const res = await axios.head(url);
+			if (res.status !== 200) throw new Error("Template not found");
+
+			setTemplateUrl(url);
+			setTemplateFile(null);
+			setShowLoadDialog(false);
+			setLoadId("");
+			toast.success("Template loaded successfully!");
+		} catch {
+			setLoadError("Template not found. Check the ID and try again.");
+		} finally {
+			setIsLoadingById(false);
+		}
+	};
+
+	// When a template loads, snap any never-positioned (0,0) field to the
+	// center of the image, then briefly hint that it can be dragged.
+	useEffect(() => {
+		if (!templateUrl) return;
+
+		let cancelled = false;
+		const img = new Image();
+		img.onload = () => {
+			if (cancelled) return;
+			const centerX = Math.round(img.naturalWidth / 2);
+			const centerY = Math.round(img.naturalHeight / 2);
+
+			setFields((prev) =>
+				prev.map((f) =>
+					f.x === 0 && f.y === 0
+						? { ...f, x: centerX, y: centerY }
+						: f,
+				),
+			);
+
+			setShowDragHint(true);
+			window.setTimeout(() => setShowDragHint(false), 1800);
+		};
+		img.src = templateUrl;
+
+		return () => {
+			cancelled = true;
+		};
+	}, [templateUrl]);
+
 	// Arrow-key nudging for the selected field, direct on the canvas.
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (showRecipients || showShareDialog || showIdDialog) return;
+			if (showRecipients || showShareDialog || showIdDialog || showLoadDialog)
+				return;
 			const tag = (document.activeElement?.tagName || "").toLowerCase();
 			if (["input", "textarea", "select"].includes(tag)) return;
 			if (!activeField) return;
@@ -169,10 +238,17 @@ const CertificateEditor = ({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [activeField, showRecipients, showShareDialog, showIdDialog, updateField]);
+	}, [
+		activeField,
+		showRecipients,
+		showShareDialog,
+		showIdDialog,
+		showLoadDialog,
+		updateField,
+	]);
 
 	return (
-		<div className="min-h-screen bg-background flex flex-col overflow-hidden">
+		<div className="h-screen bg-background flex flex-col overflow-hidden">
 			<Header
 				onTourClick={() => restartTour(resetTour, startTour)}
 				onCreateClick={() => fileInputRef.current?.click()}
@@ -213,6 +289,19 @@ const CertificateEditor = ({
 					{hasTemplate ? "Change Template" : "Upload Template"}
 				</Button>
 
+				<Button
+					variant="outline"
+					size="sm"
+					className="gap-2 shrink-0"
+					onClick={() => {
+						setLoadError(null);
+						setShowLoadDialog(true);
+					}}
+				>
+					<Search className="h-4 w-4" />
+					Load by ID
+				</Button>
+
 				<div className="h-5 w-px bg-border shrink-0" aria-hidden />
 
 				{isSimple ? (
@@ -234,7 +323,7 @@ const CertificateEditor = ({
 						size="sm"
 						className="shrink-0 text-muted-foreground hover:text-primary"
 						onClick={() =>
-							navigate("/", {
+							navigate("/editor", {
 								state: {
 									fields: [fields[0]],
 									templateUrl,
@@ -291,8 +380,8 @@ const CertificateEditor = ({
 				</div>
 			</div>
 
-			<main className="flex-1 overflow-hidden flex">
-				<div className="flex-1 flex flex-col overflow-hidden">
+			<main className="flex-1 min-h-0 overflow-hidden flex">
+				<div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
 					{!isSimple && (
 						<div
 							className="border-b border-border flex-shrink-0 flex items-center gap-2 px-4 sm:px-6 h-12 overflow-x-auto"
@@ -333,7 +422,7 @@ const CertificateEditor = ({
 					)}
 
 					<div
-						className="flex-1 flex items-center justify-center overflow-auto p-6"
+						className="flex-1 min-h-0 flex items-center justify-center overflow-auto p-6"
 						data-tour="certificate-preview"
 					>
 						<CertificatePreview
@@ -345,6 +434,7 @@ const CertificateEditor = ({
 							selectedFieldId={selectedFieldId}
 							onFieldSelect={setSelectedFieldId}
 							onFieldMove={(id, x, y) => updateField(id, { x, y })}
+							showDragHint={showDragHint}
 						/>
 					</div>
 
@@ -357,7 +447,7 @@ const CertificateEditor = ({
 				</div>
 
 				<div
-					className="w-[300px] border-l border-border flex-shrink-0 px-2 pt-4"
+					className="w-[300px] flex-shrink-0 min-h-0 border-l border-border overflow-hidden flex flex-col px-2 pt-4"
 					data-tour="control-panel"
 				>
 					<ControlPanel
@@ -448,6 +538,63 @@ const CertificateEditor = ({
 						>
 							{isPublishing ? "Publishing..." : "Publish"}
 						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={showLoadDialog}
+				onOpenChange={(o) => {
+					setShowLoadDialog(o);
+					if (!o) setLoadError(null);
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Load Template by ID</DialogTitle>
+						<DialogDescription>
+							Enter the certificate ID of a previously published
+							template to load it back into the editor.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3 py-2">
+						<Label htmlFor="load-id">Certificate ID</Label>
+						<div className="flex gap-2">
+							<Input
+								id="load-id"
+								value={loadId}
+								onChange={(e) => {
+									setLoadId(e.target.value);
+									setLoadError(null);
+								}}
+								onKeyDown={(e) =>
+									e.key === "Enter" && handleLoadById()
+								}
+								placeholder="e.g. hackathon-2024"
+								className="font-mono"
+								disabled={isLoadingById}
+								autoFocus
+							/>
+							<Button
+								onClick={handleLoadById}
+								disabled={isLoadingById || !loadId.trim()}
+								className="shrink-0"
+							>
+								{isLoadingById ? (
+									<Loader2 className="h-4 w-4 animate-spin" />
+								) : (
+									<Search className="h-4 w-4" />
+								)}
+							</Button>
+						</div>
+						{loadError && (
+							<div className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3">
+								<AlertCircle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+								<p className="text-sm text-destructive">
+									{loadError}
+								</p>
+							</div>
+						)}
 					</div>
 				</DialogContent>
 			</Dialog>

@@ -3,7 +3,7 @@ import { indexPageTourSteps, TOUR_STORAGE_KEYS } from "@/config/tourSteps";
 import { useLocation } from "react-router-dom";
 import type { Recipient, TextField } from "@/types/TextField";
 
-const Index = () => {
+const Editor = () => {
 	const location = useLocation();
 	const state = location.state as {
 		fields?: TextField[];
@@ -27,4 +27,4 @@ const Index = () => {
 	);
 };
 
-export default Index;
+export default Editor;

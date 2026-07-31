@@ -9,8 +9,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import Admin from "./pages/Admin";
 import Advanced from "./pages/Advanced";
+import Editor from "./pages/Editor";
 import GoogleCallback from "./pages/GoogleCallback";
-import Index from "./pages/Index";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Marketplace from "./pages/Marketplace";
 import NotFound from "./pages/NotFound";
@@ -38,7 +39,8 @@ const App = () => (
 					<AnalyticsTracker />
 					<ErrorBoundary>
 						<Routes>
-							<Route path="/" element={<Index />} />
+							<Route path="/" element={<Landing />} />
+							<Route path="/editor" element={<Editor />} />
 							<Route path="/marketplace" element={<Marketplace />} />
 							<Route
 								path="/advanced"
