@@ -8,9 +8,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -38,6 +36,7 @@ import ListPagination from "@/components/dashboard/ListPagination";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import type { Collection } from "@/hooks/useDashboardStore";
 import { openTemplateInEditor } from "@/lib/editorUtils";
+import { cn } from "@/lib/utils";
 import { fetchTemplates, PAGE_SIZE } from "@/services/dashboardApi";
 import { Template } from "@/types/Template";
 import type { PaginationMeta } from "@/types/Pagination";
@@ -45,14 +44,10 @@ import { DEFAULT_PAGINATION, clampPageAfterDelete } from "@/types/Pagination";
 import { AnimatePresence, motion } from "framer-motion";
 import {
 	ArrowUpRightFromSquare,
-	ChevronRight,
 	FolderOpen,
-	LayoutGrid,
 	Loader2,
 	MoreVertical,
 	Pencil,
-	Plus,
-	Rows3,
 	Trash2,
 	X,
 } from "lucide-react";
@@ -73,6 +68,8 @@ interface Props {
 	) => Promise<void>;
 	onUploadToCollection: (collectionId: number, file: File) => Promise<void>;
 }
+
+const TILT = ["-rotate-2", "rotate-1", "-rotate-1", "rotate-2"];
 
 const CollectionsPage = ({
 	isLoading,
@@ -264,35 +261,104 @@ const CollectionsPage = ({
 		};
 	}, [isLoading]);
 
-	if (isLoading) {
-		return (
-			<div className="space-y-6">
-				<div className="min-h-[30vh] flex flex-col items-center justify-center gap-3">
-					<div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-						<Loader2 className="h-6 w-6 animate-spin text-primary" />
-					</div>
-					<p className="text-sm text-muted-foreground">
-						Loading collections...
+	const Byline = ({
+		eyebrow,
+		title,
+		description,
+		watermark,
+		right,
+	}: {
+		eyebrow: string;
+		title: string;
+		description: string;
+		watermark: string;
+		right?: React.ReactNode;
+	}) => (
+		<div className="relative">
+			<span
+				aria-hidden
+				className="pointer-events-none absolute -left-2 -top-12 select-none font-playfair text-[7rem] font-bold italic leading-none text-foreground/[0.04] sm:text-[9rem]"
+			>
+				{watermark}
+			</span>
+			<div className="relative flex flex-col justify-between gap-5 border-b-2 border-foreground pb-4 sm:flex-row sm:items-end">
+				<div>
+					<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
+						{eyebrow}
+					</p>
+					<h2 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
+						{title}
+					</h2>
+					<p className="mt-1 text-sm text-muted-foreground">
+						{description}
 					</p>
 				</div>
+				{right && <div className="flex items-center gap-4">{right}</div>}
+			</div>
+		</div>
+	);
+
+	const LayoutToggle = () => (
+		<div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.15em]">
+			<button
+				onClick={() => setLayoutMode("grid")}
+				className={cn(
+					"border-b-2 pb-0.5 transition-colors",
+					!isListLayout
+						? "border-primary text-primary"
+						: "border-transparent text-muted-foreground hover:text-foreground",
+				)}
+			>
+				Grid
+			</button>
+			<span className="text-border">/</span>
+			<button
+				onClick={() => setLayoutMode("list")}
+				className={cn(
+					"border-b-2 pb-0.5 transition-colors",
+					isListLayout
+						? "border-primary text-primary"
+						: "border-transparent text-muted-foreground hover:text-foreground",
+				)}
+			>
+				List
+			</button>
+		</div>
+	);
+
+	if (isLoading) {
+		return (
+			<div className="space-y-10">
+				<Byline
+					eyebrow="Section 03"
+					title="Collections"
+					description="Loading your groupings…"
+					watermark="03"
+				/>
 				<div
 					className={
 						isListLayout
-							? "space-y-3"
-							: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+							? "divide-y divide-dashed divide-border border-t border-dashed border-border"
+							: "flex flex-wrap gap-x-4 gap-y-8"
 					}
 				>
-					{Array.from({ length: visibleSkeletons }).map(
-						(_, index) => (
-							<Card
+					{Array.from({ length: visibleSkeletons }).map((_, index) =>
+						isListLayout ? (
+							<div
 								key={`collection-skeleton-${index}`}
-								className="border-border"
+								className="flex items-center gap-4 py-3"
 							>
-								<CardContent className="p-4 space-y-3">
-									<Skeleton className="h-5 w-3/4" />
-									<Skeleton className="h-4 w-1/2" />
-								</CardContent>
-							</Card>
+								<Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+								<Skeleton className="h-4 w-1/3" />
+							</div>
+						) : (
+							<div
+								key={`collection-skeleton-${index}`}
+								className="w-48 shrink-0 border border-border bg-card p-4"
+							>
+								<Skeleton className="h-5 w-2/3" />
+								<Skeleton className="mt-3 h-3 w-1/2" />
+							</div>
 						),
 					)}
 				</div>
@@ -300,13 +366,13 @@ const CollectionsPage = ({
 		);
 	}
 
-	// If a collection is opened, show the detail view
+	// Detail view — templates inside an opened collection
 	if (openedCollection) {
 		const colTemplates = detailTemplates;
 		const hasDisplayTemplates =
 			colTemplates.length > 0 || uploadingTemplates.length > 0;
 		return (
-			<div className="space-y-6">
+			<div className="space-y-10">
 				<input
 					type="file"
 					id="collection-upload-input"
@@ -314,227 +380,131 @@ const CollectionsPage = ({
 					accept="image/*"
 					onChange={handleUploadToOpenedCollection}
 				/>
-				{/* Breadcrumbs */}
-				<div className="flex items-center gap-1 text-sm text-muted-foreground">
-					<button
-						onClick={() => setOpenedCollection(null)}
-						className="hover:text-foreground transition-colors"
-					>
-						Dashboard
-					</button>
-					<ChevronRight className="h-3 w-3" />
-					<button
-						onClick={() => setOpenedCollection(null)}
-						className="hover:text-foreground transition-colors"
-					>
-						Collections
-					</button>
-					<ChevronRight className="h-3 w-3" />
-					<span className="text-foreground font-medium">
-						{openedCollection.name}
-					</span>
-				</div>
 
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-3">
-						<div className="flex items-center rounded-md border border-border p-1">
-							<Button
-								size="icon"
-								variant={
-									layoutMode === "grid"
-										? "secondary"
-										: "ghost"
-								}
-								className="h-8 w-8"
-								onClick={() => setLayoutMode("grid")}
-							>
-								<LayoutGrid className="h-4 w-4" />
-							</Button>
-							<Button
-								size="icon"
-								variant={
-									layoutMode === "list"
-										? "secondary"
-										: "ghost"
-								}
-								className="h-8 w-8"
-								onClick={() => setLayoutMode("list")}
-							>
-								<Rows3 className="h-4 w-4" />
-							</Button>
-						</div>
-						<h2 className="text-2xl font-semibold text-foreground">
+				<button
+					onClick={() => setOpenedCollection(null)}
+					className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
+				>
+					← Section 03 / Collections
+				</button>
+
+				<div className="relative flex flex-col justify-between gap-5 border-b-2 border-foreground pb-4 sm:flex-row sm:items-end">
+					<div>
+						<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
+							Folder
+						</p>
+						<h2 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
 							{openedCollection.name}
 						</h2>
-					</div>
-					<div className="flex items-center gap-3">
-						<p className="text-sm text-muted-foreground">
+						<p className="mt-1 text-sm text-muted-foreground">
 							{detailPagination.total_count} template
-							{detailPagination.total_count !== 1 ? "s" : ""}
+							{detailPagination.total_count !== 1 ? "s" : ""} · click
+							to select, double-click to open
 						</p>
-						<Button
-							size="sm"
+					</div>
+					<div className="flex items-center gap-4">
+						<LayoutToggle />
+						<button
 							onClick={() =>
 								document
 									.getElementById("collection-upload-input")
 									?.click()
 							}
 							disabled={isUploadingToCollection}
+							className="flex -rotate-2 items-center gap-2 border-2 border-foreground bg-secondary px-4 py-2 text-xs font-bold uppercase tracking-widest text-secondary-foreground shadow-[3px_3px_0_hsl(var(--foreground))] transition-all hover:rotate-0 disabled:opacity-60"
 						>
 							{isUploadingToCollection ? (
 								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Uploading...
+									<Loader2 className="h-3.5 w-3.5 animate-spin" />
+									Uploading
 								</>
 							) : (
-								"Upload Template"
+								<>+ Upload Template</>
 							)}
-						</Button>
+						</button>
 					</div>
 				</div>
-				<p className="text-xs text-muted-foreground -mt-2">
-					Tip: Click a template card to select. Double-click to open
-					it in the editor.
-				</p>
 
 				{isDetailLoading ? (
-					<div className="min-h-[20vh] flex items-center justify-center">
+					<div className="flex min-h-[20vh] items-center justify-center">
 						<Loader2 className="h-6 w-6 animate-spin text-primary" />
 					</div>
 				) : !hasDisplayTemplates ? (
-					<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-						<FolderOpen className="h-12 w-12 mb-3 opacity-40" />
-						<p className="text-lg">
-							No templates in this collection
+					<div className="flex flex-col items-center gap-2 border-2 border-dashed border-border py-20 text-center">
+						<p className="font-playfair text-2xl italic text-foreground">
+							This folder is empty
 						</p>
-						<p className="text-sm">
-							Upload one now or assign templates from Templates.
+						<p className="font-hand text-xl text-secondary">
+							upload one, or assign templates from Templates ↓
 						</p>
 					</div>
-				) : (
+				) : isListLayout ? (
 					<>
-					<div
-						className={
-							isListLayout
-								? "space-y-0"
-								: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-						}
-					>
-						{uploadingTemplates.map((upload) => (
-							<Card
-								key={upload.id}
-								className={`group overflow-hidden border-border opacity-80 ${
-									isListLayout
-										? "flex items-center min-h-14 rounded-none border-x-0 border-t-0 shadow-none transition-colors hover:bg-muted/30"
-										: ""
-								}`}
-							>
+						<div className="divide-y divide-dashed divide-border border-t border-dashed border-border">
+							{uploadingTemplates.map((upload) => (
 								<div
-									className={`relative bg-muted flex items-center justify-center overflow-hidden ${
-										isListLayout
-											? "h-14 w-20 sm:w-24 shrink-0"
-											: "aspect-[4/3]"
-									}`}
+									key={upload.id}
+									className="flex items-center gap-4 py-3 opacity-70"
 								>
-									<img
-										src={upload.previewUrl}
-										alt={upload.name}
-										className="w-full h-full object-cover grayscale"
-									/>
-									<div className="absolute inset-0 bg-background/55 flex items-center justify-center">
-										<div className="flex items-center gap-2 text-sm text-foreground">
-											<Loader2 className="h-4 w-4 animate-spin" />
-											Uploading
-										</div>
+									<div className="h-12 w-16 shrink-0 overflow-hidden bg-muted">
+										<img
+											src={upload.previewUrl}
+											alt={upload.name}
+											className="h-full w-full object-cover grayscale"
+										/>
 									</div>
-								</div>
-								<CardContent
-									className={`flex-1 min-w-0 ${isListLayout ? "p-2" : "p-3"}`}
-								>
-									<div className="flex items-center justify-between gap-3">
-										<p className="text-sm text-foreground truncate">
-											<span className="font-medium">
-												{upload.name}
-											</span>
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-sm font-medium text-foreground">
+											{upload.name}
 										</p>
-										<p className="text-xs text-muted-foreground shrink-0">
-											Pending upload...
+										<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+											<Loader2 className="h-3 w-3 animate-spin" />
+											Uploading...
 										</p>
 									</div>
-								</CardContent>
-							</Card>
-						))}
-						{colTemplates.map((t) => (
-							<Card
-								key={t.id}
-								data-collection-template-card
-								className={`group overflow-hidden cursor-pointer ${
-									isListLayout
-										? "flex items-center min-h-14 rounded-none border-x-0 border-t-0 shadow-none"
-										: "transition-shadow"
-								} ${
-									selectedTemplateId === t.id
-										? isListLayout
-											? "border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
-											: "border-primary ring-2 ring-primary/30 shadow-md"
-										: isListLayout
-											? "border-border hover:bg-muted/40 transition-colors"
-											: "border-border hover:shadow-md"
-								}`}
-								onClick={() => setSelectedTemplateId(t.id)}
-								onDoubleClick={() =>
-									openTemplateInEditor(navigate, t)
-								}
-							>
-								<div
-									className={`bg-muted flex items-center justify-center overflow-hidden ${
-										isListLayout
-											? "h-14 w-20 sm:w-24 shrink-0"
-											: "aspect-[4/3]"
-									}`}
-								>
-									<img
-										src={t.url}
-										alt={t.name}
-										className="w-full h-full object-cover"
-									/>
 								</div>
-								<CardContent
-									className={`flex-1 min-w-0 flex items-center justify-between gap-3 ${isListLayout ? "p-2" : "p-3"}`}
+							))}
+							{colTemplates.map((t, i) => (
+								<div
+									key={t.id}
+									data-collection-template-card
+									onClick={() => setSelectedTemplateId(t.id)}
+									onDoubleClick={() =>
+										openTemplateInEditor(navigate, t)
+									}
+									className={cn(
+										"group flex cursor-pointer items-center gap-4 py-3 transition-colors",
+										selectedTemplateId === t.id
+											? "bg-primary/5"
+											: "hover:bg-muted/40",
+									)}
 								>
-									<div className="min-w-0">
-										{isListLayout ? (
-											<p className="text-sm text-foreground truncate">
-												<span className="font-medium">
-													{t.name}
-												</span>
-												<span className="text-xs text-muted-foreground">
-													{" "}
-													· {t.public_id}
-												</span>
-											</p>
-										) : (
-											<>
-												<p className="text-sm font-medium text-foreground truncate">
-													{t.name}
-												</p>
-												<p className="text-xs text-muted-foreground truncate">
-													{t.public_id}
-												</p>
-											</>
-										)}
+									<span className="w-7 shrink-0 font-playfair text-sm italic text-muted-foreground">
+										{String(i + 1).padStart(2, "0")}
+									</span>
+									<div className="h-12 w-16 shrink-0 overflow-hidden bg-muted">
+										<img
+											src={t.url}
+											alt={t.name}
+											className="h-full w-full object-cover"
+										/>
+									</div>
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-sm font-medium text-foreground">
+											{t.name}
+										</p>
+										<p className="truncate text-xs text-muted-foreground">
+											{t.public_id}
+										</p>
 									</div>
 									<Button
 										variant="ghost"
 										size="sm"
-										className={`text-xs text-muted-foreground hover:text-destructive shrink-0 ${isListLayout ? "h-7 px-2" : ""}`}
+										className="h-7 shrink-0 px-2 text-xs text-muted-foreground hover:text-destructive"
 										onClick={(event) => {
 											event.stopPropagation();
 											void (async () => {
-												await onAssignCollection(
-													t.id,
-													null,
-												);
+												await onAssignCollection(t.id, null);
 												const nextPage =
 													clampPageAfterDelete(
 														detailPagination,
@@ -552,16 +522,102 @@ const CollectionsPage = ({
 									>
 										Remove
 									</Button>
-								</CardContent>
-							</Card>
-						))}
-					</div>
-					<ListPagination
-						pagination={detailPagination}
-						onPageChange={setDetailPage}
-						isLoading={isDetailLoading}
-						className="pt-2"
-					/>
+								</div>
+							))}
+						</div>
+						<ListPagination
+							pagination={detailPagination}
+							onPageChange={setDetailPage}
+							isLoading={isDetailLoading}
+							className="pt-2"
+						/>
+					</>
+				) : (
+					<>
+						<div className="flex flex-wrap items-start gap-x-4 gap-y-10">
+							{uploadingTemplates.map((upload, i) => (
+								<div
+									key={upload.id}
+									className={cn(
+										"w-40 shrink-0 border border-border bg-card p-2.5 pb-4 opacity-70 sm:w-48",
+										TILT[i % TILT.length],
+									)}
+								>
+									<div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+										<img
+											src={upload.previewUrl}
+											alt={upload.name}
+											className="h-full w-full object-cover grayscale"
+										/>
+										<div className="absolute inset-0 flex items-center justify-center bg-background/60">
+											<Loader2 className="h-5 w-5 animate-spin text-foreground" />
+										</div>
+									</div>
+									<p className="font-hand mt-2 truncate text-center text-lg text-foreground">
+										{upload.name}
+									</p>
+								</div>
+							))}
+							{colTemplates.map((t, i) => (
+								<div
+									key={t.id}
+									data-collection-template-card
+									onClick={() => setSelectedTemplateId(t.id)}
+									onDoubleClick={() =>
+										openTemplateInEditor(navigate, t)
+									}
+									className={cn(
+										"group relative w-40 shrink-0 cursor-pointer border border-border bg-card p-2.5 pb-4 shadow-[3px_3px_0_hsl(var(--foreground)/0.12)] transition-all hover:z-10 hover:-translate-y-1 hover:rotate-0 hover:shadow-[5px_5px_0_hsl(var(--foreground)/0.2)] sm:w-48",
+										selectedTemplateId === t.id
+											? "z-10 rotate-0 shadow-[5px_5px_0_hsl(var(--primary))]"
+											: TILT[i % TILT.length],
+									)}
+								>
+									<button
+										className="absolute right-3.5 top-3.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-destructive group-hover:opacity-100"
+										onClick={(event) => {
+											event.stopPropagation();
+											void (async () => {
+												await onAssignCollection(t.id, null);
+												const nextPage =
+													clampPageAfterDelete(
+														detailPagination,
+													);
+												if (nextPage !== detailPage) {
+													setDetailPage(nextPage);
+												} else {
+													await loadCollectionTemplates(
+														openedCollection.id,
+														detailPage,
+													);
+												}
+											})();
+										}}
+									>
+										<X className="h-3.5 w-3.5" />
+									</button>
+									<div className="aspect-[4/3] w-full overflow-hidden bg-muted">
+										<img
+											src={t.url}
+											alt={t.name}
+											className="h-full w-full object-cover"
+										/>
+									</div>
+									<p className="font-hand mt-2 truncate text-center text-lg text-foreground">
+										{t.name || "Untitled"}
+									</p>
+									<p className="truncate text-center text-[10px] uppercase tracking-wider text-muted-foreground">
+										{t.public_id}
+									</p>
+								</div>
+							))}
+						</div>
+						<ListPagination
+							pagination={detailPagination}
+							onPageChange={setDetailPage}
+							isLoading={isDetailLoading}
+							className="pt-2"
+						/>
 					</>
 				)}
 
@@ -580,7 +636,7 @@ const CollectionsPage = ({
 								mass: 0.55,
 							}}
 						>
-							<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+							<div className="flex items-center gap-2 rounded-full border-2 border-foreground bg-card p-2 shadow-[4px_4px_0_hsl(var(--foreground))]">
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
@@ -596,35 +652,33 @@ const CollectionsPage = ({
 											<ArrowUpRightFromSquare className="h-4 w-4" />
 										</Button>
 									</TooltipTrigger>
-									<TooltipContent>
-										Open in Editor
-									</TooltipContent>
+									<TooltipContent>Open in Editor</TooltipContent>
 								</Tooltip>
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
 											size="icon"
 											variant="destructive"
-										onClick={() =>
-											void (async () => {
-												await onAssignCollection(
-													selectedTemplate.id,
-													null,
-												);
-												const nextPage =
-													clampPageAfterDelete(
-														detailPagination,
+											onClick={() =>
+												void (async () => {
+													await onAssignCollection(
+														selectedTemplate.id,
+														null,
 													);
-												if (nextPage !== detailPage) {
-													setDetailPage(nextPage);
-												} else {
-													await loadCollectionTemplates(
-														openedCollection.id,
-														detailPage,
-													);
-												}
-											})()
-										}
+													const nextPage =
+														clampPageAfterDelete(
+															detailPagination,
+														);
+													if (nextPage !== detailPage) {
+														setDetailPage(nextPage);
+													} else {
+														await loadCollectionTemplates(
+															openedCollection.id,
+															detailPage,
+														);
+													}
+												})()
+											}
 										>
 											<X className="h-4 w-4" />
 										</Button>
@@ -638,228 +692,248 @@ const CollectionsPage = ({
 										<Button
 											size="icon"
 											variant="ghost"
-											onClick={() =>
-												setSelectedTemplateId(null)
-											}
+											onClick={() => setSelectedTemplateId(null)}
 										>
 											<Trash2 className="h-4 w-4" />
 										</Button>
 									</TooltipTrigger>
-									<TooltipContent>
-										Clear Selection
-									</TooltipContent>
+									<TooltipContent>Clear Selection</TooltipContent>
 								</Tooltip>
 							</div>
 						</motion.div>
 					)}
 				</AnimatePresence>
-
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={() => setOpenedCollection(null)}
-				>
-					← Back to Collections
-				</Button>
 			</div>
 		);
 	}
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-3">
-					<div className="flex items-center rounded-md border border-border p-1">
-						<Button
-							size="icon"
-							variant={
-								layoutMode === "grid" ? "secondary" : "ghost"
-							}
-							className="h-8 w-8"
-							onClick={() => setLayoutMode("grid")}
-						>
-							<LayoutGrid className="h-4 w-4" />
-						</Button>
-						<Button
-							size="icon"
-							variant={
-								layoutMode === "list" ? "secondary" : "ghost"
-							}
-							className="h-8 w-8"
-							onClick={() => setLayoutMode("list")}
-						>
-							<Rows3 className="h-4 w-4" />
-						</Button>
-					</div>
-					<h2 className="text-2xl font-semibold text-foreground">
-						Collections
-					</h2>
-				</div>
-				{!creating ? (
-					<Button size="sm" onClick={() => setCreating(true)}>
-						<Plus className="mr-2 h-4 w-4" /> New Collection
-					</Button>
-				) : (
-					<div className="flex items-center gap-2">
-						<Input
-							autoFocus
-							placeholder="Collection name..."
-							value={newName}
-							onChange={(e) => setNewName(e.target.value)}
-							onKeyDown={(e) =>
-								e.key === "Enter" && handleCreate()
-							}
-							className="h-9 w-48"
-						/>
-						<Button size="sm" onClick={handleCreate}>
-							Add
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							onClick={() => {
-								setCreating(false);
-								setNewName("");
-							}}
-						>
-							<X className="h-4 w-4" />
-						</Button>
-					</div>
-				)}
-			</div>
+		<div className="space-y-10">
+			<Byline
+				eyebrow="Section 03"
+				title="Collections"
+				description={
+					collections.length > 0
+						? "Double-click a folder to open it."
+						: "Group templates together to keep events organized."
+				}
+				watermark="03"
+				right={
+					<>
+						<LayoutToggle />
+						{!creating ? (
+							<button
+								onClick={() => setCreating(true)}
+								className="flex -rotate-2 items-center gap-2 border-2 border-foreground bg-secondary px-4 py-2 text-xs font-bold uppercase tracking-widest text-secondary-foreground shadow-[3px_3px_0_hsl(var(--foreground))] transition-all hover:rotate-0"
+							>
+								+ New Folder
+							</button>
+						) : (
+							<div className="flex items-center gap-2">
+								<Input
+									autoFocus
+									placeholder="Collection name..."
+									value={newName}
+									onChange={(e) => setNewName(e.target.value)}
+									onKeyDown={(e) =>
+										e.key === "Enter" && handleCreate()
+									}
+									className="h-9 w-48 rounded-none border-x-0 border-t-0 border-b-2 border-foreground bg-transparent px-0 focus-visible:ring-0"
+								/>
+								<Button size="sm" onClick={handleCreate}>
+									Add
+								</Button>
+								<Button
+									size="sm"
+									variant="ghost"
+									onClick={() => {
+										setCreating(false);
+										setNewName("");
+									}}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</div>
+						)}
+					</>
+				}
+			/>
 
 			{collections.length === 0 ? (
-				<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-					<FolderOpen className="h-12 w-12 mb-3 opacity-40" />
-					<p className="text-lg">No collections yet</p>
-					<p className="text-sm">
-						Create a collection to organize your templates.
+				<div className="flex flex-col items-center gap-2 border-2 border-dashed border-border py-20 text-center">
+					<p className="font-playfair text-2xl italic text-foreground">
+						No folders yet
 					</p>
+					<p className="font-hand text-xl text-secondary">
+						create one to start organizing ↓
+					</p>
+					<button
+						onClick={() => setCreating(true)}
+						className="mt-2 border-2 border-foreground bg-primary px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[3px_3px_0_hsl(var(--foreground))] transition-all hover:-translate-y-0.5"
+					>
+						+ New Folder
+					</button>
 				</div>
+			) : isListLayout ? (
+				<>
+					<div className="divide-y divide-dashed divide-border border-t border-dashed border-border">
+						{collections.map((col, i) => {
+							const templateCount = col.template_count ?? 0;
+							return (
+								<div
+									key={col.id}
+									data-collection-card
+									onClick={() => setSelectedCollectionId(col.id)}
+									onDoubleClick={() => setOpenedCollection(col)}
+									className={cn(
+										"group flex cursor-pointer items-center gap-4 py-3 transition-colors",
+										selectedCollectionId === col.id
+											? "bg-primary/5"
+											: "hover:bg-muted/40",
+									)}
+								>
+									<span className="w-7 shrink-0 font-playfair text-sm italic text-muted-foreground">
+										{String(i + 1).padStart(2, "0")}
+									</span>
+									<FolderOpen className="h-4 w-4 shrink-0 text-secondary" />
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-sm font-medium text-foreground">
+											{col.name}
+										</p>
+										<p className="truncate text-xs text-muted-foreground">
+											{templateCount} template
+											{templateCount !== 1 ? "s" : ""}
+										</p>
+									</div>
+									<DropdownMenu>
+										<DropdownMenuTrigger
+											asChild
+											onClick={(e) => e.stopPropagation()}
+										>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-8 w-8 shrink-0"
+											>
+												<MoreVertical className="h-4 w-4" />
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent align="end">
+											<DropdownMenuItem
+												onClick={(e) => {
+													e.stopPropagation();
+													setEditCol(col);
+													setEditName(col.name);
+												}}
+											>
+												<Pencil className="mr-2 h-4 w-4" />
+												Rename
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												className="text-destructive"
+												onClick={(e) => {
+													e.stopPropagation();
+													setDeleteColId(col.id);
+												}}
+											>
+												<Trash2 className="mr-2 h-4 w-4" />
+												Delete Collection
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</div>
+							);
+						})}
+					</div>
+					<ListPagination
+						pagination={pagination}
+						onPageChange={onPageChange}
+						isLoading={isLoading}
+						className="pt-2"
+					/>
+				</>
 			) : (
 				<>
-				<div
-					className={
-						isListLayout
-							? "space-y-0"
-							: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-					}
-				>
-					{collections.map((col) => {
-						const templateCount = col.template_count ?? 0;
-						return (
-							<Card
-								key={col.id}
-								data-collection-card
-								className={`cursor-pointer ${
-									isListLayout
-										? "min-h-14 rounded-none border-x-0 border-t-0 shadow-none"
-										: "transition-shadow"
-								} ${
-									selectedCollectionId === col.id
-										? isListLayout
-											? "border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
-											: "border-primary ring-2 ring-primary/30 shadow-md"
-										: isListLayout
-											? "border-border hover:bg-muted/40 transition-colors"
-											: "border-border hover:shadow-md"
-								}`}
-								onClick={() => setSelectedCollectionId(col.id)}
-								onDoubleClick={() => setOpenedCollection(col)}
-							>
-								<CardContent
-									className={
-										isListLayout ? "p-2" : "p-4 space-y-3"
-									}
-								>
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-2 min-w-0">
-											<FolderOpen className="h-5 w-5 text-primary shrink-0" />
-											{isListLayout ? (
-												<p className="text-sm text-foreground truncate">
-													<span className="font-medium">
-														{col.name}
-													</span>
-													<span className="text-xs text-muted-foreground">
-														{" "}
-														· {templateCount}{" "}
-														template
-														{templateCount !== 1
-															? "s"
-															: ""}
-													</span>
-												</p>
-											) : (
-												<>
-													<span className="font-medium text-foreground truncate">
-														{col.name}
-													</span>
-													<Badge
-														variant="secondary"
-														className="text-xs"
-													>
-														{templateCount}
-													</Badge>
-												</>
-											)}
-										</div>
-										<DropdownMenu>
-											<DropdownMenuTrigger
-												asChild
-												onClick={(e) =>
-													e.stopPropagation()
-												}
-											>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="h-8 w-8 shrink-0"
-												>
-													<MoreVertical className="h-4 w-4" />
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent align="end">
-												<DropdownMenuItem
-													onClick={(e) => {
-														e.stopPropagation();
-														setEditCol(col);
-														setEditName(col.name);
-													}}
-												>
-													<Pencil className="mr-2 h-4 w-4" />{" "}
-													Rename
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													className="text-destructive"
-													onClick={(e) => {
-														e.stopPropagation();
-														setDeleteColId(col.id);
-													}}
-												>
-													<Trash2 className="mr-2 h-4 w-4" />{" "}
-													Delete Collection
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</div>
-									{!isListLayout && (
-										<p className="text-xs text-muted-foreground">
-											{templateCount} template
-											{templateCount !== 1 ? "s" : ""}{" "}
-											· Click to view
-										</p>
+					<div className="flex flex-wrap items-start gap-x-5 gap-y-10">
+						{collections.map((col, i) => {
+							const templateCount = col.template_count ?? 0;
+							return (
+								<div
+									key={col.id}
+									data-collection-card
+									onClick={() => setSelectedCollectionId(col.id)}
+									onDoubleClick={() => setOpenedCollection(col)}
+									className={cn(
+										"group relative w-48 shrink-0 cursor-pointer transition-all hover:z-10 hover:-translate-y-1 hover:rotate-0",
+										selectedCollectionId === col.id
+											? "z-10 rotate-0"
+											: TILT[i % TILT.length],
 									)}
-								</CardContent>
-							</Card>
-						);
-					})}
-				</div>
-				<ListPagination
-					pagination={pagination}
-					onPageChange={onPageChange}
-					isLoading={isLoading}
-					className="pt-2"
-				/>
+								>
+									{/* folder tab */}
+									<div className="ml-3 h-4 w-16 border border-b-0 border-foreground bg-secondary" />
+									<div
+										className={cn(
+											"border border-foreground bg-card p-4 shadow-[3px_3px_0_hsl(var(--foreground)/0.15)] transition-shadow group-hover:shadow-[5px_5px_0_hsl(var(--foreground)/0.22)]",
+											selectedCollectionId === col.id &&
+												"shadow-[5px_5px_0_hsl(var(--primary))]",
+										)}
+									>
+										<div className="flex items-start justify-between gap-2">
+											<FolderOpen className="h-5 w-5 shrink-0 text-secondary" />
+											<DropdownMenu>
+												<DropdownMenuTrigger
+													asChild
+													onClick={(e) =>
+														e.stopPropagation()
+													}
+												>
+													<button className="opacity-0 transition-opacity group-hover:opacity-100">
+														<MoreVertical className="h-4 w-4 text-muted-foreground" />
+													</button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end">
+													<DropdownMenuItem
+														onClick={(e) => {
+															e.stopPropagation();
+															setEditCol(col);
+															setEditName(col.name);
+														}}
+													>
+														<Pencil className="mr-2 h-4 w-4" />
+														Rename
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														className="text-destructive"
+														onClick={(e) => {
+															e.stopPropagation();
+															setDeleteColId(col.id);
+														}}
+													>
+														<Trash2 className="mr-2 h-4 w-4" />
+														Delete Collection
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</div>
+										<p className="font-hand mt-2 truncate text-2xl text-foreground">
+											{col.name}
+										</p>
+										<p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+											{templateCount} template
+											{templateCount !== 1 ? "s" : ""}
+										</p>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+					<ListPagination
+						pagination={pagination}
+						onPageChange={onPageChange}
+						isLoading={isLoading}
+						className="pt-2"
+					/>
 				</>
 			)}
 
@@ -878,16 +952,14 @@ const CollectionsPage = ({
 							mass: 0.55,
 						}}
 					>
-						<div className="flex items-center gap-2 rounded-full border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+						<div className="flex items-center gap-2 rounded-full border-2 border-foreground bg-card p-2 shadow-[4px_4px_0_hsl(var(--foreground))]">
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<Button
 										size="icon"
 										variant="outline"
 										onClick={() =>
-											setOpenedCollection(
-												selectedCollection,
-											)
+											setOpenedCollection(selectedCollection)
 										}
 									>
 										<ArrowUpRightFromSquare className="h-4 w-4" />
@@ -902,17 +974,13 @@ const CollectionsPage = ({
 										variant="outline"
 										onClick={() => {
 											setEditCol(selectedCollection);
-											setEditName(
-												selectedCollection.name,
-											);
+											setEditName(selectedCollection.name);
 										}}
 									>
 										<Pencil className="h-4 w-4" />
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent>
-									Rename Collection
-								</TooltipContent>
+								<TooltipContent>Rename Collection</TooltipContent>
 							</Tooltip>
 							<Tooltip>
 								<TooltipTrigger asChild>
@@ -920,26 +988,20 @@ const CollectionsPage = ({
 										size="icon"
 										variant="destructive"
 										onClick={() =>
-											setDeleteColId(
-												selectedCollection.id,
-											)
+											setDeleteColId(selectedCollection.id)
 										}
 									>
 										<Trash2 className="h-4 w-4" />
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent>
-									Delete Collection
-								</TooltipContent>
+								<TooltipContent>Delete Collection</TooltipContent>
 							</Tooltip>
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<Button
 										size="icon"
 										variant="ghost"
-										onClick={() =>
-											setSelectedCollectionId(null)
-										}
+										onClick={() => setSelectedCollectionId(null)}
 									>
 										<X className="h-4 w-4" />
 									</Button>
@@ -951,14 +1013,12 @@ const CollectionsPage = ({
 				)}
 			</AnimatePresence>
 
-			{/* Rename dialog */}
-			<Dialog
-				open={!!editCol}
-				onOpenChange={(o) => !o && setEditCol(null)}
-			>
+			<Dialog open={!!editCol} onOpenChange={(o) => !o && setEditCol(null)}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Rename Collection</DialogTitle>
+						<DialogTitle className="font-playfair text-xl italic">
+							Rename Collection
+						</DialogTitle>
 						<DialogDescription>
 							Enter a new name for this collection.
 						</DialogDescription>
@@ -972,10 +1032,7 @@ const CollectionsPage = ({
 						/>
 					</div>
 					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setEditCol(null)}
-						>
+						<Button variant="outline" onClick={() => setEditCol(null)}>
 							Cancel
 						</Button>
 						<Button onClick={saveEdit}>Save</Button>
@@ -983,14 +1040,15 @@ const CollectionsPage = ({
 				</DialogContent>
 			</Dialog>
 
-			{/* Delete collection confirmation */}
 			<AlertDialog
 				open={!!deleteColId}
 				onOpenChange={(o) => !o && setDeleteColId(null)}
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Delete Collection?</AlertDialogTitle>
+						<AlertDialogTitle className="font-playfair text-xl italic">
+							Delete Collection?
+						</AlertDialogTitle>
 						<AlertDialogDescription>
 							This will remove the collection grouping. Templates
 							inside will not be deleted.

@@ -1,6 +1,6 @@
 import { TextField } from "@/types/TextField";
 import { motion } from "framer-motion";
-import { RefObject, useEffect, useState } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 
 interface CertificatePreviewProps {
 	templateUrl: string | null;
@@ -11,6 +11,8 @@ interface CertificatePreviewProps {
 	previewRef: RefObject<HTMLDivElement>;
 	imgRef: RefObject<HTMLImageElement>;
 	isParticipant?: boolean;
+	/** When provided (and not isParticipant), fields can be dragged directly on the canvas. */
+	onFieldMove?: (id: string, x: number, y: number) => void;
 }
 
 const CertificatePreview = ({
@@ -22,12 +24,15 @@ const CertificatePreview = ({
 	previewRef,
 	imgRef,
 	isParticipant = false,
+	onFieldMove,
 }: CertificatePreviewProps) => {
 	const [imageScale, setImageScale] = useState({
 		scale: 1,
 		offsetX: 0,
 		offsetY: 0,
 	});
+	const draggingId = useRef<string | null>(null);
+	const isDraggable = !isParticipant && !!onFieldMove;
 
 	// Calculate actual image dimensions and scale
 	useEffect(() => {
@@ -74,6 +79,46 @@ const CertificatePreview = ({
 		return () => window.removeEventListener("resize", calculateImageScale);
 	}, [templateUrl, imgRef, previewRef]);
 
+	const movePointerToField = (fieldId: string, clientX: number, clientY: number) => {
+		if (!onFieldMove || !previewRef.current || !imgRef.current) return;
+
+		const rect = previewRef.current.getBoundingClientRect();
+		const naturalX = (clientX - rect.left - imageScale.offsetX) / imageScale.scale;
+		const naturalY = (clientY - rect.top - imageScale.offsetY) / imageScale.scale;
+
+		const maxX = imgRef.current.naturalWidth || naturalX;
+		const maxY = imgRef.current.naturalHeight || naturalY;
+
+		onFieldMove(
+			fieldId,
+			Math.round(Math.min(Math.max(naturalX, 0), maxX)),
+			Math.round(Math.min(Math.max(naturalY, 0), maxY)),
+		);
+	};
+
+	const handlePointerDown = (
+		e: React.PointerEvent<HTMLSpanElement>,
+		fieldId: string,
+	) => {
+		if (!isDraggable) return;
+		e.preventDefault();
+		e.stopPropagation();
+		onFieldSelect(fieldId);
+		draggingId.current = fieldId;
+		e.currentTarget.setPointerCapture(e.pointerId);
+	};
+
+	const handlePointerMove = (e: React.PointerEvent<HTMLSpanElement>, fieldId: string) => {
+		if (draggingId.current !== fieldId) return;
+		movePointerToField(fieldId, e.clientX, e.clientY);
+	};
+
+	const handlePointerUp = (e: React.PointerEvent<HTMLSpanElement>) => {
+		if (!draggingId.current) return;
+		draggingId.current = null;
+		e.currentTarget.releasePointerCapture(e.pointerId);
+	};
+
 	return (
 		<motion.div
 			initial={{ opacity: 0, scale: 0.95 }}
@@ -91,46 +136,67 @@ const CertificatePreview = ({
 						src={templateUrl}
 						alt="Certificate Template"
 						className="w-full h-full object-contain"
+						draggable={false}
 					/>
 
 					{showPreview &&
 						fields &&
 						fields?.length &&
-						fields?.map((field) => (
-							<motion.span
-								key={field.id}
-								onClick={() =>
-									!isParticipant && onFieldSelect(field.id)
-								}
-								className={`absolute cursor-pointer ${
-									!isParticipant &&
-									field.id === selectedFieldId
-										? ""
-										: ""
-								}`}
-								style={{
-									left: `${field.x * imageScale.scale + imageScale.offsetX}px`,
-									top: `${field.y * imageScale.scale + imageScale.offsetY}px`,
-									transform:
-										field.anchorMode === "center"
-											? "translate(-50%, -50%)"
-											: "translate(0%, -50%)",
+						fields?.map((field) => {
+							const isSelected =
+								!isParticipant && field.id === selectedFieldId;
+							return (
+								<motion.span
+									key={field.id}
+									onPointerDown={(e) => handlePointerDown(e, field.id)}
+									onPointerMove={(e) => handlePointerMove(e, field.id)}
+									onPointerUp={handlePointerUp}
+									onClick={(e) => {
+										if (isDraggable) {
+											// Selection already happens on pointerdown when draggable.
+											e.stopPropagation();
+											return;
+										}
+										if (!isParticipant) onFieldSelect(field.id);
+									}}
+									className="absolute select-none"
+									style={{
+										left: `${field.x * imageScale.scale + imageScale.offsetX}px`,
+										top: `${field.y * imageScale.scale + imageScale.offsetY}px`,
+										transform:
+											field.anchorMode === "center"
+												? "translate(-50%, -50%)"
+												: "translate(0%, -50%)",
 
-									fontFamily: `"${field.font}"`,
-									fontSize: `${field.fontSize * imageScale.scale}px`,
-									fontWeight: field.fontWeight,
-									color: field.color,
-									whiteSpace: "nowrap",
-									display: "inline-flex",
-									alignItems: "center",
-									lineHeight: "1",
-									padding: "0",
-									margin: "0",
-								}}
-							>
-								{field.text}
-							</motion.span>
-						))}
+										fontFamily: `"${field.font}"`,
+										fontSize: `${field.fontSize * imageScale.scale}px`,
+										fontWeight: field.fontWeight,
+										color: field.color,
+										whiteSpace: "nowrap",
+										display: "inline-flex",
+										alignItems: "center",
+										lineHeight: "1",
+										padding: isSelected ? "6px 10px" : "0",
+										margin: isSelected ? "-6px -10px" : "0",
+										cursor: isDraggable
+											? draggingId.current === field.id
+												? "grabbing"
+												: "grab"
+											: !isParticipant
+												? "pointer"
+												: "default",
+										outline: isSelected
+											? "2px dashed hsl(var(--primary))"
+											: "none",
+										outlineOffset: isSelected ? "2px" : "0",
+										borderRadius: isSelected ? "4px" : "0",
+										touchAction: isDraggable ? "none" : "auto",
+									}}
+								>
+									{field.text}
+								</motion.span>
+							);
+						})}
 				</div>
 			) : (
 				<div className="flex flex-col items-center justify-center max-w-md text-center space-y-4">

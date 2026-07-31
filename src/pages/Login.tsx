@@ -4,11 +4,13 @@ import GitHubSvg from "@/components/ui/GitHubSvg";
 import GoogleSvg from "@/components/ui/GoogleSvg";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import useAuth from "@/hooks/useAuth";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+
+const fieldClass =
+	"rounded-none border-x-0 border-t-0 border-b-2 border-foreground/30 bg-transparent px-0 text-base focus-visible:border-primary focus-visible:ring-0";
 
 const Login = () => {
 	const [email, setEmail] = useState("");
@@ -28,115 +30,136 @@ const Login = () => {
 	};
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-background px-4">
-			<div className="w-full max-w-[400px] space-y-6">
-				{/* Header */}
-				<div className="text-center space-y-2">
-					<h1 className="text-2xl font-semibold tracking-tight text-foreground">
-						Welcome back
-					</h1>
-					<p className="text-sm text-muted-foreground">
-						Sign in to your account to continue
+		<div className="flex min-h-screen bg-background">
+			{/* Poster panel */}
+			<div className="relative hidden w-[42%] shrink-0 flex-col justify-between bg-foreground p-10 text-background lg:flex">
+				<Link
+					to="/"
+					className="font-playfair text-3xl font-bold italic tracking-tight"
+				>
+					genC
+				</Link>
+				<div>
+					<p className="text-xs uppercase tracking-[0.3em] text-background/60">
+						Issue No. 02 — Members Only
+					</p>
+					<h2 className="mt-4 font-playfair text-5xl italic leading-[1.05]">
+						Good to see
+						<br />
+						you again.
+					</h2>
+					<p className="mt-4 max-w-xs text-sm leading-relaxed text-background/70">
+						Sign back in to keep designing, organizing, and sending
+						certificates that people actually want to frame.
 					</p>
 				</div>
+				<p className="font-hand text-2xl text-background/80">
+					— The Certificate Desk
+				</p>
+			</div>
 
-				{/* Social Auth */}
-				<div className="space-y-3">
-					<AuthButton
-						onClick={handleGoogleLogin}
-						label="Continue with Google"
-						svg={<GoogleSvg />}
-					/>
+			{/* Form panel */}
+			<div className="flex flex-1 items-center justify-center px-6 py-16">
+				<div className="w-full max-w-sm space-y-8">
+					<div>
+						<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
+							Sign In
+						</p>
+						<h1 className="mt-1 font-playfair text-3xl italic text-foreground">
+							Welcome back
+						</h1>
+						<p className="mt-1 text-sm text-muted-foreground">
+							Sign in to your account to continue
+						</p>
+					</div>
 
-					<AuthButton
-						onClick={handleGithubLogin}
-						label="Continue with GitHub"
-						svg={<GitHubSvg />}
-					/>
-				</div>
-
-				{/* Divider */}
-				<div className="relative">
-					<Separator />
-					<span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-3 text-xs text-muted-foreground uppercase tracking-wider">
-						or
-					</span>
-				</div>
-
-				{/* Email Form */}
-				<form onSubmit={handleSubmit} className="space-y-4">
-					<div className="space-y-2">
-						<Label
-							htmlFor="email"
-							className="text-sm font-medium text-foreground"
-						>
-							Email
-						</Label>
-						<Input
-							id="email"
-							type="email"
-							placeholder="name@example.com"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							className="h-11"
-							required
+					<div className="space-y-3">
+						<AuthButton
+							onClick={handleGoogleLogin}
+							label="Continue with Google"
+							svg={<GoogleSvg />}
+						/>
+						<AuthButton
+							onClick={handleGithubLogin}
+							label="Continue with GitHub"
+							svg={<GitHubSvg />}
 						/>
 					</div>
 
-					<div className="space-y-2">
-						<div className="flex items-center justify-between">
-							<Label
-								htmlFor="password"
-								className="text-sm font-medium text-foreground"
-							>
-								Password
-							</Label>
-							<Link
-								to="/forgot-password"
-								className="text-xs text-primary hover:text-primary/80 transition-colors"
-							>
-								Forgot password?
-							</Link>
-						</div>
-						<div className="relative">
-							<Input
-								id="password"
-								type={showPassword ? "text" : "password"}
-								placeholder="••••••••"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								className="h-11 pr-10"
-								required
-							/>
-							<button
-								type="button"
-								onClick={() => setShowPassword(!showPassword)}
-								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-							>
-								{showPassword ? (
-									<EyeOff className="h-4 w-4" />
-								) : (
-									<Eye className="h-4 w-4" />
-								)}
-							</button>
-						</div>
+					<div className="flex items-center gap-3">
+						<div className="h-px flex-1 bg-border" />
+						<span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+							or
+						</span>
+						<div className="h-px flex-1 bg-border" />
 					</div>
 
-					<Button type="submit" className="w-full h-11 font-medium">
-						Sign in
-					</Button>
-				</form>
+					<form onSubmit={handleSubmit} className="space-y-5">
+						<div className="space-y-2">
+							<Label htmlFor="email">Email</Label>
+							<Input
+								id="email"
+								type="email"
+								placeholder="name@example.com"
+								value={email}
+								onChange={(e) => setEmail(e.target.value)}
+								className={fieldClass}
+								required
+							/>
+						</div>
 
-				{/* Footer */}
-				<p className="text-center text-sm text-muted-foreground">
-					Don't have an account?{" "}
-					<Link
-						to="/signup"
-						className="text-primary font-medium hover:text-primary/80 transition-colors"
-					>
-						Sign up
-					</Link>
-				</p>
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<Label htmlFor="password">Password</Label>
+								<Link
+									to="/forgot-password"
+									className="text-xs text-primary hover:underline"
+								>
+									Forgot password?
+								</Link>
+							</div>
+							<div className="relative">
+								<Input
+									id="password"
+									type={showPassword ? "text" : "password"}
+									placeholder="••••••••"
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									className={`${fieldClass} pr-8`}
+									required
+								/>
+								<button
+									type="button"
+									onClick={() => setShowPassword(!showPassword)}
+									className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+								>
+									{showPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
+								</button>
+							</div>
+						</div>
+
+						<Button
+							type="submit"
+							className="h-11 w-full font-semibold uppercase tracking-widest"
+						>
+							Sign In
+						</Button>
+					</form>
+
+					<p className="text-center text-sm text-muted-foreground">
+						Don't have an account?{" "}
+						<Link
+							to="/signup"
+							className="font-medium text-primary hover:underline"
+						>
+							Sign up
+						</Link>
+					</p>
+				</div>
 			</div>
 		</div>
 	);

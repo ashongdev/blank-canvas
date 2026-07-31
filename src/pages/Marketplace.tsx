@@ -1,9 +1,7 @@
 import CertificatePreview from "@/components/CertificatePreview";
 import Header from "@/components/Header";
 import EditorAuthFooter from "@/components/EditorAuthFooter";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -18,20 +16,17 @@ import {
 	marketplaceTemplates,
 } from "@/config/marketplaceTemplates";
 import { openMarketplaceTemplateInEditor } from "@/lib/editorUtils";
+import { cn } from "@/lib/utils";
 import type {
 	MarketplaceCategory,
 	MarketplaceTemplate,
 } from "@/types/MarketplaceTemplate";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-	Eye,
-	FlaskConical,
-	Search,
-	Sparkles,
-	Store,
-} from "lucide-react";
+import { FlaskConical, Search, Sparkles } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+const TILT = ["-rotate-2", "rotate-1", "-rotate-1", "rotate-2"];
 
 const Marketplace = () => {
 	const navigate = useNavigate();
@@ -68,148 +63,115 @@ const Marketplace = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-background flex flex-col">
+		<div className="flex min-h-screen flex-col bg-background">
 			<Header onTourClick={() => {}} />
 
-			<main className="flex-1 container mx-auto px-6 py-10">
-				<div className="max-w-6xl mx-auto space-y-8">
-					<div className="space-y-3">
-						<div className="flex items-center gap-3">
-							<div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-								<Store className="h-5 w-5 text-primary" />
-							</div>
-							<div>
-								<h1 className="text-3xl font-semibold tracking-tight">
-									Template Marketplace
-								</h1>
-								<p className="text-muted-foreground">
-									Browse ready-made certificate templates.
-									Preview any design, then choose to try it
-									with sample data or use it for real.
-								</p>
-							</div>
+			<main className="mx-auto w-full max-w-[1400px] flex-1 px-5 py-12 sm:px-8">
+				{/* Byline header */}
+				<div className="relative">
+					<span
+						aria-hidden
+						className="pointer-events-none absolute -left-2 -top-12 select-none font-playfair text-[7rem] font-bold italic leading-none text-foreground/[0.04] sm:text-[9rem]"
+					>
+						02
+					</span>
+					<div className="relative flex flex-col justify-between gap-5 border-b-2 border-foreground pb-4 sm:flex-row sm:items-end">
+						<div>
+							<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
+								Section 02
+							</p>
+							<h1 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
+								Template Marketplace
+							</h1>
+							<p className="mt-1 max-w-lg text-sm text-muted-foreground">
+								Browse ready-made certificate templates. Preview
+								any design, then try it with sample data or use
+								it for real.
+							</p>
 						</div>
-					</div>
-
-					<div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-						<div className="relative w-full sm:max-w-sm">
-							<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<div className="relative w-full sm:max-w-xs">
+							<Search className="absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 							<Input
-								placeholder="Search templates..."
+								placeholder="Search templates…"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="pl-9"
+								className="rounded-none border-x-0 border-t-0 border-b-2 border-foreground/30 bg-transparent pl-6 focus-visible:border-primary focus-visible:ring-0"
 							/>
 						</div>
-						<div className="flex flex-wrap gap-2">
-							{MARKETPLACE_CATEGORIES.map((category) => (
-								<Button
-									key={category.id}
-									variant={
-										activeCategory === category.id
-											? "default"
-											: "outline"
-									}
-									size="sm"
-									onClick={() =>
-										setActiveCategory(category.id)
-									}
-								>
-									{category.label}
-								</Button>
-							))}
-						</div>
 					</div>
-
-					{filteredTemplates.length === 0 ? (
-						<div className="text-center py-20 text-muted-foreground">
-							<p>No templates match your search.</p>
-						</div>
-					) : (
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-							<AnimatePresence mode="popLayout">
-								{filteredTemplates.map((template, index) => (
-									<motion.div
-										key={template.id}
-										layout
-										initial={{ opacity: 0, y: 16 }}
-										animate={{ opacity: 1, y: 0 }}
-										exit={{ opacity: 0, scale: 0.95 }}
-										transition={{
-											duration: 0.25,
-											delay: index * 0.04,
-										}}
-									>
-										<Card className="group overflow-hidden hover:shadow-md transition-shadow cursor-pointer h-full">
-											<CardContent className="p-0">
-												<button
-													type="button"
-													className="w-full text-left"
-													onClick={() =>
-														setPreviewTemplate(
-															template,
-														)
-													}
-												>
-													<div className="relative aspect-[1.414/1] bg-muted overflow-hidden">
-														<img
-															src={
-																template.imageUrl
-															}
-															alt={template.name}
-															className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-														/>
-														<div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-															<span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 text-white text-sm font-medium bg-black/50 px-4 py-2 rounded-full">
-																<Eye className="h-4 w-4" />
-																Preview
-															</span>
-														</div>
-													</div>
-													<div className="p-4 space-y-2">
-														<div className="flex items-start justify-between gap-2">
-															<h3 className="font-medium">
-																{template.name}
-															</h3>
-															<Badge
-																variant="secondary"
-																className="capitalize shrink-0"
-															>
-																{
-																	template.category
-																}
-															</Badge>
-														</div>
-														<p className="text-sm text-muted-foreground line-clamp-2">
-															{
-																template.description
-															}
-														</p>
-														<div className="flex flex-wrap gap-1 pt-1">
-															{template.tags.map(
-																(tag) => (
-																	<Badge
-																		key={
-																			tag
-																		}
-																		variant="outline"
-																		className="text-xs font-normal"
-																	>
-																		{tag}
-																	</Badge>
-																),
-															)}
-														</div>
-													</div>
-												</button>
-											</CardContent>
-										</Card>
-									</motion.div>
-								))}
-							</AnimatePresence>
-						</div>
-					)}
 				</div>
+
+				{/* Category filter as TOC-style tabs */}
+				<div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-semibold uppercase tracking-[0.15em]">
+					{MARKETPLACE_CATEGORIES.map((category) => (
+						<button
+							key={category.id}
+							onClick={() => setActiveCategory(category.id)}
+							className={cn(
+								"border-b-2 pb-0.5 transition-colors",
+								activeCategory === category.id
+									? "border-primary text-primary"
+									: "border-transparent text-muted-foreground hover:text-foreground",
+							)}
+						>
+							{category.label}
+						</button>
+					))}
+				</div>
+
+				{filteredTemplates.length === 0 ? (
+					<div className="mt-16 flex flex-col items-center gap-2 border-2 border-dashed border-border py-20 text-center">
+						<p className="font-playfair text-2xl italic text-foreground">
+							Nothing matches
+						</p>
+						<p className="font-hand text-xl text-secondary">
+							try a different search or category
+						</p>
+					</div>
+				) : (
+					<div className="mt-12 flex flex-wrap items-start gap-x-6 gap-y-12">
+						<AnimatePresence mode="popLayout">
+							{filteredTemplates.map((template, index) => (
+								<motion.button
+									key={template.id}
+									type="button"
+									layout
+									initial={{ opacity: 0, y: 16 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, scale: 0.95 }}
+									transition={{
+										duration: 0.25,
+										delay: index * 0.03,
+									}}
+									onClick={() => setPreviewTemplate(template)}
+									className={cn(
+										"group w-52 shrink-0 border border-border bg-card p-3 pb-5 text-left shadow-[3px_3px_0_hsl(var(--foreground)/0.12)] transition-all hover:z-10 hover:-translate-y-1 hover:rotate-0 hover:shadow-[5px_5px_0_hsl(var(--foreground)/0.2)] sm:w-60",
+										TILT[index % TILT.length],
+									)}
+								>
+									<div className="relative aspect-[1.414/1] w-full overflow-hidden bg-muted">
+										<img
+											src={template.imageUrl}
+											alt={template.name}
+											className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+										/>
+									</div>
+									<p className="font-hand mt-3 truncate text-2xl text-foreground">
+										{template.name}
+									</p>
+									<p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+										{template.description}
+									</p>
+									<div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[10px] uppercase tracking-wider text-secondary">
+										{template.tags.slice(0, 3).map((tag) => (
+											<span key={tag}>#{tag}</span>
+										))}
+									</div>
+								</motion.button>
+							))}
+						</AnimatePresence>
+					</div>
+				)}
 			</main>
 
 			<Dialog
@@ -218,11 +180,13 @@ const Marketplace = () => {
 					if (!open) setPreviewTemplate(null);
 				}}
 			>
-				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+				<DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
 					{previewTemplate && (
 						<>
 							<DialogHeader>
-								<DialogTitle>{previewTemplate.name}</DialogTitle>
+								<DialogTitle className="font-playfair text-2xl italic">
+									{previewTemplate.name}
+								</DialogTitle>
 								<DialogDescription>
 									{previewTemplate.description}
 								</DialogDescription>
@@ -245,11 +209,11 @@ const Marketplace = () => {
 								</div>
 							</div>
 
-							<div className="rounded-lg border border-border bg-muted/40 p-4 space-y-2">
+							<div className="space-y-2 border-2 border-dashed border-border p-4">
 								<p className="text-sm font-medium">
 									How would you like to use this template?
 								</p>
-								<ul className="text-sm text-muted-foreground space-y-1">
+								<ul className="space-y-1 text-sm text-muted-foreground">
 									<li className="flex items-center gap-2">
 										<FlaskConical className="h-4 w-4 shrink-0" />
 										<span>
@@ -267,14 +231,14 @@ const Marketplace = () => {
 											<strong className="text-foreground">
 												Use template
 											</strong>{" "}
-											— opens a clean editor ready for
-											your real certificate content.
+											— opens a clean editor ready for your
+											real certificate content.
 										</span>
 									</li>
 								</ul>
 							</div>
 
-							<DialogFooter className="flex-col sm:flex-row gap-2">
+							<DialogFooter className="flex-col gap-2 sm:flex-row">
 								<Button
 									variant="outline"
 									onClick={() => setPreviewTemplate(null)}
