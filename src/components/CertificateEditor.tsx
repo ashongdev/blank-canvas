@@ -5,6 +5,11 @@ import Header from "@/components/Header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
@@ -13,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Sheet,
 	SheetContent,
@@ -32,7 +38,9 @@ import axios from "axios";
 import type { DriveStep } from "driver.js";
 import {
 	AlertCircle,
+	ChevronDown,
 	Download,
+	Eye,
 	FlaskConical,
 	Loader2,
 	Plus,
@@ -83,17 +91,20 @@ const CertificateEditor = ({
 	const [selectedFieldId, setSelectedFieldId] = useState<string>(fields[0].id);
 	const activeField = fields.find((f) => f.id === selectedFieldId) ?? fields[0];
 	const [recipients, setRecipients] = useState<Recipient[]>(initialRecipients);
-	const [showRecipients, setShowRecipients] = useState(false);
+	const [showSharePanel, setShowSharePanel] = useState(false);
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [showDragHint, setShowDragHint] = useState(false);
+	const [isPreviewing, setIsPreviewing] = useState(false);
+	const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+	const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(
+		null,
+	);
 
 	const previewRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const [showShareDialog, setShowShareDialog] = useState(false);
 	const [generatedLink, setGeneratedLink] = useState("");
-	const [showIdDialog, setShowIdDialog] = useState(false);
 	const [customPublicId, setCustomPublicId] = useState("");
 	const [isPublishing, setIsPublishing] = useState(false);
 
@@ -118,6 +129,8 @@ const CertificateEditor = ({
 		handlePublish,
 		handleTemplateUpload,
 		handleBatchDownload,
+		handlePreview,
+		setUploadedPublicId,
 	} = useTemplateManager({
 		templateFile,
 		templateUrl,
@@ -129,8 +142,7 @@ const CertificateEditor = ({
 		setTemplateUrl,
 		setCustomPublicId,
 		setIsPublishing,
-		setShowIdDialog,
-		setShowShareDialog,
+		setShowSharePanel,
 		setGeneratedLink,
 	});
 
@@ -144,6 +156,42 @@ const CertificateEditor = ({
 			await Promise.resolve(handleDownload());
 		} finally {
 			setIsGenerating(false);
+		}
+	};
+
+	const handlePreviewClick = async () => {
+		if (isPreviewing) return;
+		setIsPreviewing(true);
+		try {
+			const url = await handlePreview();
+			if (url) {
+				setPreviewImageUrl((prev) => {
+					if (prev) URL.revokeObjectURL(prev);
+					return url;
+				});
+				setShowPreviewDialog(true);
+			}
+		} finally {
+			setIsPreviewing(false);
+		}
+	};
+
+	const handleDownloadFromPreview = () => {
+		if (!previewImageUrl) return;
+		const link = document.createElement("a");
+		link.href = previewImageUrl;
+		link.download = "Certificate.png";
+		link.click();
+		toast.success("Download complete");
+	};
+
+	const handlePreviewDialogChange = (open: boolean) => {
+		setShowPreviewDialog(open);
+		if (!open) {
+			setPreviewImageUrl((prev) => {
+				if (prev) URL.revokeObjectURL(prev);
+				return null;
+			});
 		}
 	};
 
@@ -164,6 +212,7 @@ const CertificateEditor = ({
 
 			setTemplateUrl(url);
 			setTemplateFile(null);
+			setUploadedPublicId(id);
 			setShowLoadDialog(false);
 			setLoadId("");
 			toast.success("Template loaded successfully!");
@@ -207,8 +256,7 @@ const CertificateEditor = ({
 	// Arrow-key nudging for the selected field, direct on the canvas.
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (showRecipients || showShareDialog || showIdDialog || showLoadDialog)
-				return;
+			if (showSharePanel || showLoadDialog || showPreviewDialog) return;
 			const tag = (document.activeElement?.tagName || "").toLowerCase();
 			if (["input", "textarea", "select"].includes(tag)) return;
 			if (!activeField) return;
@@ -240,10 +288,9 @@ const CertificateEditor = ({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [
 		activeField,
-		showRecipients,
-		showShareDialog,
-		showIdDialog,
+		showSharePanel,
 		showLoadDialog,
+		showPreviewDialog,
 		updateField,
 	]);
 
@@ -259,8 +306,8 @@ const CertificateEditor = ({
 					<FlaskConical className="h-4 w-4" />
 					<AlertDescription>
 						You&apos;re using a marketplace template in{" "}
-						<strong>testing mode</strong> with sample data. Switch to
-						Recipients to see sample entries, or edit fields for your
+						<strong>testing mode</strong> with sample data. Open Share
+						to see sample recipient entries, or edit fields for your
 						real certificate.
 					</AlertDescription>
 				</Alert>
@@ -341,15 +388,15 @@ const CertificateEditor = ({
 						variant="outline"
 						size="sm"
 						className="gap-2"
-						onClick={() => setShowRecipients(true)}
+						disabled={!hasTemplate || isPreviewing}
+						onClick={handlePreviewClick}
 					>
-						<Users className="h-4 w-4" />
-						Recipients
-						{recipients.length > 0 && (
-							<span className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-xs font-medium text-primary">
-								{recipients.length}
-							</span>
+						{isPreviewing ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							<Eye className="h-4 w-4" />
 						)}
+						Preview
 					</Button>
 
 					<Button
@@ -376,6 +423,11 @@ const CertificateEditor = ({
 					>
 						<Share2 className="h-4 w-4" />
 						Share
+						{recipients.length > 0 && (
+							<span className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-xs font-medium text-primary">
+								{recipients.length}
+							</span>
+						)}
 					</Button>
 				</div>
 			</div>
@@ -421,22 +473,24 @@ const CertificateEditor = ({
 						</div>
 					)}
 
-					<div
-						className="flex-1 min-h-0 flex items-center justify-center overflow-auto p-6"
+					<ScrollArea
+						className="flex-1 min-h-0"
 						data-tour="certificate-preview"
 					>
-						<CertificatePreview
-							templateUrl={templateUrl}
-							showPreview={showPreview}
-							imgRef={imgRef}
-							previewRef={previewRef}
-							fields={fields}
-							selectedFieldId={selectedFieldId}
-							onFieldSelect={setSelectedFieldId}
-							onFieldMove={(id, x, y) => updateField(id, { x, y })}
-							showDragHint={showDragHint}
-						/>
-					</div>
+						<div className="flex min-h-full items-start justify-center p-6">
+							<CertificatePreview
+								templateUrl={templateUrl}
+								showPreview={showPreview}
+								imgRef={imgRef}
+								previewRef={previewRef}
+								fields={fields}
+								selectedFieldId={selectedFieldId}
+								onFieldSelect={setSelectedFieldId}
+								onFieldMove={(id, x, y) => updateField(id, { x, y })}
+								showDragHint={showDragHint}
+							/>
+						</div>
+					</ScrollArea>
 
 					{hasTemplate && (
 						<p className="text-center text-xs text-muted-foreground pb-3 shrink-0">
@@ -459,88 +513,97 @@ const CertificateEditor = ({
 				</div>
 			</main>
 
-			<Sheet open={showRecipients} onOpenChange={setShowRecipients}>
+			<Sheet open={showSharePanel} onOpenChange={setShowSharePanel}>
 				<SheetContent
 					side="right"
 					className="w-full sm:max-w-md flex flex-col gap-0 p-0"
 				>
-					<SheetHeader className="p-6 pb-2">
-						<SheetTitle>Recipients</SheetTitle>
+					<SheetHeader className="p-6 pb-4 border-b border-border">
+						<SheetTitle>Share Certificate</SheetTitle>
 						<SheetDescription>
-							Add the people who&apos;ll receive this certificate,
-							then generate them all at once.
+							Publish a link participants can use to generate their
+							own certificate.
 						</SheetDescription>
 					</SheetHeader>
-					<div className="flex-1 overflow-auto px-6 pb-6">
-						<RecipientManager
-							recipients={recipients}
-							onRecipientsChange={setRecipients}
-							onGenerateAll={handleBatchDownload}
-						/>
+					<div className="flex-1 overflow-hidden">
+						<div className="p-6 space-y-3 border-b border-border">
+							{generatedLink ? (
+								<>
+									<Label htmlFor="link">Shareable Link</Label>
+									<div className="flex items-center gap-2">
+										<Input
+											id="link"
+											value={generatedLink}
+											readOnly
+										/>
+										<Button
+											size="sm"
+											className="shrink-0 px-3"
+											onClick={() =>
+												void copyLinkToClipboard(
+													generatedLink,
+												)
+											}
+										>
+											Copy
+										</Button>
+									</div>
+									<Button
+										variant="ghost"
+										size="sm"
+										className="text-muted-foreground"
+										onClick={() => {
+											setGeneratedLink("");
+											setCustomPublicId("");
+										}}
+									>
+										Publish a new link
+									</Button>
+								</>
+							) : (
+								<>
+									<Label htmlFor="public-id">
+										Public ID (optional)
+									</Label>
+									<Input
+										id="public-id"
+										value={customPublicId}
+										onChange={(e) =>
+											setCustomPublicId(e.target.value)
+										}
+										placeholder="e.g. hackathon-2024"
+									/>
+									<Button
+										className="w-full"
+										onClick={handlePublish}
+										disabled={isPublishing}
+									>
+										{isPublishing
+											? "Publishing..."
+											: "Publish & Get Link"}
+									</Button>
+								</>
+							)}
+						</div>
+						<Collapsible className="p-6">
+							<CollapsibleTrigger className="group flex w-full items-center justify-between gap-2">
+								<span className="flex items-center gap-2 text-sm font-medium">
+									<Users className="h-4 w-4 text-muted-foreground" />
+									Recipients
+								</span>
+								<ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+							</CollapsibleTrigger>
+							<CollapsibleContent className="pt-4">
+								<RecipientManager
+									recipients={recipients}
+									onRecipientsChange={setRecipients}
+									onGenerateAll={handleBatchDownload}
+								/>
+							</CollapsibleContent>
+						</Collapsible>
 					</div>
 				</SheetContent>
 			</Sheet>
-
-			<Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Certificate Published!</DialogTitle>
-						<DialogDescription>
-							Share this link with your participants to let them fill
-							their details.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="flex items-center space-x-2">
-						<div className="grid flex-1 gap-2">
-							<Label htmlFor="link" className="sr-only">
-								Link
-							</Label>
-							<Input id="link" defaultValue={generatedLink} readOnly />
-						</div>
-						<Button
-							size="sm"
-							className="px-3"
-							onClick={() => void copyLinkToClipboard(generatedLink)}
-						>
-							<span className="sr-only">Copy</span>
-							Copy
-						</Button>
-					</div>
-				</DialogContent>
-			</Dialog>
-
-			<Dialog open={showIdDialog} onOpenChange={setShowIdDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Set a Public ID</DialogTitle>
-						<DialogDescription>
-							Enter a custom ID for your template or leave blank for a
-							random one.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid grid-cols-4 items-center gap-4">
-							<Label htmlFor="public-id">Public ID Here:</Label>
-							<Input
-								id="public-id"
-								value={customPublicId}
-								onChange={(e) => setCustomPublicId(e.target.value)}
-								className="col-span-3"
-								placeholder="e.g. hackathon-2024"
-							/>
-						</div>
-					</div>
-					<div className="flex w-full">
-						<Button
-							className="w-full"
-							onClick={handlePublish}
-							disabled={isPublishing}
-						>
-							{isPublishing ? "Publishing..." : "Publish"}
-						</Button>
-					</div>
-				</DialogContent>
-			</Dialog>
 
 			<Dialog
 				open={showLoadDialog}
@@ -595,6 +658,39 @@ const CertificateEditor = ({
 								</p>
 							</div>
 						)}
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={showPreviewDialog} onOpenChange={handlePreviewDialogChange}>
+				<DialogContent className="max-w-3xl">
+					<DialogHeader>
+						<DialogTitle>Preview</DialogTitle>
+						<DialogDescription>
+							This is exactly what a generated certificate will look
+							like — rendered the same way a real download is.
+						</DialogDescription>
+					</DialogHeader>
+					{previewImageUrl && (
+						<div className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted">
+							<img
+								src={previewImageUrl}
+								alt="Certificate preview"
+								className="w-full h-auto"
+							/>
+						</div>
+					)}
+					<div className="flex justify-end gap-2">
+						<Button
+							variant="outline"
+							onClick={() => handlePreviewDialogChange(false)}
+						>
+							Close
+						</Button>
+						<Button onClick={handleDownloadFromPreview} className="gap-2">
+							<Download className="h-4 w-4" />
+							Download
+						</Button>
 					</div>
 				</DialogContent>
 			</Dialog>

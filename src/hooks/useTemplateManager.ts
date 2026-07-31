@@ -6,7 +6,7 @@ import {
 import api from "@/services/axios";
 import type { Recipient, TextField } from "@/types/TextField";
 import axios from "axios";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuthContext } from "./useAuthContext";
 
@@ -21,8 +21,7 @@ interface UseTemplateManagerProps {
 	setTemplateUrl: React.Dispatch<React.SetStateAction<string | null>>;
 	setCustomPublicId: React.Dispatch<React.SetStateAction<string>>;
 	setIsPublishing: React.Dispatch<React.SetStateAction<boolean>>;
-	setShowIdDialog: React.Dispatch<React.SetStateAction<boolean>>;
-	setShowShareDialog: React.Dispatch<React.SetStateAction<boolean>>;
+	setShowSharePanel: React.Dispatch<React.SetStateAction<boolean>>;
 	setGeneratedLink: React.Dispatch<React.SetStateAction<string>>;
 }
 
@@ -46,11 +45,18 @@ const useTemplateManager = ({
 	setTemplateUrl,
 	setCustomPublicId,
 	setIsPublishing,
-	setShowIdDialog,
-	setShowShareDialog,
+	setShowSharePanel,
 	setGeneratedLink,
 }: UseTemplateManagerProps) => {
 	const { isAuthenticated, BASE_URL } = useAuthContext();
+
+	// Tracks the Cloudinary public_id already owned by this editing session
+	// (from an earlier silent upload, publish, or "Load by ID"), so later
+	// uploads/publishes overwrite that same asset instead of creating a
+	// duplicate. Reset whenever a fresh template is picked from scratch.
+	const [uploadedPublicId, setUploadedPublicId] = useState<string | null>(
+		null,
+	);
 
 	// Revoke local blob URLs to avoid memory leaks
 	useEffect(() => {
@@ -73,16 +79,21 @@ const useTemplateManager = ({
 		};
 	}, [templateFile, templateUrl, setTemplateFile]);
 
-	const handleDownload = async () => {
+	/**
+	 * Renders the certificate exactly as the server would (same /generate/
+	 * pipeline used for real downloads), returning the resulting image blob.
+	 * Shared by both "Generate" (download) and "Preview" (view only).
+	 */
+	const generateCertificateBlob = async (): Promise<Blob | null> => {
 		if (!hasTemplateSource(templateFile, templateUrl)) {
 			toast.error("Please upload a template first");
-			return;
+			return null;
 		}
 
 		const resolvedFile = await resolveTemplateFile(templateFile, templateUrl);
 		if (!resolvedFile) {
 			toast.error("Failed to load the selected template");
-			return;
+			return null;
 		}
 
 		const formData = new FormData();
@@ -96,19 +107,37 @@ const useTemplateManager = ({
 				formData,
 				{ responseType: "blob" },
 			);
-
-			const url = URL.createObjectURL(response.data as Blob);
-			const link = document.createElement("a");
-			link.href = url;
-			link.download = "Certificate.png";
-			link.click();
-			URL.revokeObjectURL(url);
-
-			logEvent("Certificate", "Generate", "Editor Generation");
-			toast.success("Download complete");
+			return response.data as Blob;
 		} catch {
 			toast.error("Failed to generate certificate");
+			return null;
 		}
+	};
+
+	const handleDownload = async () => {
+		const blob = await generateCertificateBlob();
+		if (!blob) return;
+
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = "Certificate.png";
+		link.click();
+		URL.revokeObjectURL(url);
+
+		logEvent("Certificate", "Generate", "Editor Generation");
+		toast.success("Download complete");
+	};
+
+	/**
+	 * Same real rendering as handleDownload, but returns an object URL to
+	 * display instead of triggering a file download. Caller owns the
+	 * returned URL and must revoke it when done (e.g. on dialog close).
+	 */
+	const handlePreview = async (): Promise<string | null> => {
+		const blob = await generateCertificateBlob();
+		if (!blob) return null;
+		return URL.createObjectURL(blob);
 	};
 
 	const handleBatchDownload = async () => {
@@ -174,9 +203,20 @@ const useTemplateManager = ({
 		if (isAuthenticated) {
 			const formData = new FormData();
 			formData.append("template", file);
+			if (uploadedPublicId) {
+				formData.append("existing_public_id", uploadedPublicId);
+			}
 			try {
-				// Returns JSON { public_id, secure_url } — NOT a blob
-				await api.post(`${BASE_URL}/upload/`, formData);
+				// Returns JSON { public_id, secure_url } — NOT a blob.
+				// Passing existing_public_id (when we have one) makes the
+				// backend overwrite that same asset instead of creating a
+				// new one, so swapping templates mid-session doesn't leave
+				// orphaned duplicates in storage.
+				const res = await api.post<UploadResponse>(
+					`${BASE_URL}/upload/`,
+					formData,
+				);
+				if (res.data.public_id) setUploadedPublicId(res.data.public_id);
 			} catch {
 				// Non-fatal: the local template is still usable
 			}
@@ -193,7 +233,7 @@ const useTemplateManager = ({
 			toast.error("Please upload a template first");
 			return;
 		}
-		setShowIdDialog(true);
+		setShowSharePanel(true);
 	};
 
 	const checkId = async (publicId: string): Promise<boolean> => {
@@ -225,7 +265,7 @@ const useTemplateManager = ({
 
 			let finalPublicId = customPublicId.trim();
 
-			if (finalPublicId) {
+			if (finalPublicId && finalPublicId !== uploadedPublicId) {
 				const exists = await checkId(finalPublicId);
 				if (exists) {
 					finalPublicId = `${finalPublicId}_${Date.now()}`;
@@ -237,10 +277,32 @@ const useTemplateManager = ({
 			const formData = new FormData();
 			formData.append("template", resolvedFile);
 			if (finalPublicId) formData.append("public_id", finalPublicId);
+			if (uploadedPublicId) {
+				formData.append("existing_public_id", uploadedPublicId);
+			}
 
+			// Reuses/overwrites the asset already owned by this session (see
+			// existing_public_id above) instead of creating a duplicate.
 			const res = await api.post<UploadResponse>(`${BASE_URL}/upload/`, formData);
 
 			if (res.data.public_id) {
+				setUploadedPublicId(res.data.public_id);
+
+				// Persist the recipient allow-list for this template. An empty
+				// list clears any prior restriction, so the link stays open —
+				// gating is purely opt-in based on whether recipients exist.
+				try {
+					await api.post(`${BASE_URL}/templates/recipients/`, {
+						public_id: res.data.public_id,
+						recipients: JSON.stringify(recipients),
+					});
+				} catch {
+					// Non-fatal: the template is still published either way.
+					toast.warning(
+						"Published, but the recipient list couldn't be saved.",
+					);
+				}
+
 				const encodedFields = btoa(JSON.stringify(fields));
 				const params = new URLSearchParams({
 					id: res.data.public_id,
@@ -249,8 +311,6 @@ const useTemplateManager = ({
 				const link = `${window.location.origin}/participant?${params.toString()}`;
 
 				setGeneratedLink(link);
-				setShowIdDialog(false);
-				setShowShareDialog(true);
 
 				logEvent("Certificate", "Publish", "New Template Published");
 				toast.dismiss(toastId);
@@ -267,10 +327,13 @@ const useTemplateManager = ({
 	return {
 		handleDownload,
 		handleBatchDownload,
+		handlePreview,
 		handleTemplateUpload,
 		handleFileSelect,
 		handleShareClick,
 		handlePublish,
+		uploadedPublicId,
+		setUploadedPublicId,
 	};
 };
 

@@ -31,11 +31,38 @@ import api from "@/services/axios";
 import { TextField } from "@/types/TextField";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { AlertCircle, Loader2, Search, Share2 } from "lucide-react";
+import {
+	AlertCircle,
+	Loader2,
+	Mail,
+	Search,
+	Share2,
+	ShieldCheck,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+
+/**
+ * /generate/ is called with responseType: "blob", so an error response body
+ * arrives as a Blob too (not parsed JSON) — read its text to check whether
+ * the server rejected the request because the certificate is gated behind
+ * recipient email verification.
+ */
+const isGatedError = async (error: unknown): Promise<boolean> => {
+	if (!axios.isAxiosError(error) || error.response?.status !== 403) {
+		return false;
+	}
+	const data = error.response.data;
+	if (!(data instanceof Blob)) return Boolean((data as { gated?: boolean })?.gated);
+	try {
+		const parsed = JSON.parse(await data.text());
+		return Boolean(parsed?.gated);
+	} catch {
+		return false;
+	}
+};
 
 const Participant = () => {
 	const { BASE_URL } = useAuthContext();
@@ -77,6 +104,25 @@ const Participant = () => {
 	const [isSharedLinkFlow, setIsSharedLinkFlow] = useState(false);
 	const [showNameInputDialog, setShowNameInputDialog] = useState(false);
 	const [hasDownloaded, setHasDownloaded] = useState(false);
+
+	// Recipient email verification (only kicks in when the organizer set a
+	// recipients allow-list for this certificate — see /generate/'s `gated`
+	// response). Ungated certificates never touch any of this.
+	const [needsVerification, setNeedsVerification] = useState(false);
+	const [verificationStep, setVerificationStep] = useState<"email" | "code">(
+		"email",
+	);
+	const [verificationEmail, setVerificationEmail] = useState("");
+	const [verificationCode, setVerificationCode] = useState("");
+	const [verificationError, setVerificationError] = useState<string | null>(
+		null,
+	);
+	const [isSendingCode, setIsSendingCode] = useState(false);
+	const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+	const [verificationToken, setVerificationToken] = useState<string | null>(
+		null,
+	);
+	const isNameVerified = !!verificationToken;
 
 	const previewRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
@@ -163,6 +209,30 @@ const Participant = () => {
 			}
 		}
 	}, [searchParams]);
+
+	// Restore a previously-verified token for this certificate (e.g. after a
+	// page refresh) so returning recipients don't have to re-verify by email
+	// every single visit within the token's lifetime.
+	useEffect(() => {
+		if (!certificateId) return;
+		const stored = sessionStorage.getItem(`cert-verify-${certificateId}`);
+		if (!stored) {
+			setVerificationToken(null);
+			return;
+		}
+		try {
+			const { token, email } = JSON.parse(stored) as {
+				token: string;
+				email: string;
+			};
+			if (token) {
+				setVerificationToken(token);
+				setVerificationEmail(email ?? "");
+			}
+		} catch {
+			sessionStorage.removeItem(`cert-verify-${certificateId}`);
+		}
+	}, [certificateId]);
 
 	const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string;
 
@@ -382,6 +452,7 @@ const Participant = () => {
 					certificateId,
 					participantName,
 					fields: JSON.stringify(currentFields),
+					verificationToken: verificationToken ?? undefined,
 				},
 				{ responseType: "blob" },
 			);
@@ -397,7 +468,14 @@ const Participant = () => {
 
 			toast.success("Download Complete.");
 		} catch (error) {
-			toast.error("Failed to generate certificates");
+			const gated = await isGatedError(error);
+			if (gated) {
+				setShowNameInputDialog(false);
+				setNeedsVerification(true);
+				setVerificationStep("email");
+			} else {
+				toast.error("Failed to generate certificates");
+			}
 		} finally {
 			setIsDownloading(false);
 		}
@@ -431,6 +509,76 @@ const Participant = () => {
 		}
 	};
 
+	const handleSendCode = async () => {
+		if (!verificationEmail.trim()) {
+			setVerificationError("Please enter your email");
+			return;
+		}
+		setIsSendingCode(true);
+		setVerificationError(null);
+		try {
+			await api.post(`${BASE_URL}/participant/request-code/`, {
+				certificateId,
+				email: verificationEmail.trim(),
+			});
+			setVerificationStep("code");
+			toast.success("Verification code sent — check your email.");
+		} catch (error) {
+			const message = axios.isAxiosError(error)
+				? (error.response?.data as { error?: string })?.error
+				: undefined;
+			setVerificationError(message ?? "Failed to send verification code.");
+		} finally {
+			setIsSendingCode(false);
+		}
+	};
+
+	const handleVerifyCode = async () => {
+		if (!verificationCode.trim()) {
+			setVerificationError("Please enter the code");
+			return;
+		}
+		setIsVerifyingCode(true);
+		setVerificationError(null);
+		try {
+			const res = await api.post(`${BASE_URL}/participant/verify-code/`, {
+				certificateId,
+				email: verificationEmail.trim(),
+				code: verificationCode.trim(),
+			});
+			const token = res.data.token as string;
+			const verifiedName = res.data.name as string;
+
+			setVerificationToken(token);
+			sessionStorage.setItem(
+				`cert-verify-${certificateId}`,
+				JSON.stringify({ token, email: verificationEmail.trim() }),
+			);
+
+			setParticipantName(verifiedName);
+			setInputValues((prev) => {
+				const next = { ...prev };
+				if (fields.length > 0) next[fields[0].id] = verifiedName;
+				return next;
+			});
+
+			setNeedsVerification(false);
+			setVerificationCode("");
+			toast.success("Verified! Click Generate to download your certificate.");
+
+			if (isSharedLinkFlow) {
+				setShowNameInputDialog(true);
+			}
+		} catch (error) {
+			const message = axios.isAxiosError(error)
+				? (error.response?.data as { error?: string })?.error
+				: undefined;
+			setVerificationError(message ?? "Invalid or expired code.");
+		} finally {
+			setIsVerifyingCode(false);
+		}
+	};
+
 	return (
 		<div className="min-h-screen bg-background flex flex-col">
 			{/* Header */}
@@ -460,40 +608,56 @@ const Participant = () => {
 						{fields.length > 0 ? (
 							fields
 								.filter((f, i) => f.required || i === 0)
-								.map((field) => (
-									<div className="space-y-2" key={field.id}>
-										<Label htmlFor={`field-${field.id}`}>
-											{field.label}
-										</Label>
-										<Input
-											id={`field-${field.id}`}
-											value={inputValues[field.id] || ""}
-											onChange={(e) => {
-												setInputValues((prev) => ({
-													...prev,
-													[field.id]: e.target.value,
-												}));
-												if (
-													fields.indexOf(field) === 0
-												) {
-													setParticipantName(
-														e.target.value,
-													);
-												}
-											}}
-											onKeyDown={handleNameInputKeyDown}
-											placeholder={`Enter ${field.label}...`}
-										/>
-									</div>
-								))
+								.map((field) => {
+									const isPrimary = fields.indexOf(field) === 0;
+									const locked = isPrimary && isNameVerified;
+									return (
+										<div className="space-y-2" key={field.id}>
+											<Label
+												htmlFor={`field-${field.id}`}
+												className="flex items-center gap-1.5"
+											>
+												{field.label}
+												{locked && (
+													<ShieldCheck className="h-3.5 w-3.5 text-primary" />
+												)}
+											</Label>
+											<Input
+												id={`field-${field.id}`}
+												value={inputValues[field.id] || ""}
+												disabled={locked}
+												onChange={(e) => {
+													setInputValues((prev) => ({
+														...prev,
+														[field.id]: e.target.value,
+													}));
+													if (isPrimary) {
+														setParticipantName(
+															e.target.value,
+														);
+													}
+												}}
+												onKeyDown={handleNameInputKeyDown}
+												placeholder={`Enter ${field.label}...`}
+											/>
+										</div>
+									);
+								})
 						) : (
 							<div className="space-y-2">
-								<Label htmlFor="participant-name">
+								<Label
+									htmlFor="participant-name"
+									className="flex items-center gap-1.5"
+								>
 									Your Name
+									{isNameVerified && (
+										<ShieldCheck className="h-3.5 w-3.5 text-primary" />
+									)}
 								</Label>
 								<Input
 									id="participant-name"
 									value={participantName}
+									disabled={isNameVerified}
 									onChange={(e) => {
 										setParticipantName(e.target.value);
 										// Update first field if no required flags found (legacy fallback)
@@ -520,6 +684,114 @@ const Participant = () => {
 								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
 							) : null}
 							Generate & Download Certificate
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			{/* Recipient Email Verification Dialog */}
+			<Dialog
+				open={needsVerification}
+				onOpenChange={(open) => {
+					setNeedsVerification(open);
+					if (!open) setVerificationError(null);
+				}}
+			>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2 text-xl">
+							<ShieldCheck className="w-5 h-5 text-primary" />
+							Verify Your Email
+						</DialogTitle>
+						<DialogDescription>
+							This certificate is restricted to its recipient list.
+							Verify the email address you were invited with to
+							continue.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 pt-2">
+						{verificationStep === "email" ? (
+							<div className="space-y-2">
+								<Label htmlFor="verify-email">
+									Email Address
+								</Label>
+								<Input
+									id="verify-email"
+									type="email"
+									value={verificationEmail}
+									onChange={(e) => {
+										setVerificationEmail(e.target.value);
+										setVerificationError(null);
+									}}
+									onKeyDown={(e) =>
+										e.key === "Enter" && handleSendCode()
+									}
+									placeholder="you@example.com"
+									autoFocus
+								/>
+							</div>
+						) : (
+							<div className="space-y-2">
+								<Label htmlFor="verify-code">
+									Verification Code
+								</Label>
+								<Input
+									id="verify-code"
+									value={verificationCode}
+									onChange={(e) => {
+										setVerificationCode(e.target.value);
+										setVerificationError(null);
+									}}
+									onKeyDown={(e) =>
+										e.key === "Enter" && handleVerifyCode()
+									}
+									placeholder="6-digit code"
+									className="font-mono text-center tracking-widest"
+									maxLength={6}
+									autoFocus
+								/>
+								<p className="text-xs text-muted-foreground">
+									Sent to {verificationEmail}.{" "}
+									<button
+										type="button"
+										className="underline hover:text-foreground"
+										onClick={() => {
+											setVerificationStep("email");
+											setVerificationError(null);
+										}}
+									>
+										Use a different email
+									</button>
+								</p>
+							</div>
+						)}
+
+						{verificationError && (
+							<div className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+								<AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+								<p className="text-sm text-destructive">
+									{verificationError}
+								</p>
+							</div>
+						)}
+
+						<Button
+							onClick={
+								verificationStep === "email"
+									? handleSendCode
+									: handleVerifyCode
+							}
+							disabled={isSendingCode || isVerifyingCode}
+							className="w-full gap-2"
+						>
+							{isSendingCode || isVerifyingCode ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								<Mail className="h-4 w-4" />
+							)}
+							{verificationStep === "email"
+								? "Send Code"
+								: "Verify"}
 						</Button>
 					</div>
 				</DialogContent>
@@ -785,6 +1057,7 @@ const Participant = () => {
 											setIsLocalDraft(false);
 										}}
 										hasName={!!participantName.trim()}
+										nameLocked={isNameVerified}
 									/>
 									{isLocalDraft && (
 										<Button

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Recipient } from "@/types/TextField";
 import { motion } from "framer-motion";
 import { Download, Plus, Trash2, Upload } from "lucide-react";
@@ -93,92 +94,68 @@ const RecipientManager = ({
 
 	return (
 		<motion.div
-			initial={{ opacity: 0, y: 20 }}
+			initial={{ opacity: 0, y: 8 }}
 			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.4 }}
-			className="py-12"
+			transition={{ duration: 0.3 }}
+			className="space-y-4"
 		>
-			<div className="container mx-auto px-6 max-w-4xl">
-				<h2 className="text-xl font-semibold mb-6">Recipients</h2>
+			{/* Add manually + upload */}
+			<div className="flex gap-2">
+				<Input
+					placeholder="Name"
+					value={newName}
+					onChange={(e) => setNewName(e.target.value)}
+					onKeyDown={(e) => e.key === "Enter" && handleAddManual()}
+					className="flex-1"
+					maxLength={100}
+				/>
+				<Input
+					placeholder="Email"
+					type="email"
+					value={newEmail}
+					onChange={(e) => setNewEmail(e.target.value)}
+					onKeyDown={(e) => e.key === "Enter" && handleAddManual()}
+					className="flex-1"
+					maxLength={100}
+				/>
+				<Button onClick={handleAddManual} size="icon" className="shrink-0">
+					<Plus className="w-4 h-4" />
+				</Button>
+			</div>
 
-				{/* Upload Section */}
-				<div className="space-y-4 mb-8">
-					<Label
-						htmlFor="recipients-upload"
-						className="text-sm font-medium"
-					>
-						Upload Recipients (CSV or JSON)
+			<label htmlFor="recipients-upload" className="block pt-2">
+				<input
+					id="recipients-upload"
+					type="file"
+					accept=".csv,.json"
+					onChange={handleFileUpload}
+					className="hidden"
+				/>
+				<Button
+					variant="outline"
+					size="sm"
+					className="w-full justify-center gap-2 text-muted-foreground"
+					asChild
+				>
+					<span>
+						<Upload className="w-3.5 h-3.5" />
+						Upload CSV or JSON instead
+					</span>
+				</Button>
+			</label>
+
+			{/* Recipients List */}
+			{recipients.length > 0 && (
+				<div className="space-y-2">
+					<Label className="text-xs text-muted-foreground">
+						{recipients.length} added
 					</Label>
-					<label htmlFor="recipients-upload">
-						<input
-							id="recipients-upload"
-							type="file"
-							accept=".csv,.json"
-							onChange={handleFileUpload}
-							className="hidden"
-						/>
-						<Button
-							variant="outline"
-							className="w-full justify-start gap-2 hover:border-primary transition-smooth"
-							asChild
-						>
-							<span>
-								<Upload className="w-4 h-4" />
-								Upload CSV or JSON
-							</span>
-						</Button>
-					</label>
-					<p className="text-xs text-muted-foreground">
-						CSV format: name,email (one per line). JSON format: [
-						{"{"}name: "...", email: "..."{"}"}]
-					</p>
-				</div>
-
-				{/* Manual Entry */}
-				<div className="space-y-4 mb-8">
-					<Label className="text-sm font-medium">
-						Add Recipient Manually
-					</Label>
-					<div className="flex gap-3">
-						<Input
-							placeholder="Name"
-							value={newName}
-							onChange={(e) => setNewName(e.target.value)}
-							onKeyDown={(e) =>
-								e.key === "Enter" && handleAddManual()
-							}
-							className="flex-1"
-							maxLength={100}
-						/>
-						<Input
-							placeholder="Email"
-							type="email"
-							value={newEmail}
-							onChange={(e) => setNewEmail(e.target.value)}
-							onKeyDown={(e) =>
-								e.key === "Enter" && handleAddManual()
-							}
-							className="flex-1"
-							maxLength={100}
-						/>
-						<Button onClick={handleAddManual} className="gap-2">
-							<Plus className="w-4 h-4" />
-							Add
-						</Button>
-					</div>
-				</div>
-
-				{/* Recipients List */}
-				{recipients.length > 0 && (
-					<div className="space-y-3">
-						<Label className="text-sm font-medium">
-							Recipients List ({recipients.length})
-						</Label>
-						<div className="max-h-64 overflow-y-auto space-y-2 border border-border rounded-lg p-4">
+					<ScrollArea className="h-40 border border-border rounded-lg">
+						<div className="space-y-1.5 p-2">
 							{recipients.map((recipient, index) => (
 								<div
 									key={index}
-									className="flex items-center justify-between p-3 rounded-md bg-muted/50 hover:bg-muted transition-smooth"
+									className="flex items-center justify-between rounded-md bg-muted/50 px-2.5 py-1.5 hover:bg-muted transition-smooth"
 								>
 									<div className="flex-1 min-w-0">
 										<p className="text-sm font-medium truncate">
@@ -192,27 +169,27 @@ const RecipientManager = ({
 										variant="ghost"
 										size="icon"
 										onClick={() => handleRemove(index)}
-										className="ml-2 h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+										className="ml-2 h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
 									>
-										<Trash2 className="w-4 h-4" />
+										<Trash2 className="w-3.5 h-3.5" />
 									</Button>
 								</div>
 							))}
 						</div>
+					</ScrollArea>
 
-						{onGenerateAll && (
-							<Button
-								onClick={onGenerateAll}
-								className="w-full gap-2 mt-2"
-								size="lg"
-							>
-								<Download className="w-4 h-4" />
-								Generate All ({recipients.length}) — Download ZIP
-							</Button>
-						)}
-					</div>
-				)}
-			</div>
+					{onGenerateAll && (
+						<Button
+							onClick={onGenerateAll}
+							className="w-full gap-2"
+							size="sm"
+						>
+							<Download className="w-4 h-4" />
+							Generate All ({recipients.length}) — Download ZIP
+						</Button>
+					)}
+				</div>
+			)}
 		</motion.div>
 	);
 };

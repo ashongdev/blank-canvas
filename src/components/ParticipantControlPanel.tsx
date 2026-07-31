@@ -14,7 +14,7 @@ import {
 	PREDEFINED_COLORS,
 } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 interface ParticipantControlPanelProps {
@@ -31,6 +31,8 @@ interface ParticipantControlPanelProps {
 	onDownload: () => Promise<void> | void;
 	onBack: () => void;
 	hasName: boolean;
+	/** Once the recipient has verified their email, their name is locked. */
+	nameLocked?: boolean;
 }
 
 const ParticipantControlPanel = ({
@@ -47,6 +49,7 @@ const ParticipantControlPanel = ({
 	onDownload,
 	onBack,
 	hasName,
+	nameLocked = false,
 }: ParticipantControlPanelProps) => {
 	const [isDownloading, setIsDownloading] = useState(false);
 
@@ -70,9 +73,15 @@ const ParticipantControlPanel = ({
 			>
 				{/* Name Input */}
 				<div className="space-y-3">
-					<h3 className="text-sm font-medium">Your Name</h3>
+					<h3 className="text-sm font-medium flex items-center gap-1.5">
+						Your Name
+						{nameLocked && (
+							<ShieldCheck className="w-3.5 h-3.5 text-primary" />
+						)}
+					</h3>
 					<Input
 						value={participantName}
+						disabled={nameLocked}
 						onChange={(e) =>
 							onParticipantNameChange(e.target.value)
 						}

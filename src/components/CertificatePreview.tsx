@@ -127,7 +127,7 @@ const CertificatePreview = ({
 			initial={{ opacity: 0, scale: 0.95 }}
 			animate={{ opacity: 1, scale: 1 }}
 			transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-			className="relative w-full h-full flex items-center justify-center"
+			className="relative w-full min-h-full flex items-center justify-center"
 		>
 			{templateUrl ? (
 				<div
