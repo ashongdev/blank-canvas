@@ -1,7 +1,6 @@
 import CertificatePreview from "@/components/CertificatePreview";
 import Header from "@/components/Header";
 import ParticipantControlPanel from "@/components/ParticipantControlPanel";
-import PositionControls from "@/components/PositionControls";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
 	participantPageTourSteps,
 	TOUR_STORAGE_KEYS,
@@ -259,19 +259,56 @@ const Participant = () => {
 		}
 	};
 
-	const handlePositionChange = (axis: "x" | "y", direction: number) => {
-		setTextPosition((prev) => ({
-			...prev,
-			[axis]: prev[axis] + direction,
-		}));
+	const handleFieldMove = (_id: string, x: number, y: number) => {
+		setTextPosition({ x, y });
+		setFields((prev) =>
+			prev.length > 0
+				? prev.map((f, i) => (i === 0 ? { ...f, x, y } : f))
+				: prev,
+		);
 	};
 
-	const handleManualPositionChange = (axis: "x" | "y", value: number) => {
-		setTextPosition((prev) => ({
-			...prev,
-			[axis]: value,
-		}));
-	};
+	// Arrow-key nudging for the participant's own field, direct on the canvas.
+	useEffect(() => {
+		if (isSharedLinkFlow || !templateLoaded) return;
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (showShareDialog || showNameInputDialog) return;
+			const tag = (document.activeElement?.tagName || "").toLowerCase();
+			if (["input", "textarea", "select"].includes(tag)) return;
+
+			const step = e.shiftKey ? 10 : 1;
+			switch (e.key) {
+				case "ArrowUp":
+					e.preventDefault();
+					handleFieldMove("preview", textPosition.x, textPosition.y - step);
+					break;
+				case "ArrowDown":
+					e.preventDefault();
+					handleFieldMove("preview", textPosition.x, textPosition.y + step);
+					break;
+				case "ArrowLeft":
+					e.preventDefault();
+					handleFieldMove("preview", textPosition.x - step, textPosition.y);
+					break;
+				case "ArrowRight":
+					e.preventDefault();
+					handleFieldMove("preview", textPosition.x + step, textPosition.y);
+					break;
+				default:
+					return;
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [
+		isSharedLinkFlow,
+		templateLoaded,
+		showShareDialog,
+		showNameInputDialog,
+		textPosition,
+	]);
 
 	const handleDownload = async () => {
 		if (!participantName.trim()) {
@@ -651,64 +688,78 @@ const Participant = () => {
 					// Full Certificate Editor View
 					<>
 						<div className="h-full container mx-auto px-6 py-8">
-							<div className="h-full grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-8">
-								{/* Left Controls - Position */}
-								<div className="hidden lg:block h-full max-w-[264px]">
-									<PositionControls
-										onPositionChange={handlePositionChange}
-										textPosition={textPosition}
-										onManualPositionChange={
-											handleManualPositionChange
-										}
-										anchorMode={anchorMode}
-										onAnchorModeChange={setAnchorMode}
-									/>
-								</div>
-
+							<div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
 								{/* Center Preview */}
-								<div className="flex items-center justify-center">
-									<CertificatePreview
-										templateUrl={templateUrl}
-										fields={
-											fields.length > 0
-												? fields.map((f, i) =>
-														i === 0
-															? {
-																	...f,
-																	text:
-																		participantName ||
-																		"Your Name",
-																}
-															: f,
-													)
-												: [
-														{
-															id: "preview",
-															label: "Preview",
-															text:
-																participantName ||
-																"Your Name",
-															x: textPosition.x,
-															y: textPosition.y,
-															font: selectedFont,
-															fontSize: fontSize,
-															fontWeight:
-																fontWeight,
-															color: textColor,
-															anchorMode:
-																anchorMode,
-														},
-													]
-										}
-										selectedFieldId={
-											fields[0]?.id || "preview"
-										}
-										onFieldSelect={() => {}}
-										showPreview={true}
-										previewRef={previewRef}
-										imgRef={imgRef}
-										isParticipant={true}
-									/>
+								<div className="flex flex-col items-center justify-center gap-2">
+									<div className="flex-1 flex items-center justify-center w-full">
+										<CertificatePreview
+											templateUrl={templateUrl}
+											fields={
+												fields.length > 0
+													? fields.map((f, i) =>
+															i === 0
+																? {
+																		...f,
+																		text:
+																			participantName ||
+																			"Your Name",
+																	}
+																: f,
+														)
+													: [
+															{
+																id: "preview",
+																label: "Preview",
+																text:
+																	participantName ||
+																	"Your Name",
+																x: textPosition.x,
+																y: textPosition.y,
+																font: selectedFont,
+																fontSize: fontSize,
+																fontWeight:
+																	fontWeight,
+																color: textColor,
+																anchorMode:
+																	anchorMode,
+															},
+														]
+											}
+											selectedFieldId={
+												fields[0]?.id || "preview"
+											}
+											onFieldSelect={() => {}}
+											showPreview={true}
+											previewRef={previewRef}
+											imgRef={imgRef}
+											isParticipant={false}
+											onFieldMove={handleFieldMove}
+										/>
+									</div>
+									<p className="text-center text-xs text-muted-foreground">
+										Drag the text to reposition · arrow
+										keys to nudge (hold Shift for bigger
+										steps)
+									</p>
+									<div className="flex items-center gap-2">
+										<Label
+											htmlFor="anchor-mode"
+											className="text-xs text-muted-foreground"
+										>
+											{anchorMode === "center"
+												? "Center anchor"
+												: "Left anchor"}
+										</Label>
+										<Switch
+											id="anchor-mode"
+											checked={anchorMode === "left"}
+											onCheckedChange={(checked) =>
+												setAnchorMode(
+													checked ? "left" : "center",
+												)
+											}
+										/>
+									</div>
 								</div>
 
 								{/* Right Controls - Styling & Download */}
