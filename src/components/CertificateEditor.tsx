@@ -296,10 +296,7 @@ const CertificateEditor = ({
 
 	return (
 		<div className="h-screen bg-background flex flex-col overflow-hidden">
-			<Header
-				onTourClick={() => restartTour(resetTour, startTour)}
-				onCreateClick={() => fileInputRef.current?.click()}
-			/>
+			<Header onTourClick={() => restartTour(resetTour, startTour)} />
 
 			{isSimple && templateUseMode === "testing" && (
 				<Alert className="rounded-none border-x-0 border-t-0 bg-muted/50">

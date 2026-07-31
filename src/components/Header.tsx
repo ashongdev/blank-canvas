@@ -26,7 +26,6 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 
 interface HeaderProps {
 	onTourClick: () => void;
-	onCreateClick?: () => void;
 }
 
 const navItems = [
@@ -41,7 +40,7 @@ const today = new Date().toLocaleDateString(undefined, {
 	day: "numeric",
 });
 
-const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
+const Header = ({ onTourClick }: HeaderProps) => {
 	const { theme, setTheme } = useTheme();
 	const navigate = useNavigate();
 	const { user, userName, isAuthenticated, logout } = useAuthContext();
@@ -63,16 +62,6 @@ const Header = ({ onTourClick, onCreateClick }: HeaderProps) => {
 	);
 
 	const location = useLocation();
-
-	const handleCreateClick = () => {
-		if (location.pathname !== "/editor" && onCreateClick) {
-			navigate("/editor");
-		} else if (onCreateClick) {
-			onCreateClick();
-		} else {
-			navigate("/editor");
-		}
-	};
 
 	const handleLogout = () => {
 		localStorage.removeItem("auth_token");

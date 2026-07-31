@@ -100,39 +100,6 @@ export const advancedPageTourSteps: DriveStep[] = [
 	},
 ];
 
-export const adminPageTourSteps: DriveStep[] = [
-	{
-		element: '[data-tour="public-id"]',
-		popover: {
-			title: "Set Certificate ID",
-			description:
-				"Enter a unique, memorable ID for your certificate. Participants will use this to retrieve their template.",
-			side: "bottom",
-			align: "start",
-		},
-	},
-	{
-		element: '[data-tour="admin-upload"]',
-		popover: {
-			title: "Upload Template",
-			description:
-				"Click here to select your certificate image. Supports PNG, JPG, and PDF formats up to 10MB.",
-			side: "top",
-			align: "center",
-		},
-	},
-	{
-		element: '[data-tour="admin-submit"]',
-		popover: {
-			title: "Share with Participants",
-			description:
-				"After uploading, you'll get a shareable link and ID. Send this to your participants so they can download personalized certificates.",
-			side: "top",
-			align: "center",
-		},
-	},
-];
-
 export const participantPageTourSteps: DriveStep[] = [
 	{
 		element: '[data-tour="certificate-id-input"]',
@@ -159,6 +126,5 @@ export const participantPageTourSteps: DriveStep[] = [
 export const TOUR_STORAGE_KEYS = {
 	index: "tour_completed_index",
 	advanced: "tour_completed_advanced",
-	admin: "tour_completed_admin",
 	participant: "tour_completed_participant",
 } as const;

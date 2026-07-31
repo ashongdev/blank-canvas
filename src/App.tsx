@@ -7,7 +7,6 @@ import AnalyticsTracker from "./components/AnalyticsTracker";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
-import Admin from "./pages/Admin";
 import Advanced from "./pages/Advanced";
 import Editor from "./pages/Editor";
 import GoogleCallback from "./pages/GoogleCallback";
@@ -50,7 +49,6 @@ const App = () => (
 									</ProtectedRoute>
 								}
 							/>
-							<Route path="/admin" element={<Admin />} />
 							<Route path="/participant" element={<Participant />} />
 							<Route
 								path="/auth/google/callback"
