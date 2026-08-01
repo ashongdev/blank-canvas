@@ -19,10 +19,8 @@ const sections = [
 	{ no: "02", title: "Templates", url: "/dashboard/templates" },
 	{ no: "03", title: "Signatures", url: "/dashboard/signatures" },
 	{ no: "04", title: "Analytics", url: "/dashboard/analytics" },
-	{ no: "05", title: "Billing", url: "/dashboard/billing" },
-	{ no: "06", title: "Collections", url: "/dashboard/collections" },
-	{ no: "07", title: "Trash", url: "/dashboard/trash" },
-	{ no: "08", title: "Marketplace", url: "/marketplace" },
+	{ no: "05", title: "Collections", url: "/dashboard/collections" },
+	{ no: "06", title: "Trash", url: "/dashboard/trash" },
 ];
 
 const today = new Date().toLocaleDateString(undefined, {

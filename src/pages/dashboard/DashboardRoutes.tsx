@@ -1,5 +1,6 @@
 import { useDashboardStore } from "@/hooks/useDashboardStore";
 import { Routes, Route, useLocation } from "react-router-dom";
+import AccountSettingsTab from "./AccountSettingsTab";
 import TemplatesPage from "./TemplatesPage";
 import CollectionsPage from "./CollectionsPage";
 import TrashPage from "./TrashPage";
@@ -325,8 +326,10 @@ const DashboardRoutes = () => {
 			/>
 			<Route path="analytics" element={<AnalyticsPage />} />
 			<Route path="signatures" element={<SignaturesPage />} />
-			<Route path="billing" element={<BillingPage />} />
-			<Route path="settings" element={<SettingsPage />} />
+			<Route path="settings" element={<SettingsPage />}>
+				<Route index element={<AccountSettingsTab />} />
+				<Route path="billing" element={<BillingPage />} />
+			</Route>
 		</Routes>
 	);
 };

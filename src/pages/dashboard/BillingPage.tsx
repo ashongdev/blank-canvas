@@ -56,28 +56,7 @@ const BillingPage = () => {
 	};
 
 	return (
-		<div className="space-y-10">
-			{/* Byline header */}
-			<div className="relative">
-				<span
-					aria-hidden
-					className="pointer-events-none absolute -left-2 -top-12 select-none font-playfair text-[7rem] font-bold italic leading-none text-foreground/[0.04] sm:text-[9rem]"
-				>
-					05
-				</span>
-				<div className="relative border-b-2 border-foreground pb-4">
-					<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
-						Section 05
-					</p>
-					<h2 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
-						Billing
-					</h2>
-					<p className="mt-1 text-sm text-muted-foreground">
-						Your plan, billing, and certificate credits.
-					</p>
-				</div>
-			</div>
-
+		<div className="space-y-6">
 			{isLoading ? (
 				<div className="space-y-4">
 					<Skeleton className="h-32 w-full max-w-md" />
