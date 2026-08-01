@@ -83,3 +83,15 @@ export const fetchAnalytics = async (baseUrl: string): Promise<Analytics> => {
 	const response = await api.get(`${baseUrl}/dashboard/analytics/`);
 	return response.data;
 };
+
+// Fire-and-forget: a missed analytics event shouldn't ever block or fail
+// the action (publishing, loading a template) that triggered it.
+export const logActivity = (
+	baseUrl: string,
+	kind: "link_shared" | "template_loaded",
+	label?: string,
+): void => {
+	void api
+		.post(`${baseUrl}/activity/log/`, { kind, label })
+		.catch(() => {});
+};

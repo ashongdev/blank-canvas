@@ -4,6 +4,7 @@ import {
 	resolveTemplateFile,
 } from "@/lib/templateFileUtils";
 import api from "@/services/axios";
+import { logActivity } from "@/services/dashboardApi";
 import type { Recipient, TextField } from "@/types/TextField";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -84,7 +85,9 @@ const useTemplateManager = ({
 	 * pipeline used for real downloads), returning the resulting image blob.
 	 * Shared by both "Generate" (download) and "Preview" (view only).
 	 */
-	const generateCertificateBlob = async (): Promise<Blob | null> => {
+	const generateCertificateBlob = async (
+		purpose: "download" | "preview" = "download",
+	): Promise<Blob | null> => {
 		if (!hasTemplateSource(templateFile, templateUrl)) {
 			toast.error("Please upload a template first");
 			return null;
@@ -100,6 +103,13 @@ const useTemplateManager = ({
 		formData.append("template", resolvedFile);
 		formData.append("fields", JSON.stringify(fields));
 		formData.append("inEditor", "true");
+		formData.append("purpose", purpose);
+		// Lets the backend attribute this generation to the right template
+		// for analytics, even though the image itself is re-uploaded rather
+		// than fetched by id.
+		if (uploadedPublicId) {
+			formData.append("certificateId", uploadedPublicId);
+		}
 
 		try {
 			const response = await axios.post(
@@ -115,7 +125,7 @@ const useTemplateManager = ({
 	};
 
 	const handleDownload = async () => {
-		const blob = await generateCertificateBlob();
+		const blob = await generateCertificateBlob("download");
 		if (!blob) return;
 
 		const url = URL.createObjectURL(blob);
@@ -135,7 +145,7 @@ const useTemplateManager = ({
 	 * returned URL and must revoke it when done (e.g. on dialog close).
 	 */
 	const handlePreview = async (): Promise<string | null> => {
-		const blob = await generateCertificateBlob();
+		const blob = await generateCertificateBlob("preview");
 		if (!blob) return null;
 		return URL.createObjectURL(blob);
 	};
@@ -162,6 +172,12 @@ const useTemplateManager = ({
 		formData.append("fields", JSON.stringify(fields));
 		formData.append("recipients", JSON.stringify(recipients));
 		formData.append("inEditor", "true");
+		// Lets the backend attribute this batch to the right template for
+		// analytics, even though the image itself is re-uploaded rather than
+		// fetched by id.
+		if (uploadedPublicId) {
+			formData.append("certificateId", uploadedPublicId);
+		}
 
 		try {
 			const response = await api.post(`${BASE_URL}/generate-batch/`, formData, {
@@ -312,6 +328,7 @@ const useTemplateManager = ({
 
 				setGeneratedLink(link);
 
+				logActivity(BASE_URL, "link_shared", res.data.public_id);
 				logEvent("Certificate", "Publish", "New Template Published");
 				toast.dismiss(toastId);
 				toast.success("Published successfully!");

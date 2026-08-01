@@ -28,11 +28,13 @@ import {
 } from "@/components/ui/sheet";
 import RecipientManager from "@/components/RecipientManager";
 import useFunctions from "@/hooks/useFunctions";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import useTemplateManager from "@/hooks/useTemplateManager";
 import { useTour } from "@/hooks/useTour";
 import { createDefaultTextField } from "@/lib/defaultField";
 import { copyLinkToClipboard, restartTour } from "@/lib/editorUtils";
 import { cn } from "@/lib/utils";
+import { logActivity } from "@/services/dashboardApi";
 import type { Recipient, TextField } from "@/types/TextField";
 import axios from "axios";
 import type { DriveStep } from "driver.js";
@@ -76,6 +78,7 @@ const CertificateEditor = ({
 	templateUseMode,
 }: CertificateEditorProps) => {
 	const navigate = useNavigate();
+	const { BASE_URL } = useAuthContext();
 	const { startTour, resetTour } = useTour({
 		steps: tourSteps,
 		storageKey: tourStorageKey,
@@ -215,6 +218,7 @@ const CertificateEditor = ({
 			setUploadedPublicId(id);
 			setShowLoadDialog(false);
 			setLoadId("");
+			logActivity(BASE_URL, "template_loaded", id);
 			toast.success("Template loaded successfully!");
 		} catch {
 			setLoadError("Template not found. Check the ID and try again.");
