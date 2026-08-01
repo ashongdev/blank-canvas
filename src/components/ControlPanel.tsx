@@ -1,3 +1,5 @@
+import SignaturePad from "@/components/SignaturePad";
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,12 +13,18 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { DATE_FORMAT_OPTIONS, DEFAULT_DATE_FORMAT } from "@/lib/fieldPresets";
+import {
+	DATE_FORMAT_OPTIONS,
+	DEFAULT_DATE_FORMAT,
+	DEFAULT_SIGNATURE_HEIGHT,
+	DEFAULT_SIGNATURE_WIDTH,
+} from "@/lib/fieldPresets";
 import { CERTIFICATE_FONTS, FONT_WEIGHTS } from "@/lib/utils";
 import { TextField } from "@/types/TextField";
 import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import { CalendarIcon, Move, Settings2, Type } from "lucide-react";
+import { useState } from "react";
 
 const PREDEFINED_COLORS = [
 	"#000000", // Black
@@ -34,6 +42,7 @@ interface ControlPanelProps {
 	selectedFieldId: string;
 	onFieldUpdate: (id: string, updates: Partial<TextField>) => void;
 	simpleView?: boolean;
+	onUploadSignature: (file: File | Blob) => Promise<string | null>;
 }
 
 const ControlPanel = ({
@@ -41,15 +50,34 @@ const ControlPanel = ({
 	selectedFieldId,
 	onFieldUpdate,
 	simpleView = false,
+	onUploadSignature,
 }: ControlPanelProps) => {
 	const activeField =
 		fields.find((f) => f.id === selectedFieldId) || fields[0];
+	const [isUploadingSignature, setIsUploadingSignature] = useState(false);
 
 	// Identify if the active field is the primary (first) field
 	const isPrimaryField =
 		fields.length > 0 && activeField?.id === fields[0].id;
+	const isSignature = activeField?.preset === "signatory";
 
 	if (!activeField) return null;
+
+	const handleSignatureCapture = async (file: File | Blob) => {
+		setIsUploadingSignature(true);
+		try {
+			const url = await onUploadSignature(file);
+			if (url) {
+				onFieldUpdate(activeField.id, {
+					imageUrl: url,
+					width: activeField.width ?? DEFAULT_SIGNATURE_WIDTH,
+					height: activeField.height ?? DEFAULT_SIGNATURE_HEIGHT,
+				});
+			}
+		} finally {
+			setIsUploadingSignature(false);
+		}
+	};
 
 	return (
 		<ScrollArea className="h-full pr-3 overflow-x-hidden">
@@ -83,7 +111,43 @@ const ControlPanel = ({
 								/>
 							</div>
 						)}
-						{activeField.preset === "date" ? (
+						{isSignature ? (
+							<div className="space-y-2">
+								<label className="text-xs text-muted-foreground">
+									Signature
+								</label>
+								{activeField.imageUrl ? (
+									<div className="space-y-2">
+										<div className="flex items-center justify-center rounded-md border border-border bg-muted/30 p-3">
+											<img
+												src={activeField.imageUrl}
+												alt="Signature"
+												className="max-h-16 object-contain"
+											/>
+										</div>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											className="w-full"
+											onClick={() =>
+												onFieldUpdate(activeField.id, {
+													imageUrl: undefined,
+												})
+											}
+										>
+											Replace Signature
+										</Button>
+									</div>
+								) : (
+									<SignaturePad
+										penColor={activeField.color}
+										isUploading={isUploadingSignature}
+										onCapture={handleSignatureCapture}
+									/>
+								)}
+							</div>
+						) : activeField.preset === "date" ? (
 							<div className="space-y-2">
 								<label className="text-xs text-muted-foreground">
 									Date
@@ -169,7 +233,7 @@ const ControlPanel = ({
 								/>
 							</div>
 						)}
-						{!simpleView && (
+						{!simpleView && !isSignature && (
 							<div
 								className="flex items-center justify-between border rounded-md p-2"
 								data-tour="required-toggle"
@@ -243,9 +307,49 @@ const ControlPanel = ({
 							/>
 						</div>
 					</div>
+					{isSignature && activeField.imageUrl && (
+						<div className="grid grid-cols-2 gap-3">
+							<div className="space-y-2">
+								<label className="text-xs text-muted-foreground">
+									Width
+								</label>
+								<Input
+									type="number"
+									value={activeField.width ?? DEFAULT_SIGNATURE_WIDTH}
+									onChange={(e) =>
+										onFieldUpdate(activeField.id, {
+											width: Number(e.target.value),
+										})
+									}
+									min={20}
+									max={1000}
+									className="h-8"
+								/>
+							</div>
+							<div className="space-y-2">
+								<label className="text-xs text-muted-foreground">
+									Height
+								</label>
+								<Input
+									type="number"
+									value={activeField.height ?? DEFAULT_SIGNATURE_HEIGHT}
+									onChange={(e) =>
+										onFieldUpdate(activeField.id, {
+											height: Number(e.target.value),
+										})
+									}
+									min={20}
+									max={1000}
+									className="h-8"
+								/>
+							</div>
+						</div>
+					)}
 					<div className="flex items-center justify-between border rounded-md p-2">
 						<div>
-							<p className="text-xs font-medium">Text Anchor</p>
+							<p className="text-xs font-medium">
+								{isSignature ? "Anchor" : "Text Anchor"}
+							</p>
 							<p className="text-xs text-muted-foreground">
 								{activeField.anchorMode === "center"
 									? "Center"
@@ -263,92 +367,98 @@ const ControlPanel = ({
 					</div>
 				</div>
 
+				{!isSignature && (
+					<>
+						<Separator />
+
+						{/* Font Family */}
+						<div className="space-y-2">
+							<h3 className="text-sm font-medium flex items-center gap-2">
+								<Type className="w-4 h-4" />
+								Typography
+							</h3>
+							<label className="text-xs text-muted-foreground">
+								Font Family
+							</label>
+							<Select
+								value={activeField.font}
+								onValueChange={(val) =>
+									onFieldUpdate(activeField.id, { font: val })
+								}
+							>
+								<SelectTrigger className="w-full h-8">
+									<SelectValue placeholder="Select font" />
+								</SelectTrigger>
+								<SelectContent>
+									{CERTIFICATE_FONTS.map((font) => (
+										<SelectItem key={font.value} value={font.value}>
+											<span style={{ fontFamily: font.value }}>
+												{font.label}
+											</span>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="grid grid-cols-2 gap-3">
+							{/* Font Size */}
+							<div className="space-y-2">
+								<label className="text-xs text-muted-foreground">
+									Size (px)
+								</label>
+								<Input
+									type="number"
+									value={activeField.fontSize}
+									onChange={(e) =>
+										onFieldUpdate(activeField.id, {
+											fontSize: Number(e.target.value),
+										})
+									}
+									min={8}
+									max={300}
+									className="h-8"
+								/>
+							</div>
+
+							{/* Font Weight */}
+							<div className="space-y-2">
+								<label className="text-xs text-muted-foreground">
+									Weight
+								</label>
+								<Select
+									value={activeField.fontWeight}
+									onValueChange={(val) =>
+										onFieldUpdate(activeField.id, {
+											fontWeight: val,
+										})
+									}
+								>
+									<SelectTrigger className="w-full h-8">
+										<SelectValue placeholder="Weight" />
+									</SelectTrigger>
+									<SelectContent>
+										{FONT_WEIGHTS.map((weight) => (
+											<SelectItem
+												key={weight.value}
+												value={weight.value}
+											>
+												{weight.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+					</>
+				)}
+
 				<Separator />
-
-				{/* Font Family */}
-				<div className="space-y-2">
-					<h3 className="text-sm font-medium flex items-center gap-2">
-						<Type className="w-4 h-4" />
-						Typography
-					</h3>
-					<label className="text-xs text-muted-foreground">
-						Font Family
-					</label>
-					<Select
-						value={activeField.font}
-						onValueChange={(val) =>
-							onFieldUpdate(activeField.id, { font: val })
-						}
-					>
-						<SelectTrigger className="w-full h-8">
-							<SelectValue placeholder="Select font" />
-						</SelectTrigger>
-						<SelectContent>
-							{CERTIFICATE_FONTS.map((font) => (
-								<SelectItem key={font.value} value={font.value}>
-									<span style={{ fontFamily: font.value }}>
-										{font.label}
-									</span>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-
-				<div className="grid grid-cols-2 gap-3">
-					{/* Font Size */}
-					<div className="space-y-2">
-						<label className="text-xs text-muted-foreground">
-							Size (px)
-						</label>
-						<Input
-							type="number"
-							value={activeField.fontSize}
-							onChange={(e) =>
-								onFieldUpdate(activeField.id, {
-									fontSize: Number(e.target.value),
-								})
-							}
-							min={8}
-							max={300}
-							className="h-8"
-						/>
-					</div>
-
-					{/* Font Weight */}
-					<div className="space-y-2">
-						<label className="text-xs text-muted-foreground">
-							Weight
-						</label>
-						<Select
-							value={activeField.fontWeight}
-							onValueChange={(val) =>
-								onFieldUpdate(activeField.id, {
-									fontWeight: val,
-								})
-							}
-						>
-							<SelectTrigger className="w-full h-8">
-								<SelectValue placeholder="Weight" />
-							</SelectTrigger>
-							<SelectContent>
-								{FONT_WEIGHTS.map((weight) => (
-									<SelectItem
-										key={weight.value}
-										value={weight.value}
-									>
-										{weight.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
 
 				{/* Color */}
 				<div className="space-y-2">
 					<label className="text-xs text-muted-foreground">
-						Color
+						{isSignature ? "Pen Color" : "Color"}
 					</label>
 					<div className="flex flex-col gap-2">
 						<div className="flex flex-wrap gap-1.5">

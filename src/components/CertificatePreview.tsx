@@ -150,6 +150,7 @@ const CertificatePreview = ({
 								!isParticipant && field.id === selectedFieldId;
 							const pulseDragHint =
 								isDraggable && isSelected && showDragHint;
+							const isImageField = !!field.imageUrl;
 							return (
 								<motion.span
 									key={field.id}
@@ -191,11 +192,18 @@ const CertificatePreview = ({
 												? "translate(-50%, -50%)"
 												: "translate(0%, -50%)",
 
-										fontFamily: `"${field.font}"`,
-										fontSize: `${field.fontSize * imageScale.scale}px`,
-										fontWeight: field.fontWeight,
-										color: field.color,
-										whiteSpace: "nowrap",
+										...(isImageField
+											? {
+													width: `${(field.width ?? 200) * imageScale.scale}px`,
+													height: `${(field.height ?? 100) * imageScale.scale}px`,
+												}
+											: {
+													fontFamily: `"${field.font}"`,
+													fontSize: `${field.fontSize * imageScale.scale}px`,
+													fontWeight: field.fontWeight,
+													color: field.color,
+													whiteSpace: "nowrap",
+												}),
 										display: "inline-flex",
 										alignItems: "center",
 										lineHeight: "1",
@@ -216,7 +224,16 @@ const CertificatePreview = ({
 										touchAction: isDraggable ? "none" : "auto",
 									}}
 								>
-									{field.text}
+									{isImageField ? (
+										<img
+											src={field.imageUrl}
+											alt=""
+											draggable={false}
+											className="h-full w-full object-contain"
+										/>
+									) : (
+										field.text
+									)}
 								</motion.span>
 							);
 						})}

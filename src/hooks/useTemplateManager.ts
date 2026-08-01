@@ -341,6 +341,28 @@ const useTemplateManager = ({
 		}
 	};
 
+	/**
+	 * Uploads a signature (drawn or picked file) to Cloudinary and returns
+	 * its URL, or null on failure. Always organizer-initiated, from the
+	 * editor's inspector panel — never from the public participant link.
+	 */
+	const handleSignatureUpload = async (
+		file: File | Blob,
+	): Promise<string | null> => {
+		const formData = new FormData();
+		formData.append("signature", file, "signature.png");
+		try {
+			const res = await api.post<{ secure_url?: string }>(
+				`${BASE_URL}/upload-signature/`,
+				formData,
+			);
+			return res.data.secure_url ?? null;
+		} catch {
+			toast.error("Failed to upload signature");
+			return null;
+		}
+	};
+
 	return {
 		handleDownload,
 		handleBatchDownload,
@@ -349,6 +371,7 @@ const useTemplateManager = ({
 		handleFileSelect,
 		handleShareClick,
 		handlePublish,
+		handleSignatureUpload,
 		uploadedPublicId,
 		setUploadedPublicId,
 	};

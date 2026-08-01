@@ -140,6 +140,7 @@ const CertificateEditor = ({
 		handleTemplateUpload,
 		handleBatchDownload,
 		handlePreview,
+		handleSignatureUpload,
 		setUploadedPublicId,
 	} = useTemplateManager({
 		templateFile,
@@ -537,6 +538,7 @@ const CertificateEditor = ({
 						selectedFieldId={selectedFieldId}
 						onFieldUpdate={updateField}
 						simpleView={isSimple}
+						onUploadSignature={handleSignatureUpload}
 					/>
 				</div>
 			</main>

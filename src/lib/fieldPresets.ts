@@ -30,8 +30,11 @@ export interface FieldPresetDef {
 	icon: LucideIcon;
 	defaultText: string;
 	/** Which input widget the inspector/participant form should show. */
-	inputKind: "text" | "date" | "number";
+	inputKind: "text" | "date" | "number" | "image";
 }
+
+export const DEFAULT_SIGNATURE_WIDTH = 220;
+export const DEFAULT_SIGNATURE_HEIGHT = 100;
 
 // "text" and "name" (the always-present primary field) aren't offered in the
 // Add Field menu since every template already starts with a name field;
@@ -63,11 +66,11 @@ export const ADDABLE_FIELD_PRESETS: FieldPresetDef[] = [
 	},
 	{
 		id: "signatory",
-		label: "Signatory",
-		description: "Signed-by name or title",
+		label: "Signature",
+		description: "Upload or draw a signature image",
 		icon: PenLine,
-		defaultText: "Signed By",
-		inputKind: "text",
+		defaultText: "Signature",
+		inputKind: "image",
 	},
 	{
 		id: "score",

@@ -19,6 +19,11 @@ export interface TextField {
 	dateFormat?: string;
 	/** Only meaningful when preset === "date": ISO date (yyyy-MM-dd) backing the date picker. */
 	rawDate?: string;
+	/** Signature (or other image) URL. When set, this field renders as an image, not text. */
+	imageUrl?: string;
+	/** Only meaningful when imageUrl is set: display size in px on the certificate. */
+	width?: number;
+	height?: number;
 	x: number;
 	y: number;
 	font: string;
