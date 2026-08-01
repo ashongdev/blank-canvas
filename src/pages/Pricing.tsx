@@ -2,14 +2,24 @@ import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { cn } from "@/lib/utils";
 import {
+	fetchBillingStatus,
 	startCreditCheckout,
 	startSubscriptionCheckout,
 } from "@/services/billingApi";
 import { motion } from "framer-motion";
 import { Check, Minus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+
+const FREE_FEATURES = [
+	"Simple editor (1 field per certificate)",
+	"Up to 2 templates",
+	"2 publishable links (25 generations each)",
+	"10 recipients per batch",
+	"3 redownloads per certificate",
+	"Basic usage stats",
+];
 
 const PRO_FEATURES = [
 	"Advanced editor (multiple fields per certificate)",
@@ -25,7 +35,11 @@ const COMPARISON_ROWS: {
 	free: string;
 	pro: string;
 }[] = [
-	{ feature: "Self-serve public links", free: "Unlimited", pro: "Unlimited" },
+	{
+		feature: "Self-serve public links",
+		free: "2 links, 25 generations each",
+		pro: "Unlimited",
+	},
 	{ feature: "Templates", free: "2 active", pro: "Unlimited" },
 	{ feature: "Editor", free: "Simple (1 field)", pro: "Advanced (multi-field)" },
 	{ feature: "Batch generation", free: "10 recipients / batch", pro: "Unlimited" },
@@ -36,10 +50,29 @@ const COMPARISON_ROWS: {
 
 const Pricing = () => {
 	const navigate = useNavigate();
-	const { isAuthenticated, loading, BASE_URL } = useAuthContext();
+	const { isAuthenticated, isPro, loading, BASE_URL } = useAuthContext();
 	const [pendingPlan, setPendingPlan] = useState<
 		"month" | "year" | "credits" | null
 	>(null);
+	const [billingInterval, setBillingInterval] = useState<
+		"" | "month" | "year"
+	>("");
+
+	useEffect(() => {
+		if (!isAuthenticated) {
+			setBillingInterval("");
+			return;
+		}
+		fetchBillingStatus(BASE_URL)
+			.then((status) => setBillingInterval(status.interval))
+			.catch(() => setBillingInterval(""));
+	}, [isAuthenticated, BASE_URL]);
+
+	const isFreeCurrent = isAuthenticated && !isPro;
+	const isMonthlyCurrent =
+		isAuthenticated && isPro && billingInterval === "month";
+	const isAnnualCurrent =
+		isAuthenticated && isPro && billingInterval === "year";
 
 	const requireAuth = () => {
 		if (loading) return false;
@@ -107,9 +140,56 @@ const Pricing = () => {
 					</p>
 				</motion.div>
 
-				<div className="mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
+				<div className="mx-auto mt-14 grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+					{/* Free */}
+					<div className="relative flex flex-col border border-border bg-card p-6 text-left">
+						{isFreeCurrent && (
+							<span className="absolute -top-3 left-6 border border-foreground bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
+								Your Plan
+							</span>
+						)}
+						<h3 className="font-playfair text-xl italic text-foreground">
+							Free
+						</h3>
+						<p className="mt-1 text-3xl font-bold text-foreground">
+							$0
+							<span className="text-sm font-normal text-muted-foreground">
+								/forever
+							</span>
+						</p>
+						<ul className="mt-5 flex-1 space-y-2.5">
+							{FREE_FEATURES.map((feature) => (
+								<li
+									key={feature}
+									className="flex items-start gap-2 text-xs text-muted-foreground"
+								>
+									<Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+									{feature}
+								</li>
+							))}
+						</ul>
+						{isFreeCurrent ? (
+							<div className="mt-6 border-2 border-foreground bg-muted px-5 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
+								Current Plan
+							</div>
+						) : isPro ? (
+							<p className="mt-6 text-center text-xs text-muted-foreground">
+								Included in your Pro plan
+							</p>
+						) : (
+							<Button variant="outline" className="mt-6" asChild>
+								<Link to="/signup">Get Started Free</Link>
+							</Button>
+						)}
+					</div>
+
 					{/* Monthly */}
-					<div className="flex flex-col border border-border bg-card p-6 text-left">
+					<div className="relative flex flex-col border border-border bg-card p-6 text-left">
+						{isMonthlyCurrent && (
+							<span className="absolute -top-3 left-6 border border-foreground bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
+								Your Plan
+							</span>
+						)}
 						<h3 className="font-playfair text-xl italic text-foreground">
 							Pro Monthly
 						</h3>
@@ -130,19 +210,25 @@ const Pricing = () => {
 								</li>
 							))}
 						</ul>
-						<Button
-							className="mt-6"
-							onClick={() => handleSubscribe("month")}
-							disabled={pendingPlan !== null}
-						>
-							{pendingPlan === "month" ? "Redirecting..." : "Subscribe Monthly"}
-						</Button>
+						{isMonthlyCurrent ? (
+							<div className="mt-6 border-2 border-foreground bg-muted px-5 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
+								Current Plan
+							</div>
+						) : (
+							<Button
+								className="mt-6"
+								onClick={() => handleSubscribe("month")}
+								disabled={pendingPlan !== null}
+							>
+								{pendingPlan === "month" ? "Redirecting..." : "Subscribe Monthly"}
+							</Button>
+						)}
 					</div>
 
 					{/* Annual (highlighted) */}
 					<div className="relative flex flex-col border-2 border-primary bg-card p-6 text-left shadow-[4px_4px_0_hsl(var(--primary))]">
-						<span className="absolute -top-3 left-6 border border-foreground bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-secondary-foreground">
-							2 months free
+						<span className="absolute -top-3 left-6 border border-foreground bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
+							{isAnnualCurrent ? "Your Plan" : "2 months free"}
 						</span>
 						<h3 className="font-playfair text-xl italic text-foreground">
 							Pro Annual
@@ -167,13 +253,19 @@ const Pricing = () => {
 								</li>
 							))}
 						</ul>
-						<Button
-							className="mt-6"
-							onClick={() => handleSubscribe("year")}
-							disabled={pendingPlan !== null}
-						>
-							{pendingPlan === "year" ? "Redirecting..." : "Subscribe Annually"}
-						</Button>
+						{isAnnualCurrent ? (
+							<div className="mt-6 border-2 border-foreground bg-muted px-5 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
+								Current Plan
+							</div>
+						) : (
+							<Button
+								className="mt-6"
+								onClick={() => handleSubscribe("year")}
+								disabled={pendingPlan !== null}
+							>
+								{pendingPlan === "year" ? "Redirecting..." : "Subscribe Annually"}
+							</Button>
+						)}
 					</div>
 
 					{/* Credit pack */}
@@ -219,11 +311,11 @@ const Pricing = () => {
 				</div>
 
 				<p className="mt-10 text-xs text-muted-foreground">
-					Free accounts keep {""}
+					Free accounts keep up to {""}
 					<Link to="/editor" className="underline underline-offset-2">
-						unlimited self-serve links
+						2 publishable links
 					</Link>
-					, up to 2 templates, and 10 recipients per batch.
+					{" "}(25 generations each) and 10 recipients per batch.
 				</p>
 
 				{/* Compare plans */}

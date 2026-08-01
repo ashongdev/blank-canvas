@@ -21,8 +21,9 @@ import { cn } from "@/lib/utils";
 import type { PaginationMeta } from "@/types/Pagination";
 import { Template } from "@/types/Template";
 import { AnimatePresence, motion } from "framer-motion";
-import { RotateCcw, Trash2, X } from "lucide-react";
+import { ArrowLeft, RotateCcw, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
 	templates: Template[];
@@ -43,6 +44,7 @@ const TrashPage = ({
 	onRestore,
 	onPermanentlyDelete,
 }: Props) => {
+	const navigate = useNavigate();
 	const [restoreId, setRestoreId] = useState<number | null>(null);
 	const [deleteId, setDeleteId] = useState<number | null>(null);
 	const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
@@ -95,7 +97,14 @@ const TrashPage = ({
 				</span>
 				<div className="relative flex flex-col justify-between gap-5 border-b-2 border-foreground pb-4 sm:flex-row sm:items-end">
 					<div>
-						<h2 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
+						<button
+							onClick={() => navigate("/dashboard/templates")}
+							className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground"
+						>
+							<ArrowLeft className="h-3.5 w-3.5" />
+							Back to Templates
+						</button>
+						<h2 className="mt-3 font-playfair text-3xl italic text-foreground sm:text-4xl">
 							The Archive
 						</h2>
 						<p className="mt-1 text-sm text-muted-foreground">

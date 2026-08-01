@@ -10,7 +10,7 @@ import {
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LogOut, Settings } from "lucide-react";
+import { ChevronDown, LogOut, Settings, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -20,7 +20,6 @@ const sections = [
 	{ no: "03", title: "Signatures", url: "/dashboard/signatures" },
 	{ no: "04", title: "Analytics", url: "/dashboard/analytics" },
 	{ no: "05", title: "Collections", url: "/dashboard/collections" },
-	{ no: "06", title: "Trash", url: "/dashboard/trash" },
 ];
 
 const today = new Date().toLocaleDateString(undefined, {
@@ -101,6 +100,18 @@ const DashboardMasthead = () => {
 					</p>
 				</div>
 				<DropdownMenuSeparator />
+				{!isPro && (
+					<>
+						<DropdownMenuItem
+							className="font-medium text-primary focus:text-primary"
+							onClick={() => navigate("/pricing")}
+						>
+							<Sparkles className="mr-2 h-4 w-4" />
+							Upgrade to Pro
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+					</>
+				)}
 				<DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
 					<Settings className="mr-2 h-4 w-4" />
 					Settings

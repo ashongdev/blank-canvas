@@ -28,6 +28,7 @@ import {
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useTour } from "@/hooks/useTour";
 import { logEvent } from "@/lib/analytics";
+import { extractUpgradeErrorFromBlob } from "@/lib/billingErrors";
 import { DEFAULT_DATE_FORMAT } from "@/lib/fieldPresets";
 import api from "@/services/axios";
 import { TextField } from "@/types/TextField";
@@ -475,10 +476,13 @@ const Participant = () => {
 			toast.success("Download Complete.");
 		} catch (error) {
 			const gated = await isGatedError(error);
+			const upgradeMessage = await extractUpgradeErrorFromBlob(error);
 			if (gated) {
 				setShowNameInputDialog(false);
 				setNeedsVerification(true);
 				setVerificationStep("email");
+			} else if (upgradeMessage) {
+				toast.error(upgradeMessage);
 			} else {
 				toast.error("Failed to generate certificates");
 			}

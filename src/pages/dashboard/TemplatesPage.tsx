@@ -36,6 +36,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import type { Collection } from "@/hooks/useDashboardStore";
 import { openTemplateInEditor } from "@/lib/editorUtils";
 import { cn } from "@/lib/utils";
@@ -50,11 +51,12 @@ import {
 	Pencil,
 	RefreshCw,
 	Send,
+	Sparkles,
 	Trash2,
 	X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface Props {
 	templates: Template[];
@@ -94,6 +96,7 @@ const TemplatesPage = ({
 	onUploadTemplate,
 }: Props) => {
 	const navigate = useNavigate();
+	const { isPro } = useAuthContext();
 	const [editTemplate, setEditTemplate] = useState<Template | null>(null);
 	const [editName, setEditName] = useState("");
 	const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -271,8 +274,26 @@ const TemplatesPage = ({
 							{totalCount} template{totalCount !== 1 ? "s" : ""}{" "}
 							on file · click to select, double-click to open
 						</p>
+						{!isPro && (
+							<Link
+								to="/pricing"
+								className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline underline-offset-4"
+							>
+								<Sparkles className="h-3 w-3" />
+								{totalCount}/2 free templates used ·
+								Upgrade for unlimited
+							</Link>
+						)}
 					</div>
 					<div className="flex items-center gap-4">
+						<button
+							onClick={() => navigate("/dashboard/trash")}
+							className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground"
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+							Trash
+						</button>
+						<span className="hidden h-3 w-px bg-border sm:block" aria-hidden />
 						<div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.15em]">
 							<button
 								onClick={() => setLayoutMode("grid")}

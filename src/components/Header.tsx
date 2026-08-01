@@ -18,6 +18,7 @@ import {
 	LogOut,
 	Moon,
 	Settings,
+	Sparkles,
 	Sun,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -163,6 +164,18 @@ const Header = ({ onTourClick }: HeaderProps) => {
 							</p>
 						</div>
 						<DropdownMenuSeparator />
+						{!isPro && (
+							<>
+								<DropdownMenuItem
+									className="font-medium text-primary focus:text-primary"
+									onClick={() => navigate("/pricing")}
+								>
+									<Sparkles className="mr-2 h-4 w-4" />
+									Upgrade to Pro
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+							</>
+						)}
 						<DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
 							<Settings className="mr-2 h-4 w-4" />
 							Settings

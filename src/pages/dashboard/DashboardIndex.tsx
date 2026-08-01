@@ -9,9 +9,15 @@ import {
 } from "@/services/dashboardApi";
 import type { Template } from "@/types/Template";
 import { formatDistanceToNow } from "date-fns";
-import { FolderOpen, LayoutGrid, Send, Trash2 } from "lucide-react";
+import {
+	FolderOpen,
+	LayoutGrid,
+	Send,
+	Sparkles,
+	Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const getGreeting = () => {
 	const hour = new Date().getHours();
@@ -32,7 +38,7 @@ const STAMP_ROTATIONS = ["-rotate-6", "rotate-3", "-rotate-3"];
 
 const DashboardIndex = () => {
 	const navigate = useNavigate();
-	const { BASE_URL, userName } = useAuthContext();
+	const { BASE_URL, userName, isPro } = useAuthContext();
 	const [stats, setStats] = useState<Stats | null>(null);
 	const [recentTemplates, setRecentTemplates] = useState<Template[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -180,6 +186,30 @@ const DashboardIndex = () => {
 					))}
 				</div>
 			</section>
+
+			{/* Upgrade banner */}
+			{!isPro && (
+				<section className="flex flex-col items-start gap-4 border-2 border-foreground bg-primary/5 p-6 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex items-start gap-3">
+						<Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+						<div>
+							<p className="font-playfair text-lg italic text-foreground">
+								You're on the Free plan
+							</p>
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								Unlock the advanced editor, unlimited templates and
+								batches, recipient verification, and full analytics.
+							</p>
+						</div>
+					</div>
+					<Link
+						to="/pricing"
+						className="flex shrink-0 items-center gap-2 border-2 border-foreground bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[3px_3px_0_hsl(var(--foreground))] transition-all hover:-translate-y-0.5"
+					>
+						Upgrade to Pro
+					</Link>
+				</section>
+			)}
 
 			{/* Recent work collage */}
 			<section className="relative">
