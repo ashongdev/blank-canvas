@@ -15,8 +15,10 @@ import Login from "./pages/Login";
 import Marketplace from "./pages/Marketplace";
 import NotFound from "./pages/NotFound";
 import Participant from "./pages/Participant";
+import Pricing from "./pages/Pricing";
 import Signup from "./pages/Signup";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
+import RequireProRoute from "./components/RequireProRoute";
 
 // Instantiated once, outside the component tree so it survives re-renders.
 const queryClient = new QueryClient({
@@ -41,11 +43,14 @@ const App = () => (
 							<Route path="/" element={<Landing />} />
 							<Route path="/editor" element={<Editor />} />
 							<Route path="/marketplace" element={<Marketplace />} />
+							<Route path="/pricing" element={<Pricing />} />
 							<Route
 								path="/advanced"
 								element={
 									<ProtectedRoute>
-										<Advanced />
+										<RequireProRoute>
+											<Advanced />
+										</RequireProRoute>
 									</ProtectedRoute>
 								}
 							/>

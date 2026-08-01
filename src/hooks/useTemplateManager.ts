@@ -1,4 +1,8 @@
 import { logEvent } from "@/lib/analytics";
+import {
+	extractUpgradeError,
+	extractUpgradeErrorFromBlob,
+} from "@/lib/billingErrors";
 import { getVisibleFields } from "@/lib/fieldPresets";
 import {
 	hasTemplateSource,
@@ -119,8 +123,18 @@ const useTemplateManager = ({
 				{ responseType: "blob" },
 			);
 			return response.data as Blob;
-		} catch {
-			toast.error("Failed to generate certificate");
+		} catch (err) {
+			const upgradeMessage = await extractUpgradeErrorFromBlob(err);
+			if (upgradeMessage) {
+				toast.error(upgradeMessage, {
+					action: {
+						label: "View Plans",
+						onClick: () => window.location.assign("/pricing"),
+					},
+				});
+			} else {
+				toast.error("Failed to generate certificate");
+			}
 			return null;
 		}
 	};
@@ -200,9 +214,19 @@ const useTemplateManager = ({
 			if (batchErrors) {
 				toast.warning(`Some certificates had errors: ${batchErrors}`);
 			}
-		} catch {
+		} catch (err) {
 			toast.dismiss(toastId);
-			toast.error("Batch generation failed");
+			const upgradeMessage = await extractUpgradeErrorFromBlob(err);
+			if (upgradeMessage) {
+				toast.error(upgradeMessage, {
+					action: {
+						label: "View Plans",
+						onClick: () => window.location.assign("/pricing"),
+					},
+				});
+			} else {
+				toast.error("Batch generation failed");
+			}
 		}
 	};
 
@@ -313,10 +337,20 @@ const useTemplateManager = ({
 						public_id: res.data.public_id,
 						recipients: JSON.stringify(recipients),
 					});
-				} catch {
+				} catch (err) {
 					// Non-fatal: the template is still published either way.
+					const upgradeMessage = extractUpgradeError(err);
 					toast.warning(
-						"Published, but the recipient list couldn't be saved.",
+						upgradeMessage ??
+							"Published, but the recipient list couldn't be saved.",
+						upgradeMessage
+							? {
+									action: {
+										label: "View Plans",
+										onClick: () => window.location.assign("/pricing"),
+									},
+								}
+							: undefined,
 					);
 				}
 
@@ -334,9 +368,19 @@ const useTemplateManager = ({
 				toast.dismiss(toastId);
 				toast.success("Published successfully!");
 			}
-		} catch {
+		} catch (err) {
 			toast.dismiss(toastId);
-			toast.error("Failed to publish template");
+			const upgradeMessage = extractUpgradeError(err);
+			if (upgradeMessage) {
+				toast.error(upgradeMessage, {
+					action: {
+						label: "View Plans",
+						onClick: () => window.location.assign("/pricing"),
+					},
+				});
+			} else {
+				toast.error("Failed to publish template");
+			}
 		} finally {
 			setIsPublishing(false);
 		}

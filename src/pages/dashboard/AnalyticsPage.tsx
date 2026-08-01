@@ -9,6 +9,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { extractUpgradeError } from "@/lib/billingErrors";
 import { fetchAnalytics } from "@/services/dashboardApi";
 import type { Analytics } from "@/types/Analytics";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
@@ -17,6 +18,7 @@ import {
 	FilePlus2,
 	FolderOpen,
 	Link2,
+	Lock,
 	Mail,
 	Package,
 	Send,
@@ -24,6 +26,7 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
 	Area,
 	AreaChart,
@@ -38,6 +41,7 @@ const AnalyticsPage = () => {
 	const { BASE_URL } = useAuthContext();
 	const [data, setData] = useState<Analytics | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [upgradeRequired, setUpgradeRequired] = useState(false);
 	const [kindFilter, setKindFilter] = useState<
 		"total" | "editor" | "self_serve" | "batch"
 	>("total");
@@ -51,6 +55,8 @@ const AnalyticsPage = () => {
 			try {
 				const result = await fetchAnalytics(BASE_URL);
 				if (!cancelled) setData(result);
+			} catch (err) {
+				if (!cancelled && extractUpgradeError(err)) setUpgradeRequired(true);
 			} finally {
 				if (!cancelled) setIsLoading(false);
 			}
@@ -201,6 +207,25 @@ const AnalyticsPage = () => {
 				</div>
 			</div>
 
+			{upgradeRequired ? (
+				<div className="flex flex-col items-center gap-3 border border-dashed border-border bg-card px-6 py-16 text-center">
+					<Lock className="h-6 w-6 text-muted-foreground" />
+					<h3 className="font-playfair text-xl italic text-foreground">
+						Full analytics is a Pro feature
+					</h3>
+					<p className="max-w-sm text-sm text-muted-foreground">
+						Upgrade to Pro to see generation trends, verification rates,
+						top templates, and recent activity.
+					</p>
+					<Link
+						to="/pricing"
+						className="mt-2 border border-foreground bg-foreground px-5 py-2 text-xs font-semibold uppercase tracking-wider text-background transition-opacity hover:opacity-90"
+					>
+						View Plans
+					</Link>
+				</div>
+			) : (
+				<>
 			{/* ── Certificate generation ── */}
 			<div className="space-y-6">
 				<h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-secondary">
@@ -439,6 +464,8 @@ const AnalyticsPage = () => {
 					)}
 				</div>
 			</div>
+			</>
+			)}
 		</div>
 	);
 };
