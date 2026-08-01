@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const fieldClass =
 	"rounded-none border-x-0 border-t-0 border-b-2 border-foreground/30 bg-transparent px-0 text-base focus-visible:border-primary focus-visible:ring-0";
@@ -38,9 +38,6 @@ const Signup = () => {
 					genC
 				</Link>
 				<div>
-					<p className="text-xs uppercase tracking-[0.3em] text-secondary-foreground/70">
-						Issue No. 01 — New Members
-					</p>
 					<h2 className="mt-4 font-playfair text-5xl italic leading-[1.05]">
 						Join the
 						<br />

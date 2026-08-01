@@ -24,7 +24,6 @@ import {
 	TOUR_STORAGE_KEYS,
 } from "@/config/tourSteps";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import useFunctions from "@/hooks/useFunctions";
 import { useTour } from "@/hooks/useTour";
 import { logEvent } from "@/lib/analytics";
 import api from "@/services/axios";
@@ -39,7 +38,6 @@ import {
 	Share2,
 	ShieldCheck,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -522,7 +520,7 @@ const Participant = () => {
 				email: verificationEmail.trim(),
 			});
 			setVerificationStep("code");
-			toast.success("Verification code sent — check your email.");
+			toast.success("Verification code sent");
 		} catch (error) {
 			const message = axios.isAxiosError(error)
 				? (error.response?.data as { error?: string })?.error

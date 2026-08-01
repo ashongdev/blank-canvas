@@ -353,8 +353,7 @@ const AnalyticsPage = () => {
 						Activity overview
 					</h4>
 					<p className="mt-0.5 text-xs text-muted-foreground">
-						Every square is a day over the last 12 months — darker means
-						more templates created, links shared, or templates loaded.
+						Every square is a day over the last 12 months.
 					</p>
 					{isLoading ? (
 						<Skeleton className="mt-4 h-32 w-full" />
@@ -404,7 +403,7 @@ const AnalyticsPage = () => {
 						</div>
 					) : (
 						<p className="mt-4 text-sm text-muted-foreground">
-							Nothing generated yet — once certificates start going out,
+							Nothing generated yet. Once certificates start going out,
 							your most-used templates will show up here.
 						</p>
 					)}

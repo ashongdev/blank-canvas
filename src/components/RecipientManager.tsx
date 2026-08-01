@@ -185,7 +185,7 @@ const RecipientManager = ({
 							size="sm"
 						>
 							<Download className="w-4 h-4" />
-							Generate All ({recipients.length}) — Download ZIP
+							Generate All ({recipients.length})
 						</Button>
 					)}
 				</div>

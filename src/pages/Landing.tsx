@@ -8,9 +8,8 @@ import {
 	FolderOpen,
 	LayoutGrid,
 	Send,
-	Sparkles,
 	Store,
-	Users,
+	Users
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -104,10 +103,6 @@ const Landing = () => {
 					transition={{ duration: 0.4 }}
 					className="lg:col-span-7"
 				>
-					<p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
-						<Sparkles className="h-3.5 w-3.5" />
-						Vol. I — Certificate Studio
-					</p>
 					<h1 className="mt-4 font-playfair text-4xl italic leading-[1.05] tracking-tight text-foreground sm:text-6xl">
 						Certificates people
 						<br />

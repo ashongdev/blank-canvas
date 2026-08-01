@@ -32,7 +32,7 @@ export const marketplaceTemplates: MarketplaceTemplate[] = [
 		id: "classic-gold",
 		name: "Classic Gold",
 		description:
-			"Traditional certificate with ornate gold borders — ideal for formal awards and achievements.",
+			"Traditional certificate with ornate gold borders. Ideal for formal awards and achievements.",
 		category: "classic",
 		imageUrl: "/marketplace/classic-gold.svg",
 		tags: ["formal", "gold", "achievement"],
@@ -50,7 +50,7 @@ export const marketplaceTemplates: MarketplaceTemplate[] = [
 		id: "modern-minimal",
 		name: "Modern Minimal",
 		description:
-			"Clean, contemporary design with bold typography — perfect for workshops and online courses.",
+			"Clean, contemporary design with bold typography. Perfect for workshops and online courses.",
 		category: "modern",
 		imageUrl: "/marketplace/modern-minimal.svg",
 		tags: ["minimal", "clean", "workshop"],
@@ -104,7 +104,7 @@ export const marketplaceTemplates: MarketplaceTemplate[] = [
 		id: "creative-gradient",
 		name: "Creative Gradient",
 		description:
-			"Vibrant hackathon and event certificate with a modern gradient accent — great for tech events.",
+			"Vibrant hackathon and event certificate with a modern gradient accent. Great for tech events.",
 		category: "creative",
 		imageUrl: "/marketplace/creative-gradient.svg",
 		tags: ["hackathon", "event", "winner"],

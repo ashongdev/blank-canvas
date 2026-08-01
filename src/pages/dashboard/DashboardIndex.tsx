@@ -1,12 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { openTemplateInEditor } from "@/lib/editorUtils";
+import { cn } from "@/lib/utils";
 import {
 	fetchCollections,
 	fetchDashboardStats,
 	fetchTemplates,
 } from "@/services/dashboardApi";
-import { cn } from "@/lib/utils";
 import type { Template } from "@/types/Template";
 import { formatDistanceToNow } from "date-fns";
 import { FolderOpen, LayoutGrid, Send, Trash2 } from "lucide-react";
@@ -121,7 +121,7 @@ const DashboardIndex = () => {
 						<span className="text-primary">blank page</span>.
 					</h2>
 					<p className="relative mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-						This is your workspace — where templates are designed,
+						This is your workspace where templates are designed,
 						collected, and sent out into the world. Pick up where
 						you left off, or start something new.
 					</p>

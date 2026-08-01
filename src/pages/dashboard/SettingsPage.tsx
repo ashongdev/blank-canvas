@@ -1,10 +1,9 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const fieldClass =
 	"rounded-none border-x-0 border-t-0 border-b-2 border-foreground/30 bg-transparent px-0 text-base focus-visible:border-primary focus-visible:ring-0";
@@ -94,7 +93,7 @@ const SettingsPage = () => {
 				<div className="space-y-12 lg:col-span-8">
 					<section>
 						<p className="text-xs font-semibold uppercase tracking-[0.25em] text-secondary">
-							01 — Profile Information
+							01. Profile Information
 						</p>
 						<div className="mt-5 space-y-6 border-t border-border pt-6">
 							<div className="space-y-2">
@@ -127,7 +126,7 @@ const SettingsPage = () => {
 
 					<section>
 						<p className="text-xs font-semibold uppercase tracking-[0.25em] text-secondary">
-							02 — Change Password
+							02. Change Password
 						</p>
 						<div className="mt-5 space-y-6 border-t border-border pt-6">
 							<div className="space-y-2">

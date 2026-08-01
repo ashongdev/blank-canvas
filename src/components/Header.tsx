@@ -8,6 +8,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -22,7 +23,6 @@ import {
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuthContext } from "@/hooks/useAuthContext";
 
 interface HeaderProps {
 	onTourClick: () => void;
@@ -186,12 +186,6 @@ const Header = ({ onTourClick }: HeaderProps) => {
 						transition={{ duration: 0.22, ease: "easeInOut" }}
 						className="overflow-hidden"
 					>
-						{/* Issue line */}
-						<div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 pt-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground sm:px-8">
-							<span>Vol. I — Certificate Studio</span>
-							<span className="hidden sm:inline">{today}</span>
-						</div>
-
 						{/* Nameplate */}
 						<div className="mx-auto flex max-w-[1400px] flex-col gap-3 px-5 pb-4 pt-1 sm:flex-row sm:items-end sm:justify-between sm:px-8">
 							<Link to="/" className="group flex items-baseline gap-3">

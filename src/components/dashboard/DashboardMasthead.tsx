@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ThemeToggler from "@/components/dashboard/ThemeToggler";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -112,12 +112,6 @@ const DashboardMasthead = () => {
 						transition={{ duration: 0.22, ease: "easeInOut" }}
 						className="overflow-hidden"
 					>
-						{/* Issue line */}
-						<div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 pt-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground sm:px-8">
-							<span>Vol. I — Certificate Studio</span>
-							<span className="hidden sm:inline">{today}</span>
-						</div>
-
 						{/* Nameplate */}
 						<div className="mx-auto flex max-w-[1400px] flex-col gap-3 px-5 pb-4 pt-1 sm:flex-row sm:items-end sm:justify-between sm:px-8">
 							<Link to="/" className="group flex items-baseline gap-3">

@@ -40,9 +40,7 @@ const Login = () => {
 					genC
 				</Link>
 				<div>
-					<p className="text-xs uppercase tracking-[0.3em] text-background/60">
-						Issue No. 02 — Members Only
-					</p>
+					
 					<h2 className="mt-4 font-playfair text-5xl italic leading-[1.05]">
 						Good to see
 						<br />

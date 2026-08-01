@@ -1,6 +1,6 @@
 import CertificatePreview from "@/components/CertificatePreview";
-import Header from "@/components/Header";
 import EditorAuthFooter from "@/components/EditorAuthFooter";
+import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -219,10 +219,7 @@ const Marketplace = () => {
 										<span>
 											<strong className="text-foreground">
 												Try with sample data
-											</strong>{" "}
-											— opens the editor with placeholder
-											text and sample recipients for
-											testing.
+											</strong>
 										</span>
 									</li>
 									<li className="flex items-center gap-2">
@@ -230,9 +227,7 @@ const Marketplace = () => {
 										<span>
 											<strong className="text-foreground">
 												Use template
-											</strong>{" "}
-											— opens a clean editor ready for your
-											real certificate content.
+											</strong>
 										</span>
 									</li>
 								</ul>

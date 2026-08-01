@@ -2,6 +2,7 @@ import CertificatePreview from "@/components/CertificatePreview";
 import ControlPanel from "@/components/ControlPanel";
 import EditorAuthFooter from "@/components/EditorAuthFooter";
 import Header from "@/components/Header";
+import RecipientManager from "@/components/RecipientManager";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,9 +27,8 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
-import RecipientManager from "@/components/RecipientManager";
-import useFunctions from "@/hooks/useFunctions";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import useFunctions from "@/hooks/useFunctions";
 import useTemplateManager from "@/hooks/useTemplateManager";
 import { useTour } from "@/hooks/useTour";
 import { createDefaultTextField } from "@/lib/defaultField";
@@ -669,7 +669,7 @@ const CertificateEditor = ({
 						<DialogTitle>Preview</DialogTitle>
 						<DialogDescription>
 							This is exactly what a generated certificate will look
-							like — rendered the same way a real download is.
+							like
 						</DialogDescription>
 					</DialogHeader>
 					{previewImageUrl && (
