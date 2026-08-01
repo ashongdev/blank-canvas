@@ -16,6 +16,7 @@ const FREE_FEATURES = [
 	"Simple editor (1 field per certificate)",
 	"Up to 2 templates",
 	"2 publishable links (25 generations each)",
+	"Up to 2 collections",
 	"10 recipients per batch",
 	"3 redownloads per certificate",
 	"Basic usage stats",
@@ -24,6 +25,7 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
 	"Advanced editor (multiple fields per certificate)",
 	"Unlimited templates",
+	"Unlimited collections",
 	"Unlimited batch generation",
 	"Recipient email verification (access control)",
 	"Unlimited recipient redownloads",
@@ -41,6 +43,7 @@ const COMPARISON_ROWS: {
 		pro: "Unlimited",
 	},
 	{ feature: "Templates", free: "2 active", pro: "Unlimited" },
+	{ feature: "Collections", free: "2 active", pro: "Unlimited" },
 	{ feature: "Editor", free: "Simple (1 field)", pro: "Advanced (multi-field)" },
 	{ feature: "Batch generation", free: "10 recipients / batch", pro: "Unlimited" },
 	{ feature: "Recipient email verification", free: "Not included", pro: "Included" },

@@ -1,3 +1,4 @@
+import { extractUpgradeError } from "@/lib/billingErrors";
 import api from "@/services/axios";
 import { PAGE_SIZE } from "@/services/dashboardApi";
 import type { Collection } from "@/types/Collection";
@@ -138,8 +139,18 @@ export function useDashboardStore({
 				toast.success("Collection created");
 			} catch (err) {
 				setCollections(snapshot);
+				const upgradeMessage = extractUpgradeError(err);
 				toast.error(
-					collectionErrorMessage(err, "Failed to create collection"),
+					upgradeMessage ??
+						collectionErrorMessage(err, "Failed to create collection"),
+					upgradeMessage
+						? {
+								action: {
+									label: "View Plans",
+									onClick: () => window.location.assign("/pricing"),
+								},
+							}
+						: undefined,
 				);
 			}
 		},

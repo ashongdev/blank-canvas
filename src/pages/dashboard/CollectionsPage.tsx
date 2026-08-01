@@ -48,11 +48,12 @@ import {
 	Loader2,
 	MoreVertical,
 	Pencil,
+	Sparkles,
 	Trash2,
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface Props {
 	isLoading: boolean;
@@ -89,7 +90,7 @@ const CollectionsPage = ({
 	};
 
 	const navigate = useNavigate();
-	const { BASE_URL } = useAuthContext();
+	const { BASE_URL, isPro } = useAuthContext();
 	const [creating, setCreating] = useState(false);
 	const [newName, setNewName] = useState("");
 	const [visibleSkeletons, setVisibleSkeletons] = useState(1);
@@ -758,6 +759,17 @@ const CollectionsPage = ({
 					</>
 				}
 			/>
+
+			{!isPro && (
+				<Link
+					to="/pricing"
+					className="-mt-6 inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline underline-offset-4"
+				>
+					<Sparkles className="h-3 w-3" />
+					{pagination.total_count}/2 free collections used ·
+					Upgrade for unlimited
+				</Link>
+			)}
 
 			{collections.length === 0 ? (
 				<div className="flex flex-col items-center gap-2 border-2 border-dashed border-border py-20 text-center">
