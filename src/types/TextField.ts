@@ -21,6 +21,14 @@ export interface TextField {
 	rawDate?: string;
 	/** Signature (or other image) URL. When set, this field renders as an image, not text. */
 	imageUrl?: string;
+	/**
+	 * Cloudinary public_id of an ephemeral, editor-scratch signature — set only
+	 * when imageUrl came from the Draw/Upload tabs, never from the Library tab.
+	 * Sent back as existing_public_id on the next draw/upload for this field so
+	 * it overwrites in place instead of accumulating new assets. Left unset for
+	 * library-picked signatures, which must never be overwritten this way.
+	 */
+	signaturePublicId?: string;
 	/** Only meaningful when imageUrl is set: display size in px on the certificate. */
 	width?: number;
 	height?: number;

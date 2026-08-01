@@ -169,12 +169,12 @@ const AnalyticsPage = () => {
 					aria-hidden
 					className="pointer-events-none absolute -left-2 -top-12 select-none font-playfair text-[7rem] font-bold italic leading-none text-foreground/[0.04] sm:text-[9rem]"
 				>
-					03
+					04
 				</span>
 				<div className="relative flex flex-wrap items-end justify-between gap-4 border-b-2 border-foreground pb-4">
 					<div>
 						<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
-							Section 03
+							Section 04
 						</p>
 						<h2 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
 							Analytics

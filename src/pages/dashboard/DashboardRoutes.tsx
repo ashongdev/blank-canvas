@@ -5,6 +5,7 @@ import CollectionsPage from "./CollectionsPage";
 import TrashPage from "./TrashPage";
 import SettingsPage from "./SettingsPage";
 import AnalyticsPage from "./AnalyticsPage";
+import SignaturesPage from "./SignaturesPage";
 import DashboardIndex from "./DashboardIndex";
 import { useCallback, useEffect, useState } from "react";
 import { Template } from "@/types/Template";
@@ -322,6 +323,7 @@ const DashboardRoutes = () => {
 				}
 			/>
 			<Route path="analytics" element={<AnalyticsPage />} />
+			<Route path="signatures" element={<SignaturesPage />} />
 			<Route path="settings" element={<SettingsPage />} />
 		</Routes>
 	);

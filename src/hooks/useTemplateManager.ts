@@ -348,15 +348,20 @@ const useTemplateManager = ({
 	 */
 	const handleSignatureUpload = async (
 		file: File | Blob,
-	): Promise<string | null> => {
+		existingPublicId?: string,
+	): Promise<{ url: string; publicId: string } | null> => {
 		const formData = new FormData();
 		formData.append("signature", file, "signature.png");
+		if (existingPublicId) {
+			formData.append("existing_public_id", existingPublicId);
+		}
 		try {
-			const res = await api.post<{ secure_url?: string }>(
+			const res = await api.post<{ secure_url?: string; public_id?: string }>(
 				`${BASE_URL}/upload-signature/`,
 				formData,
 			);
-			return res.data.secure_url ?? null;
+			if (!res.data.secure_url || !res.data.public_id) return null;
+			return { url: res.data.secure_url, publicId: res.data.public_id };
 		} catch {
 			toast.error("Failed to upload signature");
 			return null;

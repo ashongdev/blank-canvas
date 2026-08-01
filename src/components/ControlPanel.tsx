@@ -42,7 +42,10 @@ interface ControlPanelProps {
 	selectedFieldId: string;
 	onFieldUpdate: (id: string, updates: Partial<TextField>) => void;
 	simpleView?: boolean;
-	onUploadSignature: (file: File | Blob) => Promise<string | null>;
+	onUploadSignature: (
+		file: File | Blob,
+		existingPublicId?: string,
+	) => Promise<{ url: string; publicId: string } | null>;
 }
 
 const ControlPanel = ({
@@ -66,10 +69,19 @@ const ControlPanel = ({
 	const handleSignatureCapture = async (file: File | Blob) => {
 		setIsUploadingSignature(true);
 		try {
-			const url = await onUploadSignature(file);
-			if (url) {
+			// Overwrites the field's own previous ephemeral asset in place
+			// (if any) rather than piling up a new Cloudinary asset every
+			// time the signature is redrawn/reuploaded. Never overwrites a
+			// library signature — signaturePublicId is only ever set here,
+			// from Draw/Upload, and is cleared when a library one is picked.
+			const result = await onUploadSignature(
+				file,
+				activeField.signaturePublicId,
+			);
+			if (result) {
 				onFieldUpdate(activeField.id, {
-					imageUrl: url,
+					imageUrl: result.url,
+					signaturePublicId: result.publicId,
 					width: activeField.width ?? DEFAULT_SIGNATURE_WIDTH,
 					height: activeField.height ?? DEFAULT_SIGNATURE_HEIGHT,
 				});
@@ -77,6 +89,19 @@ const ControlPanel = ({
 		} finally {
 			setIsUploadingSignature(false);
 		}
+	};
+
+	const handleSelectLibrarySignature = (signature: {
+		url: string;
+		name: string;
+	}) => {
+		onFieldUpdate(activeField.id, {
+			imageUrl: signature.url,
+			// Never overwrite a library asset from the ephemeral flow.
+			signaturePublicId: undefined,
+			width: activeField.width ?? DEFAULT_SIGNATURE_WIDTH,
+			height: activeField.height ?? DEFAULT_SIGNATURE_HEIGHT,
+		});
 	};
 
 	return (
@@ -144,6 +169,7 @@ const ControlPanel = ({
 										penColor={activeField.color}
 										isUploading={isUploadingSignature}
 										onCapture={handleSignatureCapture}
+										onSelectLibrary={handleSelectLibrarySignature}
 									/>
 								)}
 							</div>

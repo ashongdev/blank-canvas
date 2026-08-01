@@ -1,14 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { cn } from "@/lib/utils";
+import { fetchSignatures } from "@/services/signaturesApi";
+import type { Signature } from "@/types/Signature";
 import { Eraser, Loader2, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface SignaturePadProps {
 	/** Called with the captured signature (drawn or uploaded), as a file the caller uploads. */
 	onCapture: (file: File | Blob) => void;
+	/** Called when an existing library signature is picked, no upload needed. */
+	onSelectLibrary?: (signature: Signature) => void;
 	/** Pen color for the draw tab, reuses the field's assigned text color. */
 	penColor?: string;
 	isUploading?: boolean;
+	/** Hide the Library tab, e.g. when this pad is itself used to build the library. */
+	showLibraryTab?: boolean;
 }
 
 const CANVAS_WIDTH = 400;
@@ -16,13 +24,36 @@ const CANVAS_HEIGHT = 180;
 
 const SignaturePad = ({
 	onCapture,
+	onSelectLibrary,
 	penColor = "#000000",
 	isUploading = false,
+	showLibraryTab = true,
 }: SignaturePadProps) => {
+	const { BASE_URL } = useAuthContext();
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const isDrawingRef = useRef(false);
 	const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 	const [hasDrawn, setHasDrawn] = useState(false);
+	const [library, setLibrary] = useState<Signature[]>([]);
+	const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
+
+	useEffect(() => {
+		if (!showLibraryTab) {
+			setIsLoadingLibrary(false);
+			return;
+		}
+		let cancelled = false;
+		fetchSignatures(BASE_URL)
+			.then((signatures) => {
+				if (!cancelled) setLibrary(signatures);
+			})
+			.finally(() => {
+				if (!cancelled) setIsLoadingLibrary(false);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [BASE_URL, showLibraryTab]);
 
 	const getCanvasPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
 		const canvas = canvasRef.current;
@@ -86,11 +117,52 @@ const SignaturePad = ({
 	};
 
 	return (
-		<Tabs defaultValue="draw" className="w-full">
-			<TabsList className="grid w-full grid-cols-2">
+		<Tabs
+			defaultValue={showLibraryTab && library.length > 0 ? "library" : "draw"}
+			className="w-full"
+		>
+			<TabsList className={cn("grid w-full", showLibraryTab ? "grid-cols-3" : "grid-cols-2")}>
+				{showLibraryTab && <TabsTrigger value="library">Library</TabsTrigger>}
 				<TabsTrigger value="draw">Draw</TabsTrigger>
 				<TabsTrigger value="upload">Upload</TabsTrigger>
 			</TabsList>
+
+			{showLibraryTab && (
+				<TabsContent value="library">
+					{isLoadingLibrary ? (
+						<div className="flex h-[180px] w-full items-center justify-center text-muted-foreground">
+							<Loader2 className="h-5 w-5 animate-spin" />
+						</div>
+					) : library.length === 0 ? (
+						<div className="flex h-[180px] w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border text-center text-sm text-muted-foreground">
+							<p>No saved signatures yet</p>
+							<p className="text-xs">
+								Save one from the Signatures page in your dashboard
+							</p>
+						</div>
+					) : (
+						<div className="grid max-h-[180px] grid-cols-2 gap-2 overflow-y-auto">
+							{library.map((signature) => (
+								<button
+									key={signature.id}
+									type="button"
+									onClick={() => onSelectLibrary?.(signature)}
+									className="flex flex-col items-center gap-1 rounded-md border border-border p-2 transition-colors hover:border-primary"
+								>
+									<img
+										src={signature.url}
+										alt={signature.name}
+										className="h-12 w-full object-contain"
+									/>
+									<span className="w-full truncate text-center text-xs text-muted-foreground">
+										{signature.name}
+									</span>
+								</button>
+							))}
+						</div>
+					)}
+				</TabsContent>
+			)}
 
 			<TabsContent value="draw" className="space-y-2">
 				<canvas

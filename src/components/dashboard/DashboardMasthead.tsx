@@ -17,10 +17,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 const sections = [
 	{ no: "01", title: "Overview", url: "/dashboard", exact: true },
 	{ no: "02", title: "Templates", url: "/dashboard/templates" },
-	{ no: "03", title: "Analytics", url: "/dashboard/analytics" },
-	{ no: "04", title: "Collections", url: "/dashboard/collections" },
-	{ no: "05", title: "Trash", url: "/dashboard/trash" },
-	{ no: "06", title: "Marketplace", url: "/marketplace" },
+	{ no: "03", title: "Signatures", url: "/dashboard/signatures" },
+	{ no: "04", title: "Analytics", url: "/dashboard/analytics" },
+	{ no: "05", title: "Collections", url: "/dashboard/collections" },
+	{ no: "06", title: "Trash", url: "/dashboard/trash" },
+	{ no: "07", title: "Marketplace", url: "/marketplace" },
 ];
 
 const today = new Date().toLocaleDateString(undefined, {
