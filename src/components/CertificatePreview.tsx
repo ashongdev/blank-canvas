@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { TextField } from "@/types/TextField";
 import { motion } from "framer-motion";
 import { RefObject, useEffect, useRef, useState } from "react";
@@ -13,9 +14,35 @@ interface CertificatePreviewProps {
 	isParticipant?: boolean;
 	/** When provided (and not isParticipant), fields can be dragged directly on the canvas. */
 	onFieldMove?: (id: string, x: number, y: number) => void;
+	/**
+	 * When provided (and not isParticipant), the selected field shows corner
+	 * handles for drag-to-resize. Deliberately a separate prop from
+	 * onFieldMove: resizing is organizer-only even where dragging isn't.
+	 */
+	onFieldResize?: (id: string, updates: Partial<TextField>) => void;
 	/** Briefly pulses the selected field to hint that it can be dragged. */
 	showDragHint?: boolean;
 }
+
+type ResizeCorner = "tl" | "tr" | "bl" | "br";
+
+interface ResizeState {
+	fieldId: string;
+	// Screen-space position of the corner opposite the one being dragged;
+	// this stays fixed for the duration of the resize.
+	anchorX: number;
+	anchorY: number;
+	startDiagonal: number;
+	// Natural (unscaled) units: field.width/fontSize and field.height.
+	startWidth: number;
+	startHeight: number;
+	isImage: boolean;
+}
+
+const MIN_FONT_SIZE = 8;
+const MAX_FONT_SIZE = 300;
+const MIN_IMAGE_DIMENSION = 20;
+const MAX_IMAGE_DIMENSION = 1000;
 
 const CertificatePreview = ({
 	templateUrl,
@@ -27,6 +54,7 @@ const CertificatePreview = ({
 	imgRef,
 	isParticipant = false,
 	onFieldMove,
+	onFieldResize,
 	showDragHint = false,
 }: CertificatePreviewProps) => {
 	const [imageScale, setImageScale] = useState({
@@ -35,7 +63,9 @@ const CertificatePreview = ({
 		offsetY: 0,
 	});
 	const draggingId = useRef<string | null>(null);
+	const resizeState = useRef<ResizeState | null>(null);
 	const isDraggable = !isParticipant && !!onFieldMove;
+	const isResizable = !isParticipant && !!onFieldResize;
 
 	// Calculate actual image dimensions and scale
 	useEffect(() => {
@@ -122,6 +152,71 @@ const CertificatePreview = ({
 		e.currentTarget.releasePointerCapture(e.pointerId);
 	};
 
+	const handleResizePointerDown = (
+		e: React.PointerEvent<HTMLSpanElement>,
+		field: TextField,
+		corner: ResizeCorner,
+	) => {
+		if (!isResizable) return;
+		e.preventDefault();
+		e.stopPropagation();
+
+		const fieldEl = e.currentTarget.parentElement;
+		const rect = fieldEl?.getBoundingClientRect();
+		if (!rect) return;
+
+		resizeState.current = {
+			fieldId: field.id,
+			anchorX: corner.includes("l") ? rect.right : rect.left,
+			anchorY: corner.includes("t") ? rect.bottom : rect.top,
+			startDiagonal: Math.hypot(rect.width, rect.height) || 1,
+			startWidth: field.imageUrl ? (field.width ?? 200) : field.fontSize,
+			startHeight: field.height ?? 100,
+			isImage: !!field.imageUrl,
+		};
+		e.currentTarget.setPointerCapture(e.pointerId);
+	};
+
+	const handleResizePointerMove = (e: React.PointerEvent<HTMLSpanElement>) => {
+		const state = resizeState.current;
+		if (!state || !onFieldResize) return;
+
+		const dx = Math.abs(e.clientX - state.anchorX);
+		const dy = Math.abs(e.clientY - state.anchorY);
+		const ratio = (Math.hypot(dx, dy) || 1) / state.startDiagonal;
+
+		if (state.isImage) {
+			onFieldResize(state.fieldId, {
+				width: Math.round(
+					Math.min(
+						MAX_IMAGE_DIMENSION,
+						Math.max(MIN_IMAGE_DIMENSION, state.startWidth * ratio),
+					),
+				),
+				height: Math.round(
+					Math.min(
+						MAX_IMAGE_DIMENSION,
+						Math.max(MIN_IMAGE_DIMENSION, state.startHeight * ratio),
+					),
+				),
+			});
+		} else {
+			onFieldResize(state.fieldId, {
+				fontSize: Math.round(
+					Math.min(
+						MAX_FONT_SIZE,
+						Math.max(MIN_FONT_SIZE, state.startWidth * ratio),
+					),
+				),
+			});
+		}
+	};
+
+	const handleResizePointerUp = (e: React.PointerEvent<HTMLSpanElement>) => {
+		resizeState.current = null;
+		e.currentTarget.releasePointerCapture(e.pointerId);
+	};
+
 	return (
 		<motion.div
 			initial={{ opacity: 0, scale: 0.95 }}
@@ -145,7 +240,7 @@ const CertificatePreview = ({
 					{showPreview &&
 						fields &&
 						fields?.length &&
-						fields?.map((field) => {
+						fields?.filter((field) => !field.hidden).map((field) => {
 							const isSelected =
 								!isParticipant && field.id === selectedFieldId;
 							const pulseDragHint =
@@ -233,6 +328,39 @@ const CertificatePreview = ({
 										/>
 									) : (
 										field.text
+									)}
+
+									{isSelected && isResizable && (
+										<>
+											{(["tl", "tr", "bl", "br"] as const).map(
+												(corner) => (
+													<span
+														key={corner}
+														onPointerDown={(e) =>
+															handleResizePointerDown(
+																e,
+																field,
+																corner,
+															)
+														}
+														onPointerMove={handleResizePointerMove}
+														onPointerUp={handleResizePointerUp}
+														className={cn(
+															"absolute z-10 h-2.5 w-2.5 rounded-full border-2 border-primary bg-background",
+															corner === "tl" &&
+																"left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize",
+															corner === "tr" &&
+																"right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize",
+															corner === "bl" &&
+																"left-0 bottom-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize",
+															corner === "br" &&
+																"right-0 bottom-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize",
+														)}
+														style={{ touchAction: "none" }}
+													/>
+												),
+											)}
+										</>
 									)}
 								</motion.span>
 							);

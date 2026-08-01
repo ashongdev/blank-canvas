@@ -1,4 +1,4 @@
-import type { FieldPreset } from "@/types/TextField";
+import type { FieldPreset, TextField } from "@/types/TextField";
 import { format } from "date-fns";
 import {
 	Award,
@@ -112,3 +112,8 @@ export const getPresetDef = (
 	preset: FieldPreset | undefined,
 ): FieldPresetDef | undefined =>
 	ADDABLE_FIELD_PRESETS.find((p) => p.id === preset);
+
+/** Hidden fields never leave the editor: not rendered, not generated, not
+ * included in a published participant link's payload. */
+export const getVisibleFields = (fields: TextField[]): TextField[] =>
+	fields.filter((f) => !f.hidden);

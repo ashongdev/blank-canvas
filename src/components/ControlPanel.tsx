@@ -287,6 +287,21 @@ const ControlPanel = ({
 								/>
 							</div>
 						)}
+						{!isPrimaryField && (
+							<div className="flex items-center justify-between border rounded-md p-2">
+								<label className="text-xs text-muted-foreground">
+									Visible on Certificate
+								</label>
+								<Switch
+									checked={!activeField.hidden}
+									onCheckedChange={(checked) =>
+										onFieldUpdate(activeField.id, {
+											hidden: !checked,
+										})
+									}
+								/>
+							</div>
+						)}
 					</div>
 				</div>
 

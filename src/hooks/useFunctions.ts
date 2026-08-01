@@ -57,6 +57,23 @@ const useFunctions = ({
 		setSelectedFieldId(newField.id);
 	};
 
+	const duplicateField = (id: string) => {
+		const source = fields.find((f) => f.id === id);
+		if (!source) return;
+
+		const newField: TextField = {
+			...source,
+			id: uuidv4(),
+			x: source.x + 20,
+			y: source.y + 20,
+			// A duplicate is never the primary field, regardless of source.
+			required: false,
+		};
+
+		setFields((prev) => [...prev, newField]);
+		setSelectedFieldId(newField.id);
+	};
+
 	const removeField = (id: string) => {
 		if (fields.length <= 1) {
 			toast.error("Cannot remove the last field");
@@ -84,6 +101,7 @@ const useFunctions = ({
 
 	return {
 		addField,
+		duplicateField,
 		removeField,
 		handlePositionChange,
 		handleManualPositionChange,

@@ -50,7 +50,9 @@ import {
 	ChevronDown,
 	Download,
 	Eye,
+	EyeOff,
 	FlaskConical,
+	Keyboard,
 	Loader2,
 	Plus,
 	Search,
@@ -106,6 +108,7 @@ const CertificateEditor = ({
 	const [showDragHint, setShowDragHint] = useState(false);
 	const [isPreviewing, setIsPreviewing] = useState(false);
 	const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+	const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
 	const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(
 		null,
 	);
@@ -124,7 +127,7 @@ const CertificateEditor = ({
 	const [loadError, setLoadError] = useState<string | null>(null);
 	const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string;
 
-	const { addField, removeField, updateField } = useFunctions({
+	const { addField, duplicateField, removeField, updateField } = useFunctions({
 		fields,
 		selectedFieldId,
 		activeField,
@@ -268,28 +271,45 @@ const CertificateEditor = ({
 	// Arrow-key nudging for the selected field, direct on the canvas.
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (showSharePanel || showLoadDialog || showPreviewDialog) return;
+			if (
+				showSharePanel ||
+				showLoadDialog ||
+				showPreviewDialog ||
+				showShortcutsDialog
+			)
+				return;
 			const tag = (document.activeElement?.tagName || "").toLowerCase();
 			if (["input", "textarea", "select"].includes(tag)) return;
 			if (!activeField) return;
 
 			const step = e.shiftKey ? 10 : 1;
-			switch (e.key) {
-				case "ArrowUp":
+			const isDuplicateShortcut =
+				(e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "d";
+
+			switch (true) {
+				case e.key === "ArrowUp":
 					e.preventDefault();
 					updateField(activeField.id, { y: activeField.y - step });
 					break;
-				case "ArrowDown":
+				case e.key === "ArrowDown":
 					e.preventDefault();
 					updateField(activeField.id, { y: activeField.y + step });
 					break;
-				case "ArrowLeft":
+				case e.key === "ArrowLeft":
 					e.preventDefault();
 					updateField(activeField.id, { x: activeField.x - step });
 					break;
-				case "ArrowRight":
+				case e.key === "ArrowRight":
 					e.preventDefault();
 					updateField(activeField.id, { x: activeField.x + step });
+					break;
+				case e.key === "Delete" || e.key === "Backspace":
+					e.preventDefault();
+					removeField(activeField.id);
+					break;
+				case isDuplicateShortcut:
+					e.preventDefault();
+					duplicateField(activeField.id);
 					break;
 				default:
 					return;
@@ -303,7 +323,10 @@ const CertificateEditor = ({
 		showSharePanel,
 		showLoadDialog,
 		showPreviewDialog,
+		showShortcutsDialog,
 		updateField,
+		removeField,
+		duplicateField,
 	]);
 
 	return (
@@ -394,6 +417,16 @@ const CertificateEditor = ({
 
 				<div className="ml-auto flex items-center gap-2 shrink-0">
 					<Button
+						variant="ghost"
+						size="icon"
+						className="h-9 w-9 text-muted-foreground hover:text-foreground"
+						onClick={() => setShowShortcutsDialog(true)}
+						title="Keyboard shortcuts"
+					>
+						<Keyboard className="h-4 w-4" />
+					</Button>
+
+					<Button
 						variant="outline"
 						size="sm"
 						className="gap-2"
@@ -448,7 +481,7 @@ const CertificateEditor = ({
 							className="border-b border-border flex-shrink-0 flex items-center gap-2 px-4 sm:px-6 h-12 overflow-x-auto"
 							data-tour="fields-list"
 						>
-							{fields.map((field) => (
+							{fields.map((field, i) => (
 								<button
 									key={field.id}
 									onClick={() => setSelectedFieldId(field.id)}
@@ -457,9 +490,27 @@ const CertificateEditor = ({
 										field.id === selectedFieldId
 											? "border-primary bg-primary/10 text-primary"
 											: "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
+										field.hidden && "opacity-50",
 									)}
 								>
 									{field.label}
+									{i > 0 && (
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation();
+												updateField(field.id, { hidden: !field.hidden });
+											}}
+											className="text-muted-foreground hover:text-foreground"
+											title={field.hidden ? "Show field" : "Hide field"}
+										>
+											{field.hidden ? (
+												<EyeOff className="h-3 w-3" />
+											) : (
+												<Eye className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+											)}
+										</button>
+									)}
 									{fields.length > 1 && (
 										<X
 											className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
@@ -516,6 +567,7 @@ const CertificateEditor = ({
 								selectedFieldId={selectedFieldId}
 								onFieldSelect={setSelectedFieldId}
 								onFieldMove={(id, x, y) => updateField(id, { x, y })}
+								onFieldResize={updateField}
 								showDragHint={showDragHint}
 							/>
 						</div>
@@ -721,6 +773,63 @@ const CertificateEditor = ({
 							<Download className="h-4 w-4" />
 							Download
 						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={showShortcutsDialog} onOpenChange={setShowShortcutsDialog}>
+				<DialogContent className="max-w-sm">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<Keyboard className="h-4 w-4" />
+							Keyboard &amp; Mouse
+						</DialogTitle>
+						<DialogDescription>
+							Shortcuts for working with the selected field.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-1 text-sm">
+						<div className="space-y-2">
+							{[
+								{ keys: ["↑", "↓", "←", "→"], label: "Move by 1px" },
+								{ keys: ["Shift", "+ Arrow"], label: "Move by 10px" },
+								{ keys: ["Delete"], label: "Remove field" },
+								{ keys: ["Ctrl", "/", "⌘", "+ D"], label: "Duplicate field" },
+							].map((shortcut, i) => (
+								<div
+									key={i}
+									className="flex items-center justify-between gap-4"
+								>
+									<span className="text-muted-foreground">
+										{shortcut.label}
+									</span>
+									<span className="flex shrink-0 items-center gap-1">
+										{shortcut.keys.map((key, j) =>
+											key === "/" || key.startsWith("+") ? (
+												<span
+													key={j}
+													className="text-xs text-muted-foreground"
+												>
+													{key}
+												</span>
+											) : (
+												<kbd
+													key={j}
+													className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs"
+												>
+													{key}
+												</kbd>
+											),
+										)}
+									</span>
+								</div>
+							))}
+						</div>
+						<div className="border-t border-border pt-3 text-xs text-muted-foreground">
+							<p>Drag a field to reposition it.</p>
+							<p>Drag a corner handle to resize it.</p>
+							<p>Click the eye icon on a field chip to hide/show it.</p>
+						</div>
 					</div>
 				</DialogContent>
 			</Dialog>

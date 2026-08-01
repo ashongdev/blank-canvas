@@ -22,7 +22,7 @@ export interface TextField {
 	/** Signature (or other image) URL. When set, this field renders as an image, not text. */
 	imageUrl?: string;
 	/**
-	 * Cloudinary public_id of an ephemeral, editor-scratch signature — set only
+	 * Cloudinary public_id of an ephemeral, editor-scratch signature, set only
 	 * when imageUrl came from the Draw/Upload tabs, never from the Library tab.
 	 * Sent back as existing_public_id on the next draw/upload for this field so
 	 * it overwrites in place instead of accumulating new assets. Left unset for
@@ -40,6 +40,8 @@ export interface TextField {
 	color: string;
 	anchorMode: "center" | "left";
 	required?: boolean;
+	/** Hidden fields are skipped on the canvas and never sent for generation. */
+	hidden?: boolean;
 }
 
 export interface Recipient {

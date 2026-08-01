@@ -1,4 +1,5 @@
 import { logEvent } from "@/lib/analytics";
+import { getVisibleFields } from "@/lib/fieldPresets";
 import {
 	hasTemplateSource,
 	resolveTemplateFile,
@@ -101,7 +102,7 @@ const useTemplateManager = ({
 
 		const formData = new FormData();
 		formData.append("template", resolvedFile);
-		formData.append("fields", JSON.stringify(fields));
+		formData.append("fields", JSON.stringify(getVisibleFields(fields)));
 		formData.append("inEditor", "true");
 		formData.append("purpose", purpose);
 		// Lets the backend attribute this generation to the right template
@@ -169,7 +170,7 @@ const useTemplateManager = ({
 		const toastId = toast.loading(`Generating ${recipients.length} certificate(s)...`);
 		const formData = new FormData();
 		formData.append("template", resolvedFile);
-		formData.append("fields", JSON.stringify(fields));
+		formData.append("fields", JSON.stringify(getVisibleFields(fields)));
 		formData.append("recipients", JSON.stringify(recipients));
 		formData.append("inEditor", "true");
 		// Lets the backend attribute this batch to the right template for
@@ -319,7 +320,7 @@ const useTemplateManager = ({
 					);
 				}
 
-				const encodedFields = btoa(JSON.stringify(fields));
+				const encodedFields = btoa(JSON.stringify(getVisibleFields(fields)));
 				const params = new URLSearchParams({
 					id: res.data.public_id,
 					data: encodedFields,
