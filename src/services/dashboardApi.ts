@@ -1,4 +1,5 @@
 import api from "@/services/axios";
+import type { Analytics } from "@/types/Analytics";
 import type { Collection } from "@/types/Collection";
 import { DEFAULT_PAGINATION, type PaginationMeta } from "@/types/Pagination";
 import type { Template } from "@/types/Template";
@@ -69,4 +70,16 @@ export const fetchCollections = async (
 		collections: response.data.collections ?? [],
 		pagination: response.data.pagination ?? DEFAULT_PAGINATION,
 	};
+};
+
+export const fetchDashboardStats = async (
+	baseUrl: string,
+): Promise<{ total_generated: number }> => {
+	const response = await api.get(`${baseUrl}/dashboard/stats/`);
+	return { total_generated: response.data.total_generated ?? 0 };
+};
+
+export const fetchAnalytics = async (baseUrl: string): Promise<Analytics> => {
+	const response = await api.get(`${baseUrl}/dashboard/analytics/`);
+	return response.data;
 };

@@ -24,17 +24,21 @@ const useFunctions = ({
 	};
 
 	const addField = () => {
+		// Inherit the most recently used styling (and roughly the position)
+		// from whichever field was active, instead of resetting to hardcoded
+		// defaults every time. A small offset keeps the new field from
+		// landing exactly on top of the one it's copied from.
 		const newField: TextField = {
 			id: uuidv4(),
 			label: "New Field",
 			text: "New Text",
-			x: 0,
-			y: 0,
-			font: "Bickham Script Pro Regular",
-			fontSize: 100,
-			fontWeight: "300",
-			color: "#000000",
-			anchorMode: "center",
+			x: activeField.x + 20,
+			y: activeField.y + 20,
+			font: activeField.font,
+			fontSize: activeField.fontSize,
+			fontWeight: activeField.fontWeight,
+			color: activeField.color,
+			anchorMode: activeField.anchorMode,
 			required: false,
 		};
 

@@ -49,6 +49,7 @@ import {
 	MoreVertical,
 	Pencil,
 	RefreshCw,
+	Send,
 	Trash2,
 	X,
 } from "lucide-react";
@@ -426,6 +427,12 @@ const TemplatesPage = ({
 										{t.public_id}
 									</p>
 								</div>
+								{t.generation_count > 0 && (
+									<span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+										<Send className="h-3 w-3" />
+										{t.generation_count}
+									</span>
+								)}
 								<CardMenu t={t} />
 							</div>
 						))}
@@ -492,6 +499,12 @@ const TemplatesPage = ({
 								<p className="truncate text-center text-[10px] uppercase tracking-wider text-muted-foreground">
 									{t.public_id}
 								</p>
+								{t.generation_count > 0 && (
+									<p className="mt-1 flex items-center justify-center gap-1 text-center text-[10px] text-muted-foreground">
+										<Send className="h-3 w-3" />
+										{t.generation_count} generated
+									</p>
+								)}
 							</div>
 						))}
 					</div>

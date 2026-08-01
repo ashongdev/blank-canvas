@@ -8,6 +8,7 @@ type Template = {
 	name: string | null;
 	collection_id: number | null;
 	trashed: boolean;
+	generation_count: number;
 };
 
 export { Template };

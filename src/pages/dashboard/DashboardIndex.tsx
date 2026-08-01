@@ -1,11 +1,15 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { openTemplateInEditor } from "@/lib/editorUtils";
-import { fetchCollections, fetchTemplates } from "@/services/dashboardApi";
+import {
+	fetchCollections,
+	fetchDashboardStats,
+	fetchTemplates,
+} from "@/services/dashboardApi";
 import { cn } from "@/lib/utils";
 import type { Template } from "@/types/Template";
 import { formatDistanceToNow } from "date-fns";
-import { FolderOpen, LayoutGrid, Trash2 } from "lucide-react";
+import { FolderOpen, LayoutGrid, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -21,6 +25,7 @@ interface Stats {
 	templates: number;
 	collections: number;
 	trashed: number;
+	generated: number;
 }
 
 const STAMP_ROTATIONS = ["-rotate-6", "rotate-3", "-rotate-3"];
@@ -39,12 +44,14 @@ const DashboardIndex = () => {
 		const load = async () => {
 			setIsLoading(true);
 			try {
-				const [active, trashed, collections, recent] = await Promise.all([
-					fetchTemplates(BASE_URL, { state: "active", page: 1, pageSize: 1 }),
-					fetchTemplates(BASE_URL, { state: "deleted", page: 1, pageSize: 1 }),
-					fetchCollections(BASE_URL, { page: 1, pageSize: 1 }),
-					fetchTemplates(BASE_URL, { state: "active", page: 1, pageSize: 8 }),
-				]);
+				const [active, trashed, collections, recent, usage] =
+					await Promise.all([
+						fetchTemplates(BASE_URL, { state: "active", page: 1, pageSize: 1 }),
+						fetchTemplates(BASE_URL, { state: "deleted", page: 1, pageSize: 1 }),
+						fetchCollections(BASE_URL, { page: 1, pageSize: 1 }),
+						fetchTemplates(BASE_URL, { state: "active", page: 1, pageSize: 8 }),
+						fetchDashboardStats(BASE_URL),
+					]);
 
 				if (cancelled) return;
 
@@ -52,6 +59,7 @@ const DashboardIndex = () => {
 					templates: active.pagination.total_count,
 					collections: collections.pagination.total_count,
 					trashed: trashed.pagination.total_count,
+					generated: usage.total_generated,
 				});
 				setRecentTemplates(recent.templates);
 			} finally {
@@ -70,6 +78,12 @@ const DashboardIndex = () => {
 			label: "Templates",
 			value: stats?.templates,
 			icon: LayoutGrid,
+			onClick: () => navigate("/dashboard/templates"),
+		},
+		{
+			label: "Generated",
+			value: stats?.generated,
+			icon: Send,
 			onClick: () => navigate("/dashboard/templates"),
 		},
 		{
