@@ -72,11 +72,9 @@ const AnalyticsPage = () => {
 			...d,
 			label: format(parseISO(d.date), "MMM d"),
 		})) ?? [];
-	const activityChartData =
-		data?.activity_daily.slice(-timeframe).map((d) => ({
-			...d,
-			label: format(parseISO(d.date), "MMM d"),
-		})) ?? [];
+	// The heatmap always shows a full year, independent of the 7/30/90-day
+	// timeframe selector used by the generation trend above it.
+	const activityHeatmapData = data?.activity_daily ?? [];
 	// Aim for roughly 6-7 x-axis labels regardless of the selected window.
 	const tickInterval = Math.max(0, Math.ceil(chartData.length / 7) - 1);
 
@@ -355,14 +353,14 @@ const AnalyticsPage = () => {
 						Activity overview
 					</h4>
 					<p className="mt-0.5 text-xs text-muted-foreground">
-						Every square is a day — darker means more templates created,
-						links shared, or templates loaded.
+						Every square is a day over the last 12 months — darker means
+						more templates created, links shared, or templates loaded.
 					</p>
 					{isLoading ? (
 						<Skeleton className="mt-4 h-32 w-full" />
 					) : (
 						<div className="mt-4">
-							<ActivityHeatmap data={activityChartData} />
+							<ActivityHeatmap data={activityHeatmapData} />
 						</div>
 					)}
 				</div>
