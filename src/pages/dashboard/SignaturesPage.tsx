@@ -138,9 +138,6 @@ const SignaturesPage = () => {
 				</span>
 				<div className="relative flex flex-col justify-between gap-5 border-b-2 border-foreground pb-4 sm:flex-row sm:items-end">
 					<div>
-						<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
-							Section 03
-						</p>
 						<h2 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
 							Signatures
 						</h2>

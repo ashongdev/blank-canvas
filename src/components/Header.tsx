@@ -43,7 +43,7 @@ const today = new Date().toLocaleDateString(undefined, {
 const Header = ({ onTourClick }: HeaderProps) => {
 	const { theme, setTheme } = useTheme();
 	const navigate = useNavigate();
-	const { user, userName, isAuthenticated, logout } = useAuthContext();
+	const { user, userName, isAuthenticated, isPro, logout } = useAuthContext();
 	const [collapsed, setCollapsed] = useState(
 		() => localStorage.getItem("header-collapsed") === "true",
 	);
@@ -130,7 +130,12 @@ const Header = ({ onTourClick }: HeaderProps) => {
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<button className="rounded-full transition-opacity hover:opacity-80">
-							<Avatar className="h-9 w-9 border-2 border-foreground">
+							<Avatar
+								className={cn(
+									"h-9 w-9 border-2",
+									isPro ? "border-primary" : "border-foreground",
+								)}
+							>
 								<AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
 									{userName
 										.split(" ")
@@ -143,9 +148,16 @@ const Header = ({ onTourClick }: HeaderProps) => {
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-56">
 						<div className="px-2 py-1.5">
-							<p className="truncate text-sm font-medium text-foreground">
-								{userName || "Account"}
-							</p>
+							<div className="flex items-center gap-1.5">
+								<p className="truncate text-sm font-medium text-foreground">
+									{userName || "Account"}
+								</p>
+								{isPro && (
+									<span className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
+										Pro
+									</span>
+								)}
+							</div>
 							<p className="truncate text-xs text-muted-foreground">
 								{user?.email ?? ""}
 							</p>

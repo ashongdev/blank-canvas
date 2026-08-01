@@ -1,3 +1,4 @@
+import ListPagination from "@/components/dashboard/ListPagination";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -35,12 +36,11 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
-import ListPagination from "@/components/dashboard/ListPagination";
 import type { Collection } from "@/hooks/useDashboardStore";
 import { openTemplateInEditor } from "@/lib/editorUtils";
 import { cn } from "@/lib/utils";
-import { Template } from "@/types/Template";
 import type { PaginationMeta } from "@/types/Pagination";
+import { Template } from "@/types/Template";
 import { AnimatePresence, motion } from "framer-motion";
 import {
 	ArrowUpRightFromSquare,
@@ -264,9 +264,6 @@ const TemplatesPage = ({
 				</span>
 				<div className="relative flex flex-col justify-between gap-5 border-b-2 border-foreground pb-4 sm:flex-row sm:items-end">
 					<div>
-						<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
-							Section 02
-						</p>
 						<h2 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
 							My Templates
 						</h2>

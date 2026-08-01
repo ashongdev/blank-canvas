@@ -1,4 +1,5 @@
 import api from "@/services/axios";
+import { fetchBillingStatus } from "@/services/billingApi";
 import {
 	createContext,
 	useCallback,
@@ -20,6 +21,7 @@ interface AuthContextValue {
 	user: AuthUser | null;
 	userName: string;
 	isAuthenticated: boolean;
+	isPro: boolean;
 	loading: boolean;
 	refreshAuth: () => Promise<void>;
 	logout: () => void;
@@ -30,6 +32,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const [user, setUser] = useState<AuthUser | null>(null);
+	const [isPro, setIsPro] = useState(false);
 	const [loading, setLoading] = useState(true);
 
 	const BASE_URL = import.meta.env.VITE_BASE_URL as string;
@@ -39,8 +42,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 		try {
 			const response = await api.get<AuthUser>(`${BASE_URL}/me/`);
 			setUser(response.data ?? null);
+			if (response.data) {
+				try {
+					const billing = await fetchBillingStatus(BASE_URL);
+					setIsPro(billing.is_pro);
+				} catch {
+					setIsPro(false);
+				}
+			} else {
+				setIsPro(false);
+			}
 		} catch {
 			setUser(null);
+			setIsPro(false);
 		} finally {
 			setLoading(false);
 		}
@@ -52,6 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const logout = useCallback(() => {
 		setUser(null);
+		setIsPro(false);
 	}, []);
 
 	const isAuthenticated = user !== null;
@@ -63,12 +78,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 			user,
 			userName,
 			isAuthenticated,
+			isPro,
 			loading,
 			refreshAuth,
 			logout,
 			BASE_URL,
 		}),
-		[user, userName, isAuthenticated, loading, refreshAuth, logout, BASE_URL],
+		[
+			user,
+			userName,
+			isAuthenticated,
+			isPro,
+			loading,
+			refreshAuth,
+			logout,
+			BASE_URL,
+		],
 	);
 
 	return (

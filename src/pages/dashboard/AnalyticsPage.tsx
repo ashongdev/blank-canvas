@@ -179,9 +179,6 @@ const AnalyticsPage = () => {
 				</span>
 				<div className="relative flex flex-wrap items-end justify-between gap-4 border-b-2 border-foreground pb-4">
 					<div>
-						<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
-							Section 04
-						</p>
 						<h2 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
 							Analytics
 						</h2>

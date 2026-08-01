@@ -6,7 +6,7 @@ import {
 	startSubscriptionCheckout,
 } from "@/services/billingApi";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -18,6 +18,20 @@ const PRO_FEATURES = [
 	"Recipient email verification (access control)",
 	"Unlimited recipient redownloads",
 	"Full analytics dashboard",
+];
+
+const COMPARISON_ROWS: {
+	feature: string;
+	free: string;
+	pro: string;
+}[] = [
+	{ feature: "Self-serve public links", free: "Unlimited", pro: "Unlimited" },
+	{ feature: "Templates", free: "2 active", pro: "Unlimited" },
+	{ feature: "Editor", free: "Simple (1 field)", pro: "Advanced (multi-field)" },
+	{ feature: "Batch generation", free: "10 recipients / batch", pro: "Unlimited" },
+	{ feature: "Recipient email verification", free: "Not included", pro: "Included" },
+	{ feature: "Certificate redownloads", free: "3 per certificate", pro: "Unlimited" },
+	{ feature: "Analytics", free: "Basic count only", pro: "Full dashboard" },
 ];
 
 const Pricing = () => {
@@ -211,6 +225,56 @@ const Pricing = () => {
 					</Link>
 					, up to 2 templates, and 10 recipients per batch.
 				</p>
+
+				{/* Compare plans */}
+				<div className="mx-auto mt-20 max-w-3xl text-left">
+					<h2 className="text-center font-playfair text-2xl italic text-foreground sm:text-3xl">
+						Compare plans
+					</h2>
+					<div className="mt-8 overflow-x-auto border border-border">
+						<table className="w-full min-w-[480px] border-collapse text-sm">
+							<thead>
+								<tr className="border-b-2 border-foreground">
+									<th className="p-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+										Feature
+									</th>
+									<th className="p-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+										Free
+									</th>
+									<th className="p-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+										Pro
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{COMPARISON_ROWS.map((row, i) => (
+									<tr
+										key={row.feature}
+										className={cn(
+											i !== COMPARISON_ROWS.length - 1 &&
+												"border-b border-dashed border-border",
+										)}
+									>
+										<td className="p-4 text-foreground">{row.feature}</td>
+										<td className="p-4 text-muted-foreground">
+											{row.free === "Not included" ? (
+												<Minus className="h-4 w-4 text-muted-foreground/60" />
+											) : (
+												row.free
+											)}
+										</td>
+										<td className="p-4 font-medium text-foreground">
+											<span className="flex items-center gap-1.5">
+												<Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+												{row.pro}
+											</span>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				</div>
 			</section>
 		</div>
 	);

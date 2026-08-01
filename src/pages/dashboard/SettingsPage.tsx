@@ -18,9 +18,6 @@ const SettingsPage = () => {
 					05
 				</span>
 				<div className="relative border-b-2 border-foreground pb-4">
-					<p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary">
-						Section 05
-					</p>
 					<h2 className="mt-1 font-playfair text-3xl italic text-foreground sm:text-4xl">
 						Your Dossier
 					</h2>

@@ -33,7 +33,7 @@ const today = new Date().toLocaleDateString(undefined, {
 const DashboardMasthead = () => {
 	const location = useLocation();
 	const navigate = useNavigate();
-	const { user, userName, logout } = useAuthContext();
+	const { user, userName, isPro, logout } = useAuthContext();
 	const [collapsed, setCollapsed] = useState(
 		() => localStorage.getItem("dashboard-header-collapsed") === "true",
 	);
@@ -64,7 +64,12 @@ const DashboardMasthead = () => {
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<button className="flex items-center gap-2.5 self-start rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-muted sm:self-auto">
-					<Avatar className="h-8 w-8 border-2 border-foreground">
+					<Avatar
+						className={cn(
+							"h-8 w-8 border-2",
+							isPro ? "border-primary" : "border-foreground",
+						)}
+					>
 						<AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
 							{initials}
 						</AvatarFallback>
@@ -72,13 +77,25 @@ const DashboardMasthead = () => {
 					<span className="text-xs uppercase tracking-[0.2em] text-foreground">
 						{userName || "Account"}
 					</span>
+					{isPro && (
+						<span className="rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
+							Pro
+						</span>
+					)}
 				</button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-56">
 				<div className="px-2 py-1.5">
-					<p className="truncate text-sm font-medium text-foreground">
-						{userName || "Account"}
-					</p>
+					<div className="flex items-center gap-1.5">
+						<p className="truncate text-sm font-medium text-foreground">
+							{userName || "Account"}
+						</p>
+						{isPro && (
+							<span className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
+								Pro
+							</span>
+						)}
+					</div>
 					<p className="truncate text-xs text-muted-foreground">
 						{user?.email ?? ""}
 					</p>

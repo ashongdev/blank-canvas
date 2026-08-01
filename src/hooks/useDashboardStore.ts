@@ -2,11 +2,22 @@ import api from "@/services/axios";
 import { PAGE_SIZE } from "@/services/dashboardApi";
 import type { Collection } from "@/types/Collection";
 import type { Template } from "@/types/Template";
+import axios from "axios";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useAuthContext } from "./useAuthContext";
 
 export type { Collection };
+
+const collectionErrorMessage = (err: unknown, fallback: string): string => {
+	if (
+		axios.isAxiosError(err) &&
+		typeof err.response?.data?.error === "string"
+	) {
+		return err.response.data.error;
+	}
+	return fallback;
+};
 
 export function useDashboardStore({
 	templates,
@@ -125,9 +136,11 @@ export function useDashboardStore({
 					...prev.filter((c) => c.id !== optimistic.id),
 				]);
 				toast.success("Collection created");
-			} catch {
+			} catch (err) {
 				setCollections(snapshot);
-				toast.error("Failed to create collection");
+				toast.error(
+					collectionErrorMessage(err, "Failed to create collection"),
+				);
 			}
 		},
 		[collections, setCollections, BASE_URL],
@@ -144,9 +157,11 @@ export function useDashboardStore({
 					collectionId: id,
 					name,
 				});
-			} catch {
+			} catch (err) {
 				setCollections(snapshot);
-				toast.error("Failed to rename collection");
+				toast.error(
+					collectionErrorMessage(err, "Failed to rename collection"),
+				);
 			}
 		},
 		[collections, setCollections, BASE_URL],

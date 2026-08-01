@@ -10,7 +10,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 const BillingPage = () => {
-	const { BASE_URL } = useAuthContext();
+	const { BASE_URL, refreshAuth } = useAuthContext();
 	const [status, setStatus] = useState<BillingStatus | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isOpeningPortal, setIsOpeningPortal] = useState(false);
@@ -37,6 +37,7 @@ const BillingPage = () => {
 		const checkout = searchParams.get("checkout");
 		if (checkout === "success") {
 			toast.success("Payment received! It may take a few seconds to reflect below.");
+			void refreshAuth();
 			setSearchParams({}, { replace: true });
 		} else if (checkout === "cancelled") {
 			setSearchParams({}, { replace: true });

@@ -1,3 +1,4 @@
+import ListPagination from "@/components/dashboard/ListPagination";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -31,16 +32,15 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
-import ListPagination from "@/components/dashboard/ListPagination";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import useClearSelectionOnOutside from "@/hooks/useClearSelectionOnOutside";
 import type { Collection } from "@/hooks/useDashboardStore";
 import { openTemplateInEditor } from "@/lib/editorUtils";
 import { cn } from "@/lib/utils";
 import { fetchTemplates, PAGE_SIZE } from "@/services/dashboardApi";
-import { Template } from "@/types/Template";
 import type { PaginationMeta } from "@/types/Pagination";
-import { DEFAULT_PAGINATION, clampPageAfterDelete } from "@/types/Pagination";
+import { clampPageAfterDelete, DEFAULT_PAGINATION } from "@/types/Pagination";
+import { Template } from "@/types/Template";
 import { AnimatePresence, motion } from "framer-motion";
 import {
 	ArrowUpRightFromSquare,
@@ -385,7 +385,7 @@ const CollectionsPage = ({
 					onClick={() => setOpenedCollection(null)}
 					className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
 				>
-					← Section 03 / Collections
+					← Collections
 				</button>
 
 				<div className="relative flex flex-col justify-between gap-5 border-b-2 border-foreground pb-4 sm:flex-row sm:items-end">
