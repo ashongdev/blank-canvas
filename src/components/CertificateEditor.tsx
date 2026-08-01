@@ -17,6 +17,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,6 +39,7 @@ import useTemplateManager from "@/hooks/useTemplateManager";
 import { useTour } from "@/hooks/useTour";
 import { createDefaultTextField } from "@/lib/defaultField";
 import { copyLinkToClipboard, restartTour } from "@/lib/editorUtils";
+import { ADDABLE_FIELD_PRESETS } from "@/lib/fieldPresets";
 import { cn } from "@/lib/utils";
 import { logActivity } from "@/services/dashboardApi";
 import type { Recipient, TextField } from "@/types/TextField";
@@ -463,14 +470,34 @@ const CertificateEditor = ({
 									)}
 								</button>
 							))}
-							<button
-								onClick={addField}
-								data-tour="add-field-btn"
-								className="shrink-0 flex items-center gap-1 rounded-full border border-dashed border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-							>
-								<Plus className="h-3 w-3" />
-								Add Field
-							</button>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<button
+										data-tour="add-field-btn"
+										className="shrink-0 flex items-center gap-1 rounded-full border border-dashed border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+									>
+										<Plus className="h-3 w-3" />
+										Add Field
+									</button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="start" className="w-56">
+									{ADDABLE_FIELD_PRESETS.map((preset) => (
+										<DropdownMenuItem
+											key={preset.id}
+											onClick={() => addField(preset.id)}
+											className="gap-2"
+										>
+											<preset.icon className="h-3.5 w-3.5 text-muted-foreground" />
+											<div className="flex flex-col">
+												<span>{preset.label}</span>
+												<span className="text-[10px] text-muted-foreground">
+													{preset.description}
+												</span>
+											</div>
+										</DropdownMenuItem>
+									))}
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</div>
 					)}
 

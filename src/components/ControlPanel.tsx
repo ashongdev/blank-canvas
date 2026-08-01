@@ -1,4 +1,6 @@
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Select,
@@ -9,10 +11,12 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { DATE_FORMAT_OPTIONS, DEFAULT_DATE_FORMAT } from "@/lib/fieldPresets";
 import { CERTIFICATE_FONTS, FONT_WEIGHTS } from "@/lib/utils";
 import { TextField } from "@/types/TextField";
+import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
-import { Move, Settings2, Type } from "lucide-react";
+import { CalendarIcon, Move, Settings2, Type } from "lucide-react";
 
 const PREDEFINED_COLORS = [
 	"#000000", // Black
@@ -79,20 +83,92 @@ const ControlPanel = ({
 								/>
 							</div>
 						)}
-						<div className="space-y-2">
-							<label className="text-xs text-muted-foreground">
-								Preview Text
-							</label>
-							<Input
-								value={activeField.text}
-								onChange={(e) =>
-									onFieldUpdate(activeField.id, {
-										text: e.target.value,
-									})
-								}
-								className="h-8"
-							/>
-						</div>
+						{activeField.preset === "date" ? (
+							<div className="space-y-2">
+								<label className="text-xs text-muted-foreground">
+									Date
+								</label>
+								<div className="flex gap-2">
+									<Popover>
+										<PopoverTrigger asChild>
+											<button className="flex h-8 flex-1 items-center gap-2 rounded-md border border-input bg-background px-3 text-xs">
+												<CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+												{activeField.text}
+											</button>
+										</PopoverTrigger>
+										<PopoverContent className="w-auto p-0" align="start">
+											<Calendar
+												mode="single"
+												selected={
+													activeField.rawDate
+														? parseISO(activeField.rawDate)
+														: undefined
+												}
+												onSelect={(date) => {
+													if (!date) return;
+													const dateFormat =
+														activeField.dateFormat ??
+														DEFAULT_DATE_FORMAT;
+													onFieldUpdate(activeField.id, {
+														rawDate: format(date, "yyyy-MM-dd"),
+														text: format(date, dateFormat),
+													});
+												}}
+												initialFocus
+											/>
+										</PopoverContent>
+									</Popover>
+									<Select
+										value={activeField.dateFormat ?? DEFAULT_DATE_FORMAT}
+										onValueChange={(dateFormat) => {
+											// If a real date has been picked, reformat it;
+											// otherwise keep showing the pattern itself as a
+											// placeholder, updated to match the new format.
+											const updates: Partial<TextField> = {
+												dateFormat,
+												text: activeField.rawDate
+													? format(
+															parseISO(activeField.rawDate),
+															dateFormat,
+														)
+													: dateFormat,
+											};
+											onFieldUpdate(activeField.id, updates);
+										}}
+									>
+										<SelectTrigger className="h-8 w-[110px] shrink-0 text-xs">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{DATE_FORMAT_OPTIONS.map((opt) => (
+												<SelectItem
+													key={opt.value}
+													value={opt.value}
+													className="text-xs"
+												>
+													{opt.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+						) : (
+							<div className="space-y-2">
+								<label className="text-xs text-muted-foreground">
+									Preview Text
+								</label>
+								<Input
+									value={activeField.text}
+									onChange={(e) =>
+										onFieldUpdate(activeField.id, {
+											text: e.target.value,
+										})
+									}
+									className="h-8"
+								/>
+							</div>
+						)}
 						{!simpleView && (
 							<div
 								className="flex items-center justify-between border rounded-md p-2"

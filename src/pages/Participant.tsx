@@ -16,8 +16,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import {
 	participantPageTourSteps,
@@ -26,12 +28,15 @@ import {
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useTour } from "@/hooks/useTour";
 import { logEvent } from "@/lib/analytics";
+import { DEFAULT_DATE_FORMAT } from "@/lib/fieldPresets";
 import api from "@/services/axios";
 import { TextField } from "@/types/TextField";
 import axios from "axios";
+import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import {
 	AlertCircle,
+	CalendarIcon,
 	Loader2,
 	Mail,
 	Search,
@@ -89,6 +94,9 @@ const Participant = () => {
 	const [textColor, setTextColor] = useState("#000000");
 	const [participantName, setParticipantName] = useState("");
 	const [inputValues, setInputValues] = useState<Record<string, string>>({});
+	// ISO date backing each date-preset field's picker, keyed by field id —
+	// separate from inputValues, which holds the final formatted display text.
+	const [dateValues, setDateValues] = useState<Record<string, string>>({});
 	const [anchorMode, setAnchorMode] = useState<"center" | "left">("center");
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [isLocalDraft, setIsLocalDraft] = useState(false);
@@ -620,24 +628,70 @@ const Participant = () => {
 													<ShieldCheck className="h-3.5 w-3.5 text-primary" />
 												)}
 											</Label>
-											<Input
-												id={`field-${field.id}`}
-												value={inputValues[field.id] || ""}
-												disabled={locked}
-												onChange={(e) => {
-													setInputValues((prev) => ({
-														...prev,
-														[field.id]: e.target.value,
-													}));
-													if (isPrimary) {
-														setParticipantName(
-															e.target.value,
-														);
-													}
-												}}
-												onKeyDown={handleNameInputKeyDown}
-												placeholder={`Enter ${field.label}...`}
-											/>
+											{field.preset === "date" ? (
+												<Popover>
+													<PopoverTrigger asChild>
+														<button
+															id={`field-${field.id}`}
+															className="flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-sm"
+														>
+															<CalendarIcon className="h-4 w-4 text-muted-foreground" />
+															{inputValues[field.id] ||
+																`Select ${field.label}...`}
+														</button>
+													</PopoverTrigger>
+													<PopoverContent className="w-auto p-0" align="start">
+														<Calendar
+															mode="single"
+															selected={
+																dateValues[field.id]
+																	? parseISO(dateValues[field.id])
+																	: undefined
+															}
+															onSelect={(date) => {
+																if (!date) return;
+																const dateFormat =
+																	field.dateFormat ??
+																	DEFAULT_DATE_FORMAT;
+																setDateValues((prev) => ({
+																	...prev,
+																	[field.id]: format(
+																		date,
+																		"yyyy-MM-dd",
+																	),
+																}));
+																setInputValues((prev) => ({
+																	...prev,
+																	[field.id]: format(
+																		date,
+																		dateFormat,
+																	),
+																}));
+															}}
+															initialFocus
+														/>
+													</PopoverContent>
+												</Popover>
+											) : (
+												<Input
+													id={`field-${field.id}`}
+													value={inputValues[field.id] || ""}
+													disabled={locked}
+													onChange={(e) => {
+														setInputValues((prev) => ({
+															...prev,
+															[field.id]: e.target.value,
+														}));
+														if (isPrimary) {
+															setParticipantName(
+																e.target.value,
+															);
+														}
+													}}
+													onKeyDown={handleNameInputKeyDown}
+													placeholder={`Enter ${field.label}...`}
+												/>
+											)}
 										</div>
 									);
 								})

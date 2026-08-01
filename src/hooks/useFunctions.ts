@@ -1,6 +1,8 @@
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import { TextField } from "@/types/TextField";
+import { DEFAULT_DATE_FORMAT, getPresetDef } from "@/lib/fieldPresets";
+import { FieldPreset, TextField } from "@/types/TextField";
+import { format } from "date-fns";
 
 interface UseFunctionsProps {
 	fields: TextField[];
@@ -23,15 +25,17 @@ const useFunctions = ({
 		);
 	};
 
-	const addField = () => {
+	const addField = (preset: FieldPreset = "text") => {
 		// Inherit the most recently used styling (and roughly the position)
 		// from whichever field was active, instead of resetting to hardcoded
 		// defaults every time. A small offset keeps the new field from
 		// landing exactly on top of the one it's copied from.
+		const presetDef = getPresetDef(preset);
 		const newField: TextField = {
 			id: uuidv4(),
-			label: "New Field",
-			text: "New Text",
+			label: presetDef?.label ?? "New Field",
+			text: presetDef?.defaultText ?? "New Text",
+			preset,
 			x: activeField.x + 20,
 			y: activeField.y + 20,
 			font: activeField.font,
@@ -41,6 +45,13 @@ const useFunctions = ({
 			anchorMode: activeField.anchorMode,
 			required: false,
 		};
+
+		if (preset === "date") {
+			const today = new Date();
+			newField.dateFormat = DEFAULT_DATE_FORMAT;
+			newField.rawDate = format(today, "yyyy-MM-dd");
+			newField.text = format(today, DEFAULT_DATE_FORMAT);
+		}
 
 		setFields((prev) => [...prev, newField]);
 		setSelectedFieldId(newField.id);
